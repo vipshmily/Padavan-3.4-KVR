@@ -2,7 +2,7 @@ SRC_NAME = dns-forwarder-1.2.1
 THISDIR = $(shell pwd)
 
 all: config_test
-	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)/build
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)/build
 
 config_test:
 	( if [ -f ./config_done ]; then \
@@ -13,7 +13,9 @@ config_test:
 
 configure:
 	( mkdir -p $(SRC_NAME)/build && cd $(SRC_NAME)/build ; \
-	cmake -DCMAKE_TOOLCHAIN_FILE=../../cross-mipsel-linux.cmake .. \
+	cmake -DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_TOOLCHAIN_FILE=$(CONFIG_CMAKE_TOOLCHAIN_FILE) \
+	.. \
 	)
 
 clean:
