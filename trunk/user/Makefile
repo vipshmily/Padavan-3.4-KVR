@@ -255,21 +255,31 @@ endif
 dir_y							+= mtd-utils
 endif
 
-all: $(patsubst %,%_only,$(dir_y))
-
-romfs: $(patsubst %,%_romfs,$(dir_y))
-
-clean: $(patsubst %,%_clean,$(dir_y) $(dir_n) $(dir_))
+all:
+	for i in $(dir_y) ; do \
+		[ ! -d $$i ] || \
+		$(MAKE) -j1 -C $$i || \
+		exit $$? ; \
+	done
 
 %_only:
-	@echo "\033[37;43m BUILD \033[0m\033[37;44m   $(@:_only=)   \033[0m"
 	$(MAKE) -C $(@:_only=)
 
 %_romfs:
-	@echo "\033[37;42m ROMFS \033[0m\033[37;44m   $(@:_romfs=)   \033[0m"
 	$(MAKE) -C $(@:_romfs=) romfs
 
 %_clean:
-	@echo "\033[37;42m CLEAN \033[0m\033[37;44m   $(@:_clean=)   \033[0m"
-	$(MAKE) -C $(@:_clean=) clean || true
+	$(MAKE) -C $(@:_clean=) clean
+
+romfs:
+	for i in $(dir_y) ; do \
+		[ ! -d $$i ] || \
+		$(MAKE) -C $$i romfs ; \
+	done
+
+clean:
+	for i in `ls -d *` ; do \
+		[ ! -d $$i ] || \
+		$(MAKE) -C $$i clean ; \
+	done
 

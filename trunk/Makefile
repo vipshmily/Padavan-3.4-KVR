@@ -34,7 +34,7 @@ ROOTDIR        = $(shell pwd)
 HOSTCC         = gcc
 ROMFSINST      = $(ROOTDIR)/tools/romfs-inst.sh
 TFTPDIR        = /tftpboot
-PATH          := $(PATH):$(ROOTDIR)/tools:$(ROOTDIR)/tools/go/go/bin
+PATH          := $(if $(filter y,$(CONFIG_CCACHE)),$(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache:,)$(CONFIG_CROSS_COMPILER_ROOT)/bin:$(PATH):$(ROOTDIR)/tools
 
 VERSIONSTR     = $(CONFIG_VENDOR)/$(CONFIG_PRODUCT) Version $(VERSIONPKG)
 
@@ -63,6 +63,7 @@ ifneq ($(findstring linux-3.4,$(LINUXDIR)),)
 FIRMWARE_KERNEL_VER="3.4"
 CONFIG_CROSS_COMPILER_ROOT = $(CONFIG_TOOLCHAIN_DIR)/toolchain-3.4.x
 CONFIG_CROSS_COMPILER_PATH = $(CONFIG_CROSS_COMPILER_ROOT)/bin
+CONFIG_CMAKE_TOOLCHAIN_FILE = $(ROOTDIR)/vendors/cmake/cross-mipsel-linux.cmake
 KERNEL_HEADERS_PATH = $(CONFIG_CROSS_COMPILER_ROOT)/mipsel-linux-uclibc/sysroot/usr/include
 endif
 
@@ -91,7 +92,7 @@ export PROJECT_CONFIG LINUX_CONFIG ROOTDIR LINUXDIR ROMFSDIR SCRIPTSDIR
 export FIRMWARE_KERNEL_VER FIRMWARE_ROOTFS_VER FIRMWARE_BUILDS_VER FIRMWARE_BUILDS_REV
 export VERSIONPKG VERSIONSTR ROMFSINST PATH IMAGEDIR RELFILES TFTPDIR
 export KERNEL_HEADERS_PATH CONFIG_CROSS_COMPILER_ROOT CONFIG_CROSS_COMPILER_PATH
-export UNSQSHFS_TOOL CONFIG_WITHOUT_KERNEL
+export CONFIG_CMAKE_TOOLCHAIN_FILE UNSQSHFS_TOOL CONFIG_WITHOUT_KERNEL
 
 ############################################################################
 
@@ -163,6 +164,21 @@ sparseall:
 .PHONY: subdirs
 subdirs: libs
 	for dir in $(DIRS) ; do [ ! -d $$dir ] || $(MAKEARCH) -C $$dir || exit 1 ; done
+
+.PHONY: $(PRODUCTS)
+$(PRODUCTS):
+	cp -f $(TEMPLATE_DIR)/$(@).config $(CONFIG)
+	@echo "CONFIG_CROSS_COMPILER_ROOT=$(TOOLCHAIN_ROOT)" >> $(CONFIG)
+	@echo "CONFIG_CCACHE=y" >> $(CONFIG)
+	@echo "CONFIG_CCACHE=y" >> ${CURDIR}/trunk/.config
+	
+ifeq ($(CONFIG_CCACHE),y)
+	@mkdir -p $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache
+	@for bin in gcc g++ cc c++; do \
+		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/$$bin; \
+		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/mipsel-linux-uclibc-$$bin; \
+	done
+endif
 
 dep:
 	@if [ ! -f $(LINUXDIR)/.config ] ; then \
