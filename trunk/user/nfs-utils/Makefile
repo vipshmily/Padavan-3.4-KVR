@@ -1,10 +1,23 @@
-SRC_NAME=nfs-utils-1.2.8
+SRC_NAME=nfs-utils-2.6.2
+SRC_URL = https://master.dl.sourceforge.net/project/nfs/nfs-utils/2.6.2/nfs-utils-2.6.2.tar.xz?viasf=1
+THISDIR = $(shell pwd)
 
 CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
 LDFLAGS += -Wl,--gc-sections
 
-all: config_test
+all: download_test extract_test config_test
+#all: config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+
+download_test:
+	( if [ ! -f $(SRC_NAME).tar.xz ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.xz $(SRC_URL); \
+	fi )
+
+extract_test:
+	( if [ ! -d $(SRC_NAME) ]; then \
+		tar -xf $(SRC_NAME).tar.xz; \
+	fi )
 
 config_test:
 	( if [ -f ./config_done ]; then \

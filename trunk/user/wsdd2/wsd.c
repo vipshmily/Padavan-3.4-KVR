@@ -51,6 +51,7 @@
 */
 #include "wsdd.h"
 #include "wsd.h"
+#include <nvram_linux.h>
 
 #define UUIDLEN	37
 
@@ -976,8 +977,8 @@ int wsd_init(struct endpoint *ep)
 		return -1;
 	}
 
-	if (!workgroup)
-		workgroup = "WORKGROUP";
+	workgroup = nvram_safe_get("st_samba_workgroup");
+	if (strlen(workgroup) == 0) workgroup = "WORKGROUP";
 
 	if (!netbiosname)
 		netbiosname = hostname;

@@ -1,5 +1,5 @@
-SRC_NAME=minidlna-1.3.0
-SRC_URL=https://sourceforge.net/projects/minidlna/files/minidlna/1.3.0/minidlna-1.3.0.tar.gz
+SRC_NAME=minidlna-1.3.2
+SRC_URL=https://udomain.dl.sourceforge.net/project/minidlna/minidlna/1.3.2/minidlna-1.3.2.tar.gz
 
 DLNA_CFLAGS  += -ffunction-sections -fdata-sections
 DLNA_CFLAGS  += -Os -Wall -g -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
@@ -12,9 +12,9 @@ DLNA_LIBS += -ldl -lm -lpthread -lz -lexif -ljpeg -lsqlite3 -lid3tag -lFLAC -lvo
 
 THISDIR = $(shell pwd)
 
-#all: download_test extract_test config_test
-all: config_test
-	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+all: download_test extract_test config_test
+#all: config_test
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) LIBICONV_STANDALONE=true
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.gz ]; then \

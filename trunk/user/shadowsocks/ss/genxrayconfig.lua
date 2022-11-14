@@ -6,11 +6,11 @@ local socks_port = arg[4] or "0"
 local ssrindext = io.popen("dbus get ssconf_basic_json_" .. server_section)
 local servertmp = ssrindext:read("*all")
 local server = cjson.decode(servertmp)
-local v2ray = {
-log = {
-	-- error = "/var/ssrplus.log",
-	loglevel = "warning"
-},
+local xray = {
+	log = {
+		-- error = "/var/ssrplus.log",
+		loglevel = "warning"
+	},
 	-- 传入连接
 	inbound = (local_port ~= "0") and {
 		port = local_port,
@@ -69,7 +69,6 @@ log = {
 				allowInsecure = (server.insecure ~= "0") and true or false,
 				serverName = server.tls_host
 			} or nil,
-
 		        tcpSettings = (server.transport == "tcp" and server.tls ~= '2') and {
 				header = {
 					type = server.tcp_guise, --伪装
@@ -99,6 +98,9 @@ log = {
 					Host = server.ws_host
 				} or nil,
 			} or nil,
+			grpcSettings = (server.transport == "grpc") and (server.grpc_path ~= nil) and {
+				serviceName = server.grpc_path
+			} or nil,
 			httpSettings = (server.transport == "h2") and {
 				path = server.h2_path,
 				host = server.h2_host,
@@ -127,5 +129,5 @@ log = {
 	}
 }
 
-print(cjson.encode(v2ray))
+print(cjson.encode(xray))
 

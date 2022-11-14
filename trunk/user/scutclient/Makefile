@@ -1,10 +1,10 @@
 # https://github.com/scutclient/scutclient.git
-SRC_NAME := scutclient-master
-SRC_URL = https://github.com/scutclient/scutclient/archive/refs/heads/master.zip
+SRC_NAME = scutclient-3.1.3
+SRC_URL = https://github.com/scutclient/scutclient/archive/refs/tags/v3.1.3.tar.gz
 THISDIR = $(shell pwd)
 
 all: download_test extract_test config_test
-	$(MAKE) -C $(SRC_NAME)/build
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)/build
 
 download_test: 
 	( if [ ! -f $(THISDIR)/$(SRC_NAME).zip ]; then \
@@ -13,7 +13,7 @@ download_test:
 	
 extract_test:
 	( if [ ! -d $(THISDIR)/$(SRC_NAME) ]; then \
-		unzip -qq $(SRC_NAME).zip; \
+		tar -xf $(SRC_NAME).tar.gz; \
 	fi )
 
 config_test:
@@ -25,7 +25,9 @@ config_test:
 
 configure:
 	( mkdir -p $(SRC_NAME)/build && cd $(SRC_NAME)/build ; \
-		cmake -DCMAKE_TOOLCHAIN_FILE=../../cross-mipsel-linux.cmake .. \
+		cmake -DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_TOOLCHAIN_FILE=$(CONFIG_CMAKE_TOOLCHAIN_FILE) \
+		.. \
 	)
 
 clean:

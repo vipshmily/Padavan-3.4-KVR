@@ -1,8 +1,8 @@
-SRC_NAME = smartdns-Release35
+SRC_NAME = smartdns-Release38.1
 THISDIR = $(shell pwd)
 
 all: extract_test config_test
-	$(MAKE) -C $(SRC_NAME)
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \

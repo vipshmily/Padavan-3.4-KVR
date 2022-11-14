@@ -19,3 +19,4 @@ clean:
 
 romfs:
 	$(ROMFSINST) wsdd2 /sbin/wsdd2
+

@@ -2,14 +2,14 @@ SRC_NAME=pptpd-1.3.3
 THISDIR=$(shell pwd)
 
 PPPD_DIR=$(ROOTDIR)/user/pppd
-PPPD_VER=2.4.7
+PPPD_VER=2.4.9
 
 CFLAGS  += -O2
 CFLAGS  += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 
 all: config_test
-	$(MAKE) -C $(SRC_NAME)
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 config_test:
 	( if [ -f ./config_done ]; then \

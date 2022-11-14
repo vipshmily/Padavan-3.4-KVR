@@ -22,76 +22,95 @@ if echo $server|grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$">/dev/
 else
 	server=`cat /etc/storage/ssr_ip`
 fi
+
+log() {
+	logger -t "$NAME" "$@"
+	echo "$(date "+%Y-%m-%d %H:%M:%S") $@" >> "/tmp/ssrplus.log"
+}
+
+run_bin() {
+	(if [ "$(nvram get ss_cgroups)" = "1" ]; then
+	 	echo 0 > /sys/fs/cgroup/cpu/$NAME/tasks
+	 	echo 0 > /sys/fs/cgroup/memory/$NAME/tasks
+	 fi
+	 "$@" > /dev/null 2>&1
+	) &
+}
+
 while [ "1" = "1" ]  #死循环
 do 
-	sleep 30
+	sleep 10
 	#redir tcp
 	if [ $redir_tcp_process -gt 0 ] ;then
-		icount=`ps -w | grep ssr-retcp |grep -v grep| wc -l`
+		icount=`ps -w | grep ssr-retcp | grep -v grep | wc -l`
 		if [ $icount = 0 ] ;then
-			logger -t "$NAME" "检测到SS进程挂掉，重新启动!"
+			log "检测到 SS 进程挂掉，正在重启..."
 			/usr/bin/shadowsocks.sh restart 
 			exit 0
 		fi
 	fi
 	#redir udp
 	if [ $redir_udp_process -gt 0 ] ;then
-		icount=`ps -w  | grep ssr-reudp|grep -v grep| wc -l`
+		icount=`ps -w | grep ssr-reudp | grep -v grep | wc -l`
 		if [ $icount = 0 ] ;then
-			logger -t "$NAME" "检测到SS进程挂掉，重新启动!"
+			log "检测到 SS 进程挂掉，正在重启..."
 			/usr/bin/shadowsocks.sh restart  
 			exit 0
 		fi
 	fi
 	#server
 	if [ $server_process_count -gt 0 ] ;then
-		icount=`ps -w  | grep ssr-server |grep -v grep| wc -l`
+		icount=`ps -w | grep ssr-server | grep -v grep | wc -l`
 		if [ $icount -lt $server_process_count ]  #如果进程挂掉就重启它
 		then
-			logger -t "$NAME" "ssr server error.restart!"
+			log "ssr server error.restart!"
 			killall -q -9 ssr-server 
 			for i in `seq $server_process_count`
 			do
-				/usr/bin/ssr-server -c /tmp/shadowsocksr_$i.json -u -f /tmp/ssr-server$i.pid   
-			done  
-		fi   
+				run_bin /usr/bin/ssr-server -c /tmp/shadowsocksr_$i.json -u -f /tmp/ssr-server$i.pid   
+			done
+		fi
 	fi
-	#V2RAY
+	#V2RAY/XRAY/TROJAN
 	if [ $v2ray_process -gt 0 ] ;then
-		icount=`ps -w  | grep v2ray |grep -v grep| wc -l`
+		bin="$(nvram get d_type)"
+		conf="/tmp/v2-redir.json"
+		[ ! -f "/usr/bin/$bin" ] && bin=$(echo -e "v2ray\nxray" | grep -v $bin)
+		[ $bin = "trojan" ] && conf="/tmp/tj-redir.json"
+		icount=`ps -w | grep $bin | grep -v grep| wc -l`
 		if [ $icount -lt $v2ray_process ]  #如果进程挂掉就重启它
 		then
-			logger -t "$NAME" "检测到V2ray进程挂掉，重新启动!"
-			killall -q -9 v2ray
-			/tmp/v2ray -config /tmp/v2-redir.json >/dev/null 2>&1 &
+			log "检测到 $bin 进程挂掉，正在重启..."
+			killall -q -9 $bin
+			run_bin /usr/bin/$bin --config $conf
 		fi   
 	fi
 	#local
 	if [ $local_process -gt 0 ] ;then
-		icount=`ps -w  | grep ssr-local |grep -v grep| wc -l`
+		icount=`ps -w | grep ssr-local | grep -v grep | wc -l`
 		if [ $icount -lt $local_process ]  #如果进程挂掉就重启它
 		then
-			logger -t "$NAME" "ssr local error.restart!"
-			killall -q -9 ssr-local
-			( /usr/bin/ssr-local -c /tmp/shadowsocksr_s.json -u -l $sock5_port -f /tmp/ssr-local.pid &)
+			log "ssr local error.restart!"
+			/usr/bin/shadowsocks.sh restart
+			exit 0
 		fi   
 	fi
 	#pdnsd
 	if [ $pdnsd_process -gt 0 ] ;then
-		icount=`ps -w  | grep pdnsd |grep -v grep| wc -l`
+		icount=`ps -w | grep pdnsd | grep -v grep | wc -l`
 		if [ $icount -lt $pdnsd_process ]  #如果进程挂掉就重启它
 		then
-			logger -t "$NAME" "pdnsd tunnel error.restart!"
+			log "pdnsd tunnel error.restart!"
 			kill -9 pdnsd
 			/usr/sbin/pdnsd -c /tmp/pdnsd.conf -d &
 		fi   
 	fi      
 	#chinadns-ng
 	if [ $chinadnsng_process -gt 0 ] ;then
-		icount=`ps -w  | grep chinadns-ng |grep -v grep| wc -l`
+		icount=`ps -w | grep chinadns-ng | grep -v grep | wc -l`
 		if [ $icount -lt $chinadnsng_process ]  #如果进程挂掉就重启它
 		then
-			logger -t "$NAME" "chinadns-ng tunnel error.restart!"
+			log "chinadns-ng tunnel error.restart!"
 			kill -9 chinadns-ng
 			kill -9 dns2tcp
 			dns2tcp -L"127.0.0.1#5353" -R"$(nvram get tunnel_forward)" >/dev/null 2>&1 &
@@ -106,7 +125,7 @@ EOF
 		icount=`ps -w  | grep dns2tcp |grep -v grep| wc -l`
 		if [ $icount -lt $chinadnsng_process ]  #如果进程挂掉就重启它
 		then
-			logger -t "$NAME" "chinadns-ng tunnel error.restart!"
+			log "chinadns-ng tunnel error.restart!"
 			kill -9 chinadns-ng
 			kill -9 dns2tcp
 			dns2tcp -L"127.0.0.1#5353" -R"$(nvram get tunnel_forward)" >/dev/null 2>&1 &
