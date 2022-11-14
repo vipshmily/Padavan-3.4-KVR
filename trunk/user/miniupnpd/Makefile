@@ -13,7 +13,7 @@ IPTABLESPATH=$(ROOTDIR)/user/iptables/$(IPT_VERSION)
 #all: download_test extract_test
 all:
 	cd $(SRC_NAME) && ./configure
-	$(MAKE) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.gz ]; then \

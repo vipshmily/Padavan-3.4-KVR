@@ -3,7 +3,7 @@ SRC_URL = https://github.com/ZenZRyan/minieap-taiga/archive/refs/heads/main.zip
 THISDIR = $(shell pwd)
 
 all: download_test extract_test
-	$(MAKE) -C $(SRC_NAME) LIBICONV_STANDALONE=true
+	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) LIBICONV_STANDALONE=true
 
 download_test: 
 	( if [ ! -f $(THISDIR)/$(SRC_NAME).zip ]; then \

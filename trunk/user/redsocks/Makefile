@@ -4,6 +4,7 @@ SRC_URL=https://github.com/SuzukiHonoka/redsocks_for_mipsel/releases/download/re
 THISDIR = $(shell pwd)
 
 all: download_test
+        $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 download_test:
 	( if [ ! -f redsocks ]; then \

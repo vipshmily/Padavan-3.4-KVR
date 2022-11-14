@@ -5,7 +5,7 @@ THISDIR = $(shell pwd)
 CFLAGS += -Wno-unused-value
 
 all: download_test extract_test config_test
-	$(MAKE) -C $(SRC_NAME)/src
+	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)/src
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
