@@ -501,7 +501,7 @@ function changeBgColor(obj, num){
                                             <th colspan="2" style="background-color: #E3E3E3;"><#t2Advanced#></th>
                                         </tr>
 										<tr>
-                                            <th width="50%"><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,5,13);">禁止解析IPv6 DNS记录</a></th>
+                                            <th width="50%"><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,5,13);"><#Disable_IPv6DNS_records#></a></th>
                                             <td>
                                                 <div class="main_itoggle">
                                                     <div id="dhcp_filter_aaa_on_of">
@@ -516,10 +516,7 @@ function changeBgColor(obj, num){
                                             </td>
                                         </tr>
 										<tr>
-                                            <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,5,14);">客户端缓存的最小DNS TTL</a></th>
-                                            <td>
-                                                <input type="text" maxlength="15" class="input" size="15" name="dhcp_min_ttl" value="<% nvram_get_x("", "dhcp_min_ttl"); %>" />
-                                            </td>
+                                        
                                         </tr>
                                         <tr>
                                             <th width="50%"><#DHCP_Verbose#></th>

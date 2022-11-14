@@ -1,2 +1,9 @@
-CFLAGS += -DBOARD_CR660x -DBOARD_MT7915_DBDC
+##################################################################
+# Board PID # Board Name       # PRODUCT # Note
+##################################################################
+# CR660x       # CR660x              # MT7621  #
+##################################################################
+
+CFLAGS += -DBOARD_CR660x -DBOARD_MT7615_DBDC
 BOARD_NUM_USB_PORTS=0
+#CONFIG_BOARD_RAM_SIZE=128

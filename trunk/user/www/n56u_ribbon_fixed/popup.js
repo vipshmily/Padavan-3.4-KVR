@@ -2,19 +2,13 @@ var winH,winW;
 
 <% get_flash_time(); %>
 
-function winW_H() {
-	if (IsPC()) {
-		if (parseInt(navigator.appVersion) > 3) {
-			winW = document.documentElement.scrollWidth;
-			if (document.documentElement.clientHeight > document.documentElement.scrollHeight)
-				winH = document.documentElement.clientHeight;
-			else
-				winH = document.documentElement.scrollHeight;
-		}
-	}
-	else{
-		winW = window.screen.width;
-		winH = window.screen.height;
+function winW_H(){
+	if(parseInt(navigator.appVersion) > 3){
+		winW = document.documentElement.scrollWidth;
+		if(document.documentElement.clientHeight > document.documentElement.scrollHeight)
+			winH = document.documentElement.clientHeight;
+		else
+			winH = document.documentElement.scrollHeight;
 	}
 }
 
@@ -71,24 +65,16 @@ function showLoading(seconds, flag){
 	htmlbodyforIE[0].style.overflow = "hidden";
 
 	winW_H();
-	var blockmarginTop = (window.screen.height - 114) / 2;
-	//var sheight = document.documentElement.scrollHeight;
-	//var cheight = document.documentElement.clientHeight
+	var blockmarginTop;
+	var sheight = document.documentElement.scrollHeight;
+	var cheight = document.documentElement.clientHeight
 
-	/*if (IsPC())
-		blockmarginTop = (navigator.userAgent.indexOf("Safari") >= 0) ? (sheight - cheight <= 0) ? 200 : sheight - cheight + 200 : document.documentElement.scrollTop + 200;
-	else
-		blockmarginTop = (window.screen.height - 114) / 2;*/
+	blockmarginTop = (navigator.userAgent.indexOf("Safari")>=0)?(sheight-cheight<=0)?200:sheight-cheight+200:document.documentElement.scrollTop+200;
 
 	//Lock modified it for Safari4 display issue.
 	$("loadingBlock").style.marginTop = blockmarginTop+"px";
-	if (IsPC()) {
-	    $("Loading").style.width = "100%";
-	    $("Loading").style.height = "100%";
-	} else {
-	    $("Loading").style.width = winW+"px";
-	    $("Loading").style.height = winH+"px";
-	}
+	$("Loading").style.width = winW+"px";
+	$("Loading").style.height = winH+"px";
 
 	loadingSeconds = seconds;
 	progress = 100/loadingSeconds;

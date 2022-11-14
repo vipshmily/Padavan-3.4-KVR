@@ -1,3 +1,4 @@
+/* CR660x */
 
 #define BOARD_PID		"CR660x"
 #define BOARD_NAME		"CR660x"

@@ -107,14 +107,14 @@ dir_y							+= busybox
 dir_y							+= iptables
 dir_y							+= coremark
 ifneq ($(CONFIG_WITHOUT_KERNEL),y)
-dir_$(CONFIG_FIRMWARE_INCLUDE_IPSET)			+= ipset
+dir_$(CONFIG_FIRMWARE_INCLUDE_IPSET)		        += ipset
 dir_y							+= accel-pptpd
 endif
 dir_y							+= ebtables
 dir_y							+= iproute2
 dir_y							+= wireless_tools
 dir_y							+= shared
-dir_$(STORAGE_ENABLED)			+= libdisk
+dir_$(STORAGE_ENABLED)			                += libdisk
 dir_y							+= nvram
 dir_y							+= mtd_write
 dir_y							+= networkmap
@@ -129,7 +129,9 @@ dir_y							+= inadyn
 dir_y							+= miniupnpd
 dir_y							+= dnsmasq
 dir_y							+= igmpproxy
+ifneq ($(CONFIG_FIRMWARE_INCLUDE_MSD_LITE),y)
 dir_y							+= udpxy
+endif
 dir_y							+= utils
 dir_y							+= lanauth
 dir_y							+= 802.1x
@@ -145,47 +147,50 @@ dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)		+= chinadns-ng
 dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)		+= lua51
 dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)		+= microsocks
 dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)		+= ipt2socks
-dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)      +=resolveip
-dir_$(CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME)     	+= adguardhome
-dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)	    += dns2tcp
+dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)              +=resolveip
+dir_$(CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME)     	        += adguardhome
+dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)	        += dns2tcp
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
 dir_$(CONFIG_FIRMWARE_INCLUDE_V2RAY)			+= v2ray
-dir_$(CONFIG_FIRMWARE_INCLUDE_XRAY)				+= xray
+dir_$(CONFIG_FIRMWARE_INCLUDE_XRAY)			+= xray
 dir_$(CONFIG_FIRMWARE_INCLUDE_TROJAN)			+= trojan
 endif
-#dir_$(CONFIG_FIRMWARE_INCLUDE_SSOBFS)			+= simple-obfs
+dir_$(CONFIG_FIRMWARE_INCLUDE_SSOBFS)			+= simple-obfs
 dir_$(CONFIG_FIRMWARE_INCLUDE_ZEROTIER)			+= zerotier
-dir_$(CONFIG_FIRMWARE_INCLUDE_WYY)				+= unblockmusic
-dir_$(OPENSSH_ENABLED)							+= openssh
-dir_$(DROPBEAR_ENABLED)							+= dropbear
-dir_$(CONFIG_FIRMWARE_INCLUDE_HTOP)				+= htop
-dir_$(CONFIG_FIRMWARE_INCLUDE_NANO)				+= nano
+dir_$(CONFIG_FIRMWARE_INCLUDE_WYY)			+= unblockmusic
+dir_$(OPENSSH_ENABLED)					+= openssh
+dir_$(DROPBEAR_ENABLED)					+= dropbear
+dir_$(CONFIG_FIRMWARE_INCLUDE_HTOP)			+= htop
+dir_$(CONFIG_FIRMWARE_INCLUDE_NANO)			+= nano
 dir_$(CONFIG_FIRMWARE_INCLUDE_OPENVPN)			+= openvpn
 dir_$(CONFIG_FIRMWARE_INCLUDE_SSWAN)			+= strongswan
 dir_$(CONFIG_FIRMWARE_INCLUDE_XUPNPD)			+= xupnpd
 dir_$(CONFIG_FIRMWARE_INCLUDE_TCPDUMP)			+= tcpdump
-dir_$(CONFIG_FIRMWARE_INCLUDE_MTR)				+= mtr
+dir_$(CONFIG_FIRMWARE_INCLUDE_MTR)			+= mtr
 dir_$(CONFIG_FIRMWARE_INCLUDE_SOCAT)			+= socat
 dir_$(CONFIG_FIRMWARE_INCLUDE_SRELAY)			+= srelay
 dir_$(CONFIG_FIRMWARE_INCLUDE_TUNSAFE)			+= tunsafe
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_WIREGUARD),y)
-dir_y += wireguard
-dir_y += wireguard-tools
+dir_y                                                   += wireguard
+dir_y                                                   += wireguard-tools
+dir_y                                                   += wg-quick
 endif
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SMBD36),y)
-dir_$(SAMBA_ENABLED)							+= samba36
-dir_y											+= wsdd2
+dir_$(SAMBA_ENABLED)					+= samba36
+dir_y							+= wsdd2
 else
-dir_$(SAMBA_ENABLED)							+= samba3
+dir_$(SAMBA_ENABLED)					+= samba3
 endif
 dir_$(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS)		+= chnroute
-dir_$(CONFIG_FIRMWARE_INCLUDE_TTYD)				+= ttyd
-dir_$(FRP_ENABLE)								+= frp
-dir_$(SOFTETHERVPN_ENABLE)						+= softethervpn
+dir_$(CONFIG_FIRMWARE_INCLUDE_TTYD)			+= ttyd
+dir_$(CONFIG_FIRMWARE_INCLUDE_MSD_LITE)                 += msd_lite
+dir_$(CONFIG_FIRMWARE_INCLUDE_LIBCGROUP)                += libcgroup
+dir_$(FRP_ENABLE)					+= frp
+dir_$(SOFTETHERVPN_ENABLE)				+= softethervpn
 dir_$(CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT)		+= scutclient
 dir_$(CONFIG_FIRMWARE_INCLUDE_VLMCSD)			+= vlmcsd
 dir_$(CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER)		+= dns-forwarder
-dir_$(SHADOWSOCKS_ENABLE)						+= shadowsocks
+dir_$(SHADOWSOCKS_ENABLE)				+= shadowsocks
 dir_$(CONFIG_FIRMWARE_INCLUDE_LRZSZ)			+= lrzsz
 dir_$(CONFIG_FIRMWARE_INCLUDE_GDUT_DRCOM)		+= gdut-drcom
 dir_$(CONFIG_FIRMWARE_INCLUDE_DOGCOM)			+= dogcom
@@ -196,8 +201,10 @@ dir_$(CONFIG_FIRMWARE_INCLUDE_MENTOHUST)		+= mentohust
 dir_$(CONFIG_FIRMWARE_INCLUDE_SMARTDNS)			+= smartdns
 dir_$(CONFIG_FIRMWARE_INCLUDE_CADDY)			+= caddy
 dir_$(CONFIG_FIRMWARE_INCLUDE_xTUN) 			+= xTun
-dir_$(CONFIG_FIRMWARE_INCLUDE_WING) 			+= wing
-dir_$(CONFIG_FIRMWARE_INCLUDE_WING) 			+= ipt2socks
+ifeq ($(CONFIG_FIRMWARE_INCLUDE_WING),y)
+dir_y 			                                += wing
+dir_y 			                                += ipt2socks
+endif
 dir_$(CONFIG_FIRMWARE_INCLUDE_REDSOCKS)			+= redsocks
 dir_$(CONFIG_FIRMWARE_INCLUDE_3PROXY)			+= 3proxy
 
@@ -206,71 +213,63 @@ dir_$(CONFIG_FIRMWARE_INCLUDE_HDPARM)			+= hdparm
 endif
 
 ifdef CONFIG_USB_SUPPORT
-dir_y											+= p910nd
-dir_y											+= usb-modeswitch
-dir_y											+= comgt-0.32
-dir_y											+= uqmi
-dir_$(CONFIG_FIRMWARE_INCLUDE_LPRD)				+= LPRng
-dir_$(CONFIG_FIRMWARE_INCLUDE_U2EC)				+= u2ec
+dir_y							+= p910nd
+dir_y							+= usb-modeswitch
+dir_y							+= comgt-0.32
+dir_y							+= uqmi
+dir_$(CONFIG_FIRMWARE_INCLUDE_LPRD)			+= LPRng
+dir_$(CONFIG_FIRMWARE_INCLUDE_U2EC)			+= u2ec
 dir_$(CONFIG_FIRMWARE_INCLUDE_DUMP1090)			+= dump1090
 endif
 ifeq ($(STORAGE_ENABLED),y)
-dir_$(CONFIG_FIRMWARE_INCLUDE_NFSD)				+= nfs-utils
+dir_$(CONFIG_FIRMWARE_INCLUDE_NFSD)			+= nfs-utils
 ifneq (,$(filter y,$(CONFIG_FIRMWARE_INCLUDE_NFSD) $(CONFIG_FIRMWARE_INCLUDE_NFSC)))
-dir_y											+= rpcbind
+dir_y							+= rpcbind
 endif
-dir_y											+= optware
-dir_y											+= util-linux
-dir_$(FS_EXT_ENABLED)							+= e2fsprogs
-dir_$(FS_FAT_ENABLED)							+= dosfstools
-dir_$(FS_NTFS_ENABLED)							+= ntfs-3g
+dir_y							+= optware
+dir_y							+= util-linux
+dir_$(FS_EXT_ENABLED)					+= e2fsprogs
+dir_$(FS_FAT_ENABLED)					+= dosfstools
+dir_$(FS_NTFS_ENABLED)					+= ntfs-3g
 dir_$(CONFIG_FIRMWARE_INCLUDE_PARTED)			+= parted
-dir_$(CONFIG_FIRMWARE_INCLUDE_FTPD)				+= vsftpd
+dir_$(CONFIG_FIRMWARE_INCLUDE_FTPD)			+= vsftpd
 dir_$(CONFIG_FIRMWARE_INCLUDE_MINIDLNA)			+= minidlna
 dir_$(CONFIG_FIRMWARE_INCLUDE_FIREFLY)			+= firefly
 dir_$(CONFIG_FIRMWARE_INCLUDE_TRANSMISSION)		+= transmission
-dir_$(ARIA2_ENABLED)							+= aria2
+dir_$(CONFIG_FIRMWARE_INCLUDE_ARIA)			+= aria2
 endif
 
 dir_$(CONFIG_FIRMWARE_INCLUDE_KOOLPROXY)		+= koolproxy
 dir_$(CONFIG_FIRMWARE_INCLUDE_ADBYBY)			+= adbyby
 dir_$(CONFIG_FIRMWARE_INCLUDE_ALIDDNS)			+= aliddns
 dir_$(CONFIG_FIRMWARE_INCLUDE_NVPPROXY)			+= nvpproxy
-#dir_$(CONFIG_FIRMWARE_INCLUDE_NPC)				+= npc
-dir_$(CONFIG_FIRMWARE_INCLUDE_DDNSTO)	        += ddnsto
-dir_$(CONFIG_FIRMWARE_INCLUDE_ALDRIVER)	                       += aliyundrive-webdav
+#dir_$(CONFIG_FIRMWARE_INCLUDE_NPC)			+= npc
+dir_$(CONFIG_FIRMWARE_INCLUDE_DDNSTO)	                += ddnsto
+dir_$(CONFIG_FIRMWARE_INCLUDE_ALDRIVER)	                += aliyundrive-webdav
+dir_$(CONFIG_FIRMWARE_INCLUDE_SQM)                      += sqm-qos
 ifdef CONFIG_MTD_UBI
 ifneq ($(STORAGE_ENABLED),y)
-dir_y											+= optware
-dir_y											+= util-linux
+dir_y							+= optware
+dir_y							+= util-linux
 endif
-dir_y											+= mtd-utils
+dir_y							+= mtd-utils
 endif
 
-all:
-	for i in $(dir_y) ; do \
-		[ ! -d $$i ] || \
-		$(MAKE) -j1 -C $$i || \
-		exit $$? ; \
-	done
+all: $(patsubst %,%_only,$(dir_y))
+
+romfs: $(patsubst %,%_romfs,$(dir_y))
+
+clean: $(patsubst %,%_clean,$(dir_y) $(dir_n) $(dir_))
 
 %_only:
+	@echo "\033[37;43m BUILD \033[0m\033[37;44m   $(@:_only=)   \033[0m"
 	$(MAKE) -C $(@:_only=)
 
 %_romfs:
+	@echo "\033[37;42m ROMFS \033[0m\033[37;44m   $(@:_romfs=)   \033[0m"
 	$(MAKE) -C $(@:_romfs=) romfs
 
 %_clean:
-	$(MAKE) -C $(@:_clean=) clean
+	@echo "\033[37;42m CLEAN \033[0m\033[37;44m   $(@:_clean=)   \033[0m"
+	$(MAKE) -C $(@:_clean=) clean || true
 
-romfs:
-	for i in $(dir_y) ; do \
-		[ ! -d $$i ] || \
-		$(MAKE) -C $$i romfs ; \
-	done
-
-clean:
-	for i in `ls -d *` ; do \
-		[ ! -d $$i ] || \
-		$(MAKE) -C $$i clean ; \
-	done

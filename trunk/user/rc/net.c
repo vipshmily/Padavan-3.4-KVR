@@ -229,7 +229,7 @@ remove_vlan_iface(const char *vlan_ifname)
 void
 stop_udpxy(void)
 {
-	char* svcs[] = { "udpxy", NULL };
+	char* svcs[] = { "udpxy", "msd_lite", NULL };
 
 	kill_services(svcs, 3, 1);
 }
@@ -237,9 +237,37 @@ stop_udpxy(void)
 void
 start_udpxy(char *wan_ifname)
 {
-	if (nvram_get_int("udpxy_enable_x") < 1024)
+	int port = nvram_get_int("udpxy_enable_x");
+	if (port < 1024)
 		return;
 
+#if defined (APP_MSD_LITE)
+	char *src_conf = "/etc_ro/msd_lite.conf";
+	char *dst_conf = "/etc/storage/msd_lite.conf";
+	if (!check_if_file_exist(dst_conf))
+		doSystem("cp -f %s %s", src_conf, dst_conf);
+	char line[256];
+	FILE *fp1, *fp2;
+	fp1 = fopen(dst_conf, "w");
+	if (fp1) {
+		fp2 = fopen(src_conf, "r");
+		if (fp2) {
+			while (fgets(line, sizeof(line), fp2)){
+				if (strstr(line, "<ifName>"))
+					snprintf(line, sizeof(line), "\t\t\t\t<ifName>%s</ifName>\n", wan_ifname);
+				else if (strstr(line, "<bind><address>0.0.0.0:"))
+					snprintf(line, sizeof(line), "\t\t\t<bind><address>0.0.0.0:%d</address><fAcceptFilter>y</fAcceptFilter></bind>\n", port);
+				else if (strstr(line, "<bind><address>[::]:"))
+					snprintf(line, sizeof(line), "\t\t\t<bind><address>[::]:%d</address></bind>\n", port);
+				fprintf(fp1, "%s", line);
+			}
+			fclose(fp2);
+		}
+		fclose(fp1);
+	}
+	nvram_set("msd_lite_enable", "1");
+	eval("/usr/bin/msd_lite", "-d", "-c", dst_conf);
+#else
 	eval("/usr/sbin/udpxy",
 		"-m", wan_ifname,
 		"-p", nvram_safe_get("udpxy_enable_x"),
@@ -247,6 +275,7 @@ start_udpxy(char *wan_ifname)
 		"-c", nvram_safe_get("udpxy_clients"),
 		"-M", nvram_safe_get("udpxy_renew_period")
 		);
+#endif
 }
 
 #if defined(APP_XUPNPD)
@@ -381,7 +410,7 @@ start_xupnpd(char *wan_ifname)
 void
 stop_igmpproxy(char *wan_ifname)
 {
-	char *svcs[] = { "xupnpd", "udpxy", "igmpproxy", NULL };
+	char *svcs[] = { "xupnpd", "udpxy", "msd_lite", "igmpproxy", NULL };
 
 	/* check used IPTV via VLAN interface */
 	if (wan_ifname) {
@@ -824,7 +853,7 @@ set_ipv4_forward(int is_on)
 void
 set_nf_conntrack(void)
 {
-	int i_nf_nat, i_nf_val;
+	int i_nf_val;
 
 #if (BOARD_RAM_SIZE < 32)
 	int i_nf_lim = 4096;
@@ -837,15 +866,6 @@ set_nf_conntrack(void)
 #else
 	int i_nf_lim = 327680;
 #endif
-
-	i_nf_val = nvram_get_int("nf_nat_type");
-	if (i_nf_val == 2)
-		i_nf_nat = 0;	// Linux
-	else if (i_nf_val == 1)
-		i_nf_nat = 1;	// FCONE
-	else
-		i_nf_nat = 2;	// RCONE
-	fput_int("/proc/sys/net/netfilter/nf_conntrack_nat_mode", i_nf_nat);
 
 	i_nf_val = nvram_safe_get_int("nf_max_conn", 16384, 4096, i_nf_lim);
 	fput_int("/proc/sys/net/nf_conntrack_max", i_nf_val);
@@ -895,33 +915,14 @@ set_tcp_tweaks(void)
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_synack_retries");
 	fput_int(tmp, 3);		// def: 5
 
-	//sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_tw_recycle");
-	//fput_int(tmp, 1);
+//	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_tw_recycle");
+//	fput_int(tmp, 1);
 
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_tw_reuse");
 	fput_int(tmp, 1);
 
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_rfc1337");
 	fput_int(tmp, 1);
-}
-
-void
-set_passthrough_pppoe(int is_on)
-{
-	char pthrough[32], *lan_if, *wan_if;
-
-	lan_if = "null";
-	wan_if = lan_if;
-
-	if (is_on && nvram_match("fw_pt_pppoe", "1")) {
-		lan_if = IFNAME_BR;
-		wan_if = get_man_ifname(0);
-	}
-
-	snprintf(pthrough, sizeof(pthrough), "%s,%s\n", lan_if, wan_if);
-
-	/* enable/disable kernel-mode PPPoE passthrough */
-	fput_string("/proc/net/pthrough/pppoe", pthrough);
 }
 
 void

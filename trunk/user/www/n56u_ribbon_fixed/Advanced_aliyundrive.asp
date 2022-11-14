@@ -42,10 +42,12 @@ $j(document).ready(function() {
 
 function initial(){
 	show_banner(2);
-	show_menu(5,22,0);
+	show_menu(5,18,0);
 	fill_status(aliyundrive_status());
 	show_footer();
+
 }
+
 
 function fill_status(status_code){
 	var stext = "Unknown";
@@ -55,14 +57,17 @@ function fill_status(status_code){
 		stext = "<#Running#>";
 	$("aliyundrive_status").innerHTML = '<span class="label label-' + (status_code != 0 ? 'success' : 'warning') + '">' + stext + '</span>';
 }
+
 function applyRule(){
-	showLoading();
-	
-	document.form.action_mode.value = " Restart ";
-	document.form.current_page.value = "/Advanced_aliyundrive.asp";
-	document.form.next_page.value = "";
-	
-	document.form.submit();
+//	if(validForm()){
+		showLoading();
+		
+		document.form.action_mode.value = " Restart ";
+		document.form.current_page.value = "/Advanced_aliyundrive.asp";
+		document.form.next_page.value = "";
+		
+		document.form.submit();
+//	}
 }
 
 function done_validating(action){
@@ -76,8 +81,6 @@ function done_validating(action){
 
 <body onload="initial();" onunLoad="return unload_body();">
 
-<div id="Loading" class="popup_bg"></div>
-
 <div class="wrapper">
 	<div class="container-fluid" style="padding-right: 0px">
 		<div class="row-fluid">
@@ -87,6 +90,8 @@ function done_validating(action){
 			</div>
 		</div>
 	</div>
+
+	<div id="Loading" class="popup_bg"></div>
 
 	<iframe name="hidden_frame" id="hidden_frame" src="" width="0" height="0" frameborder="0"></iframe>
 

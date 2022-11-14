@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title><#Web_Title#> - <#menu5_32_2#></title>
+<title><#Web_Title#> - <#menu5_34#></title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="-1">
@@ -43,12 +43,12 @@ function initial(){
 	showmenu();
 	fill_status(ddnsto_status());
 	show_footer();
-}
 
+}
 function showmenu(){
-	showhide_div('allink', found_app_aliddns());
-	showhide_div('zelink', found_app_zerotier());
-	showhide_div('wirlink', found_app_wireguard());
+showhide_div('allink', found_app_aliddns());
+showhide_div('zelink', found_app_zerotier());
+showhide_div('wiink', 1);
 }
 
 function fill_status(status_code){
@@ -59,14 +59,17 @@ function fill_status(status_code){
 		stext = "<#Running#>";
 	$("ddnsto_status").innerHTML = '<span class="label label-' + (status_code != 0 ? 'success' : 'warning') + '">' + stext + '</span>';
 }
+
 function applyRule(){
-	showLoading();
-	
-	document.form.action_mode.value = " Restart ";
-	document.form.current_page.value = "/Advanced_ddnsto.asp";
-	document.form.next_page.value = "";
-	
-	document.form.submit();
+//	if(validForm()){
+		showLoading();
+		
+		document.form.action_mode.value = " Restart ";
+		document.form.current_page.value = "/Advanced_ddnsto.asp";
+		document.form.next_page.value = "";
+		
+		document.form.submit();
+//	}
 }
 
 function done_validating(action){
@@ -79,7 +82,7 @@ function done_validating(action){
 </head>
 
 <body onload="initial();" onunLoad="return unload_body();">
-<div id="Loading" class="popup_bg"></div>
+
 <div class="wrapper">
 	<div class="container-fluid" style="padding-right: 0px">
 		<div class="row-fluid">
@@ -90,7 +93,7 @@ function done_validating(action){
 		</div>
 	</div>
 
-	
+	<div id="Loading" class="popup_bg"></div>
 
 	<iframe name="hidden_frame" id="hidden_frame" src="" width="0" height="0" frameborder="0"></iframe>
 
@@ -125,24 +128,24 @@ function done_validating(action){
 				<div class="row-fluid">
 					<div class="span12">
 						<div class="box well grad_colour_dark_blue">
-							<h2 class="box_head round_top"><#menu5_32#> - <#menu5_32_2#></h2>
+							<h2 class="box_head round_top"><#menu5_30#> - <#menu5_34#></h2>
 							<div class="round_bottom">
 							<div>
-							    <ul class="nav nav-tabs" style="margin-bottom: 10px;">
+                            <ul class="nav nav-tabs" style="margin-bottom: 10px;">
 								<li id="allink" style="display:none">
-								    <a href="Advanced_aliddns.asp"><#menu5_23_1#></a>
-								</li>
-								<li class="active">
-								    <a href="Advanced_ddnsto.asp"><#menu5_32_2#></a>
-								</li>
+                                    <a href="Advanced_aliddns.asp"><#menu5_23_1#></a>
+                                </li>
 								<li id="zelink" style="display:none">
-								    <a href="Advanced_zerotier.asp"><#menu5_32_1#></a>
-								</li>
-								<li id="wirlink" style="display:none">
-								    <a href="Advanced_wireguard.asp"><#menu5_35_1#></a>
-								</li>			
-							    </ul>
-							</div>
+                                    <a href="Advanced_zerotier.asp"><#menu5_32_1#></a>
+                                </li>
+								<li class="active">
+                                    <a href="Advanced_ddnsto.asp"><#menu5_34_1#></a>
+                                </li>
+								<li id="wiink" style="display:none">
+                                    <a href="Advanced_wireguard.asp"><#menu5_35_1#></a>
+                                </li>
+                            </ul>
+                        </div>
 								<div class="row-fluid">
 									<div id="tabMenu" class="submenuBlock"></div>
 									<div class="alert alert-info" style="margin: 10px;">
