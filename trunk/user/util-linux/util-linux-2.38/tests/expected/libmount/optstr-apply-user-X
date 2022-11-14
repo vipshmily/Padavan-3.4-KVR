@@ -1,2 +1,2 @@
-flags:  0x00020000
-optstr: something,X-foo,X-bar
+flags:  0x00002000
+optstr: something,x-gvfs-hide,x-gdu.hide,x-canary
