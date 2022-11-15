@@ -2000,9 +2000,10 @@ static int shadowsocks_action_hook(int eid, webs_t wp, int argc, char **argv)
 	} else if (!strcmp(ss_action, "Reconnect_ss_tunnel")) {
 		notify_rc(RCN_RESTART_SS_TUNNEL);
 	} else if (!strcmp(ss_action, "Update_gfwlist")) {
-		notify_rc(RCN_RESTART_GFWLIST_UPD);}else if (!strcmp(ss_action, "Update_dlink")) {
+		notify_rc(RCN_RESTART_GFWLIST_UPD);
+	} else if (!strcmp(ss_action, "Update_dlink")) {
 		notify_rc(RCN_RESTART_DLINK);
-	}else if (!strcmp(ss_action, "Reset_dlink")) {
+	} else if (!strcmp(ss_action, "Reset_dlink")) {
 		notify_rc(RCN_RESTART_REDLINK);
 	}
 	websWrite(wp, "<script>restart_needed_time(%d);</script>\n", needed_seconds);
