@@ -73,9 +73,8 @@ struct smp_trx_layout_t {
 #define SMP_MASK_CPU3	(1U << 3)
 
 #if defined (CONFIG_RALINK_MT7621)
-#define GIC_OFFSET		7
 
-#define GIC_IRQ_FE		(GIC_OFFSET+3)
+#define GIC_IRQ_FE	(GIC_OFFSET+3)
 #define GIC_IRQ_PCIE0	(GIC_OFFSET+4)
 #define GIC_IRQ_PCIE1	(GIC_OFFSET+24)
 #define GIC_IRQ_PCIE2	(GIC_OFFSET+25)

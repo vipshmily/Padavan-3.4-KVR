@@ -705,6 +705,7 @@ void stop_lpd(void);
 void start_p910nd(char *devlp);
 void stop_p910nd(void);
 void safe_remove_usb_device(int port, const char *dev_name);
+void power_control_usb_port(int port, int power_on);
 void restart_usb_printer_spoolers(void);
 void stop_usb_printer_spoolers(void);
 void try_start_usb_printer_spoolers(void);
@@ -737,8 +738,10 @@ int get_apcli_connected(const char *ifname);
 int check_regspec_code(const char *spec);
 
 /* watchdog.c */
+#if defined (BOARD_GPIO_BTN_WPS) || defined (BOARD_GPIO_BTN_FN1) || defined (BOARD_GPIO_BTN_FN2)
 void ez_event_short(int btn_id);
 void ez_event_long(int btn_id);
+#endif
 int  is_ntpc_updated(void);
 int  ntpc_updated_main(int argc, char *argv[]);
 int  watchdog_main(int argc, char *argv[]);
@@ -748,7 +751,7 @@ void notify_watchdog_wifi(int is_5ghz);
 
 int  btn_main(int argc, char *argv[]);
 int  start_gpio_btn(void);
-int  get_state_led_pwr(void);
+/*int  get_state_led_pwr(void);*/
 void btn_reset_action(void);
 void btn_event_long(int btn_id);
 void btn_event_short(int btn_id);
