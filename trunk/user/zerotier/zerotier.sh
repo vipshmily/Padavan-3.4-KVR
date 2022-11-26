@@ -5,7 +5,6 @@ PROG=/usr/bin/zerotier-one
 PROGCLI=/usr/bin/zerotier-cli
 PROGIDT=/usr/bin/zerotier-idtool
 config_path="/etc/storage/zerotier-one"
-PLANET="/etc/storage/zerotier-one/planet"
 start_instance() {
 	cfg="$1"
 	echo $cfg
@@ -14,7 +13,6 @@ start_instance() {
 	moonid="$(nvram get zerotier_moonid)"
 	secret="$(nvram get zerotier_secret)"
 	enablemoonserv="$(nvram get zerotiermoon_enable)"
-	planet="$(nvram get zerotier_planet)"
 	if [ ! -d "$config_path" ]; then
 		mkdir -p $config_path
 	fi
@@ -40,35 +38,12 @@ start_instance() {
 		#rm -f $config_path/identity.public
 	fi
 
-	if [ -n "$planet"]; then
-		logger -t "zerotier" "找到planet,正在写入文件,请稍后..."
-		echo "$planet" >$config_path/planet.tmp
-		base64 -d $config_path/planet.tmp >$config_path/planet
-	fi
-
-	if [ -f "$PLANET" ]; then
-		if [ ! -s "$PLANET" ]; then
-			logger -t "zerotier" "自定义planet文件为空,删除..."
-			rm -f $config_path/planet
-			rm -f $PLANET
-			nvram set zerotier_planet=""
-			nvram commit
-		else
-			logger -t "zerotier" "自定义planet文件不为空,创建..."
-			planet="$(base64 $PLANET)"
-			cp -f $PLANET $config_path/planet
-			rm -f $PLANET
-			nvram set zerotier_planet="$planet"
-			nvram commit
-		fi
-	fi
-
 	add_join $(nvram get zerotier_id)
 
 	$PROG $args $config_path >/dev/null 2>&1 &
-
+		
 	rules
-
+	
 	if [ -n "$moonid" ]; then
 		$PROGCLI -D$config_path orbit $moonid $moonid
 		logger -t "zerotier" "orbit moonid $moonid ok!"
@@ -200,7 +175,7 @@ creat_moon(){
 		if [ ! -d "$config_path/moons.d" ]; then
 			mkdir -p $config_path/moons.d
 		fi
-
+		
 		#服务器加入moon server
 		mv $config_path/*.moon $config_path/moons.d/ >/dev/null 2>&1
 		logger -t "zerotier" "moon节点创建完成"
@@ -218,7 +193,7 @@ creat_moon(){
 
 remove_moon(){
 	zmoonid="$(nvram get zerotiermoon_id)"
-
+	
 	if [ ! -n "$zmoonid"]; then
 		rm -f $config_path/moons.d/000000$zmoonid.moon
 		rm -f $config_path/moon.json

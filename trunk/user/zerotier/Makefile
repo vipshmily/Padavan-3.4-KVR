@@ -10,9 +10,10 @@ all: extract_test
 extract_test:
 	 if [ ! -d $(SRC_NAME) ] ; then \
 		tar xf $(SRC_NAME).tar.gz ; \
-		patch -d $(SRC_NAME) -p1 -i ../0002-remove-pie.patch; \
+		patch -d $(SRC_NAME) -p1 -i ../0001-fix-makefile.patch ; \
+		patch -d $(SRC_NAME) -p1 -i ../0006-gcc10.patch ; \
 		patch -d $(SRC_NAME) -p1 -i ../0007-add-cerrno-header-for-str-errno.patch ; \
-		patch -d $(SRC_NAME) -p1 -i ../0009-fix-set-mac-and-change-confpath.patch ; \
+		patch -d $(SRC_NAME) -p1 -i ../0008-fix-compilation-for-arm_cortex-a7-neon.patch; \
 	 fi ;
 
 config_test:
