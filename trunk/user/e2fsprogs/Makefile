@@ -50,6 +50,7 @@ configure:
 		--disable-tls \
 		--disable-libuuid \
 		--disable-libblkid \
+		--disable-threads \
 		--enable-symlink-build \
 		--enable-verbose-makecmds \
 		--enable-elf-shlibs \
