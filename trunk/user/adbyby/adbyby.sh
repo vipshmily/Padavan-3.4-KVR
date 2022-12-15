@@ -66,7 +66,7 @@ add_rules()
 	rm -f /tmp/adbyby/data/*.bak
 
 	touch /tmp/local-md5.json && md5sum /tmp/adbyby/data/lazy.txt /tmp/adbyby/data/video.txt > /tmp/local-md5.json
-	touch /tmp/md5.json && curl -k -s -o /tmp/md5.json --connect-timeout 5 --retry 3 https://adbyby.coding.net/p/xwhyc-rules/d/xwhyc-rules/git/raw/master/md5.json
+	touch /tmp/md5.json && curl -k -s -o /tmp/md5.json --connect-timeout 5 --retry 3 https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/md5.json
 
 	lazy_local=$(grep 'lazy' /tmp/local-md5.json | awk -F' ' '{print $1}')
 	video_local=$(grep 'video' /tmp/local-md5.json | awk -F' ' '{print $1}')  
@@ -76,8 +76,8 @@ add_rules()
 	if [ "$lazy_online"x != "$lazy_local"x -o "$video_online"x != "$video_local"x ]; then
 	echo "MD5 not match! Need update!"
 	logger -t "adbyby" "发现更新的规则,下载规则！"
-	touch /tmp/lazy.txt && curl -k -s -o /tmp/lazy.txt --connect-timeout 5 --retry 3 https://adbyby.coding.net/p/xwhyc-rules/d/xwhyc-rules/git/raw/master/lazy.txt
-	touch /tmp/video.txt && curl -k -s -o /tmp/video.txt --connect-timeout 5 --retry 3 https://adbyby.coding.net/p/xwhyc-rules/d/xwhyc-rules/git/raw/master/video.txt
+	touch /tmp/lazy.txt && curl -k -s -o /tmp/lazy.txt --connect-timeout 5 --retry 3 https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt
+	touch /tmp/video.txt && curl -k -s -o /tmp/video.txt --connect-timeout 5 --retry 3 https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt
 	touch /tmp/local-md5.json && md5sum /tmp/lazy.txt /tmp/video.txt > /tmp/local-md5.json
 	lazy_local=$(grep 'lazy' /tmp/local-md5.json | awk -F' ' '{print $1}')
 	video_local=$(grep 'video' /tmp/local-md5.json | awk -F' ' '{print $1}')
@@ -396,7 +396,6 @@ addscripts()
 !  文本替换选择器标识符，后面跟需要替换的文本数据，格式：$s@模式字符串@替换后的文本@
 !  支持通配符*和？
 !  -------------------------------------------------------------------------------------------
-
 EEE
 	chmod 755 "$adbyby_rules"
 	fi
@@ -405,7 +404,6 @@ EEE
 	if [ ! -f "$adbyby_blockip" ] || [ ! -s "$adbyby_blockip" ] ; then
 	cat > "$adbyby_blockip" <<-\EEE
 2.2.2.2
-
 EEE
 	chmod 755 "$adbyby_blockip"
 	fi
@@ -427,7 +425,6 @@ jellyfish.pandora.xiaomi.com
 gallery.pandora.xiaomi.com
 o2o.api.xiaomi.com
 bss.pandora.xiaomi.com
-
 EEE
 	chmod 755 "$adbyby_adblack"
 	fi
@@ -438,7 +435,6 @@ EEE
 weixin.qq.com
 qpic.cn
 imtt.qq.com
-
 EEE
 	chmod 755 "$adbyby_adesc"
 	fi
@@ -514,7 +510,6 @@ cnbetacdn.com
 ptqy.gitv.tv
 admaster.com.cn
 serving-sys.com
-
 EEE
 	chmod 755 "$adbyby_adhost"
 	fi

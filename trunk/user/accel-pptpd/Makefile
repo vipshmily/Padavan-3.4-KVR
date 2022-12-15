@@ -2,7 +2,7 @@ SRC_NAME=pptpd-1.3.3
 THISDIR=$(shell pwd)
 
 PPPD_DIR=$(ROOTDIR)/user/pppd
-PPPD_VER=2.4.9
+PPPD_VER=2.4.7
 
 CFLAGS  += -O2
 CFLAGS  += -ffunction-sections -fdata-sections

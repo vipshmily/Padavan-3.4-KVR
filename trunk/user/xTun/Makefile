@@ -1,9 +1,9 @@
-SRC_NAME = xTun-0.6.3
-SRC_URL = https://github.com/lparam/xTun/archive/v0.6.3.tar.gz
-LIBUV_SRC_NAME = libuv-1.22.0
-LIBUV_SRC_URL = https://github.com/libuv/libuv/archive/v1.22.0.tar.gz
-LIBSODIUM__SRC_NAME = libsodium-1.0.16
-LIBSODIUM_SRC_URL = https://github.com/jedisct1/libsodium/archive/1.0.16.tar.gz
+SRC_NAME = xTun-0.6.5
+SRC_URL = https://github.com/lparam/xTun/archive/v0.6.5.tar.gz
+LIBUV_SRC_NAME = libuv-1.44.2
+LIBUV_SRC_URL = https://github.com/libuv/libuv/archive/v1.44.2.tar.gz
+LIBSODIUM__SRC_NAME = libsodium-1.0.18
+LIBSODIUM_SRC_URL = https://github.com/jedisct1/libsodium/archive/1.0.18.tar.gz
 THISDIR = $(shell pwd)
 
 all: download_test extract_test
