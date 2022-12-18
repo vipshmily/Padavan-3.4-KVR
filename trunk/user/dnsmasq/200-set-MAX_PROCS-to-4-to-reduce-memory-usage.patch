@@ -1,7 +1,7 @@
 From 757bcdd82af64d7904af2a6f5fca7eb34ed8106c Mon Sep 17 00:00:00 2001
 From: Shuanglei Tao <tsl0922@gmail.com>
 Date: Sun, 18 Dec 2022 09:55:58 +0800
-Subject: [PATCH] reduce MAX_PROCS to 4 to save memory usage
+Subject: [PATCH] set MAX_PROCS to 4 to reduce memory usage
 
 ---
  src/config.h | 2 +-
