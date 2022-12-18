@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: lprm.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
@@ -115,8 +95,8 @@
 #include "getqueue.h"
 #include "initialize.h"
 #include "linksupport.h"
-#include "patchlevel.h"
 #include "sendreq.h"
+#include "user_auth.h"
 
 /**** ENDINCLUDE ****/
 
@@ -199,9 +179,9 @@ int main(int argc, char *argv[], char *envp[])
 					uid = pw->pw_uid;
 				}
 			}
-			DEBUG2( "lprm: uid '%d'", uid );
+			DEBUG2( "lprm: uid '%ld'", (long)uid );
 			found = ( uid == OriginalRUID );
-			DEBUG2( "lprm: found '%d'", found );
+			DEBUG2( "lprm: found '%ld'", (long)found );
 		}
 		if( !found ){
 			DEBUG1( "-U (username) can only be used by ROOT or authorized users" );
@@ -238,7 +218,6 @@ int main(int argc, char *argv[], char *envp[])
 	Errorcode = 0;
 	DEBUG1("lprm: cleaning up");
 	cleanup(0);
-	return(0);
 }
 
 
@@ -251,7 +230,7 @@ void Do_removal(char **argv)
 	Fix_Rm_Rp_info(0,0);
 
 	if( ISNULL(RemotePrinter_DYN) ){
-		SNPRINTF( msg, sizeof(msg))
+		plp_snprintf( msg, sizeof(msg),
 			_("Printer: %s - cannot remove jobs from device '%s'\n"),
 			Printer_DYN, Lp_device_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
@@ -263,14 +242,14 @@ void Do_removal(char **argv)
 		Set_DYN(&Auth_DYN, getenv("AUTH"));
 	}
 	if( Check_for_rg_group( Logname_DYN ) ){
-		SNPRINTF( msg, sizeof(msg))
+		plp_snprintf( msg, sizeof(msg),
 			_("Printer: %s - not in privileged group\n"),
 			Printer_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
 		return;
 	}
 	if( Direct_DYN && Lp_device_DYN ){
-		SNPRINTF( msg, sizeof(msg))
+		plp_snprintf( msg, sizeof(msg),
 			_("Printer: %s - direct connection to device '%s'\n"),
 			Printer_DYN, Lp_device_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
@@ -280,7 +259,8 @@ void Do_removal(char **argv)
 		argv, Connect_timeout_DYN, Send_query_rw_timeout_DYN, 1 );
 	if( fd > 0 ){
 		shutdown( fd, 1 );
-		while( (n = read(fd, msg, sizeof(msg)) ) > 0 ){
+		while( (n = Read_fd_len_timeout(Send_query_rw_timeout_DYN,
+			fd, msg, sizeof(msg)) ) > 0 ){
 			if( write(1,msg,n) < 0 ) cleanup(0);
 		}
 		close(fd);
@@ -295,17 +275,11 @@ void Do_removal(char **argv)
  ***************************************************************************/
 
  extern char *next_opt;
- char LPRM_optstr[]   /* LPRM options */
- = "AaD:P:U:V" ;
- char CLEAN_optstr[]   /* CLEAN options */
- = "AD:" ;
+static void Get_parms_clean(int argc, char *argv[] );
+static void Get_parms_lprm(int argc, char *argv[] );
 
 void Get_parms(int argc, char *argv[] )
 {
-	int option;
-	char *name;
-
-
 	if( argv[0] && (Name = strrchr( argv[0], '/' )) ) {
 		++Name;
 	} else {
@@ -314,29 +288,23 @@ void Get_parms(int argc, char *argv[] )
 	/* check to see if we simulate (poorly) the LP options */
 	if( Name && safestrcmp( Name, "clean" ) == 0 ){
 		LP_mode = 1;
-		while ((option = Getopt (argc, argv, CLEAN_optstr )) != EOF)
-		switch (option) {
-		case 'A': Auth = 1; break;
-		case 'D':
-			Parse_debug( Optarg, 1 );
-			break;
-		default: usage(); break;
-		}
-		if( Optind < argc ){
-			name = argv[argc-1];
-			Get_all_printcap_entries();
-			if( safestrcasecmp(name,ALL) ){
-				if( Find_exists_value( &All_line_list, name, Value_sep ) ){
-					Set_DYN(&Printer_DYN,name);
-					argv[argc-1] = 0;
-				}
-			} else {
-				All_printers = 1;
-				Set_DYN(&Printer_DYN,"all");
-			}
-		}
-	} else {
-		while ((option = Getopt (argc, argv, LPRM_optstr )) != EOF)
+		Get_parms_clean(argc,argv);
+	}
+	else {
+		Get_parms_lprm(argc,argv);
+	}
+
+	if( Verbose ){
+		FPRINTF( STDERR, "%s\n", Version );
+		if( Verbose > 1 ) Printlist( Copyright, 1 );
+	}
+}
+
+
+static void Get_parms_lprm(int argc, char *argv[] )
+{
+	int option;
+	while ((option = Getopt (argc, argv, "AaD:P:U:V" )) != EOF)
 		switch (option) {
 		case 'A': Auth = 1; break;
 		case 'a': All_printers = 1; Set_DYN(&Printer_DYN,"all"); break;
@@ -346,65 +314,78 @@ void Get_parms(int argc, char *argv[] )
 		case 'P': Set_DYN(&Printer_DYN, Optarg); break;
 		default: usage(); break;
 		}
-	}
-	if( Verbose ){
-		FPRINTF( STDERR, "%s\n", Version );
-		if( Verbose > 1 ) Printlist( Copyright, 1 );
-	}
 }
 
- char *clean_msg[] = {
- N_(" usage: %s [-A] [-Ddebuglevel] (jobid|user|'all')* [printer]\n"),
- N_("  -A           - use authentication\n"),
- N_("  -Ddebuglevel - debug level\n"),
- N_("  user           removes user jobs\n"),
- N_("  all            removes all jobs\n"),
- N_("  jobid          removes job number jobid\n"),
- N_(" Example:\n"),
- N_("    'clean 30 lp' removes job 30 on printer lp\n"),
- N_("    'clean'       removes first job on default printer\n"),
- N_("    'clean all'      removes all your jobs on default printer\n"),
- N_("    'clean all all'  removes all your jobs on all printers\n"),
- N_("  Note: clean removes only jobs for which you have removal permission\n"),
-	0 };
-
- char *lprm_msg[] =  {
- N_(" usage: %s [-A] [-a | -Pprinter] [-Ddebuglevel] (jobid|user|'all')*\n"),
- N_("  -a           - all printers\n"),
- N_("  -A           - use authentication\n"),
- N_("  -Pprinter    - printer (default PRINTER environment variable)\n"),
- N_("  -Uuser       - impersonate this user (root or privileged user only)\n"),
- N_("  -Ddebuglevel - debug level\n"),
- N_("  -V           - show version information\n"),
- N_("  user           removes user jobs\n"),
- N_("  all            removes all jobs\n"),
- N_("  jobid          removes job number jobid\n"),
- N_(" Example:\n"),
- N_("    'lprm -Plp 30' removes job 30 on printer lp\n"),
- N_("    'lprm -a'      removes all your jobs on all printers\n"),
- N_("    'lprm -a all'  removes all jobs on all printers\n"),
- N_("  Note: lprm removes only jobs for which you have removal permission\n"),
-	0 };
-
-void pr_msg( char **msg )
+static void Get_parms_clean(int argc, char *argv[] )
 {
-	int i;
-	char *s;
-	for( i = 0; (s = msg[i]); ++i ){
-		if( i == 0 ){
-			FPRINTF(STDERR, _(s), Name );
-		} else {
-			FPRINTF(STDERR, "%s", _(s) );
+	char *name;
+	int option;
+
+	while ((option = Getopt (argc, argv, "AD:" )) != EOF)
+		switch (option) {
+		case 'A': Auth = 1; break;
+		case 'D':
+			Parse_debug( Optarg, 1 );
+			break;
+		default: usage(); break;
 		}
+
+	if( Optind < argc ){
+		name = argv[argc-1];
+		Get_all_printcap_entries();
+
+		if( safestrcasecmp(name,ALL) != 0){
+			if( Find_exists_value( &All_line_list, name, Hash_value_sep ) ){
+				Set_DYN(&Printer_DYN,name);
+				argv[argc-1] = 0;
+			}
+		} else {
+			All_printers = 1;
+			Set_DYN(&Printer_DYN,"all");
+		}
+
 	}
 }
 
-void usage(void)
+static void usage(void)
 {
 	if( !LP_mode ){
-		pr_msg(lprm_msg);
+		FPRINTF(STDERR,
+_(" usage: %s [-A] [-a | -Pprinter] [-Ddebuglevel] (jobid|user|'all')*\n"
+"  -a           - all printers\n"
+"  -A           - use authentication\n"
+"  -Pprinter    - printer (default PRINTER environment variable)\n"
+"  -Uuser       - impersonate this user (root or privileged user only)\n"
+"  -Ddebuglevel - debug level\n"
+"  -V           - show version information\n"
+"  user           removes user jobs\n"
+"  all            removes all jobs\n"
+"  jobid          removes job number jobid\n"
+" Example:\n"
+"    'lprm -Plp 30' removes job 30 on printer lp\n"
+"    'lprm -a'      removes all your jobs on all printers\n"
+"    'lprm -a all'  removes all jobs on all printers\n"
+"  Note: lprm removes only jobs for which you have removal permission\n"),
+			Name );
 	} else {
-		pr_msg(clean_msg);
+		FPRINTF(STDERR,
+_(" usage: %s [-A] [-Ddebuglevel] (jobid|user|'all')* [printer]\n"
+"  -A           - use authentication\n"
+"  -Ddebuglevel - debug level\n"
+"  user           removes user jobs\n"
+"  all            removes all jobs\n"
+"  jobid          removes job number jobid\n"
+" Example:\n"
+"    'clean 30 lp' removes job 30 on printer lp\n"
+"    'clean'       removes first job on default printer\n"
+"    'clean all'      removes all your jobs on default printer\n"
+"    'clean all all'  removes all your jobs on all printers\n"
+"  Note: clean removes only jobs for which you have removal permission\n"),
+			Name );
+	}
+	{
+	char buffer[128];
+	FPRINTF( STDERR, "Security Supported: %s\n", ShowSecuritySupported(buffer,sizeof(buffer)) );
 	}
 	Parse_debug("=",-1);
 	FPRINTF( STDOUT, "%s\n", Version );

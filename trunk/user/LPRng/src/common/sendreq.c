@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: sendreq.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 
 #include "lp.h"
 
@@ -88,12 +68,12 @@ int Send_request(
 	int output					/* output on this FD */
 	)
 {
-	char errormsg[LARGEBUFFER];
+	char errormsg[LARGEBUFFER], errmsg[SMALLBUFFER];
 	char *cmd = 0;
 	int status = -1, sock = -1, err;
 	char *real_host = 0;
 	char *save_host = 0;
-	struct security *security = 0;
+	const struct security *security = 0;
 	struct line_list info;
 
 	Init_line_list(&info);
@@ -104,9 +84,7 @@ int Send_request(
 	DEBUG1("Send_request: connnect_timeout %d, transfer_timeout %d",
 			connnect_timeout, transfer_timeout );
 
-#ifdef ORIGINAL_DEBUG//JY@1020
 	security = Fix_send_auth(0,&info, 0, errormsg, sizeof(errormsg) );
-#endif
 
 	DEBUG1("Send_request: security %s", security?security->name:0 );
 	if( security ){
@@ -122,7 +100,7 @@ int Send_request(
 	if( Remote_support_DYN ) uppercase( Remote_support_DYN );
 	if( islower(class) ) class = toupper(class);
 	if( safestrchr( Remote_support_DYN, class ) == 0 ){
-		char *m = "unknown";
+		const char *m = "unknown";
 		switch( class ){
 		case 'R': m = "lpr"; break;
 		case 'M': m = "lprm"; break;
@@ -132,7 +110,7 @@ int Send_request(
 		}
 		DEBUG1("Send_request: no remote support for %c - '%s' operation", class, m );
 		if( !Is_server ){
-			SNPRINTF(errormsg,sizeof(errormsg))
+			plp_snprintf(errormsg,sizeof(errormsg),
 			_("no network support for '%s' operation"), m);
 		}
 		status = 0;
@@ -150,23 +128,21 @@ int Send_request(
 	cmd = safeextend2(cmd,"\n", __FILE__,__LINE__ );
 	errno = 0;
 
-#ifdef ORIGINAL_DEBUG//JY@1020
+	errmsg[0] = 0;
 	sock = Link_open_list( RemoteHost_DYN,
-		&real_host, connnect_timeout, 0, Unix_socket_path_DYN );
-#endif
+		&real_host, connnect_timeout, 0, Unix_socket_path_DYN , errmsg, sizeof(errmsg) );
 	err = errno;
 	if( sock < 0 ){
-		char *msg = "";
-		SNPRINTF( errormsg, sizeof(errormsg)-2)
+		plp_snprintf( errormsg, sizeof(errormsg)-2,
 			"cannot open connection - %s",
-			err?Errormsg(err):"bad or missing hostname" );
+			errmsg[0]?errmsg:( err?Errormsg(err):"bad or missing hostname" ) );
 		if( !Is_server ){
 			int v = safestrlen(errormsg);
-			SNPRINTF( errormsg+v, sizeof(errormsg)-v)
+			plp_snprintf( errormsg+v, sizeof(errormsg)-v,
 			"\nMake sure the remote host supports the LPD protocol");
 			if( geteuid() && getuid() ){
 				v = safestrlen(errormsg);
-				SNPRINTF( errormsg+v, sizeof(errormsg)-v)
+				plp_snprintf( errormsg+v, sizeof(errormsg)-v,
 				"\nand accepts connections from this host and from non-privileged (>1023) ports");
 			}
 		}
@@ -184,20 +160,18 @@ int Send_request(
 				transfer_timeout,
 				errormsg, sizeof(errormsg),
 				security, &info );
-		DEBUG1("Send_request: connect status %d, error  '%s'", status, errormsg ); 
+		DEBUG1("Send_request: connect status %d, error '%s'", status, errormsg ); 
 		if( status ) goto error;
 	}
 	/* now send the command line */
 	if( security && security->client_send ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 		status = Send_auth_transfer( &sock, transfer_timeout, 0, 0,
 			errormsg, sizeof(errormsg), cmd, security, &info );
-#endif
 	} else {
 		status = Link_send( RemoteHost_DYN, &sock, transfer_timeout,
 			cmd, safestrlen(cmd), 0 );
 		if( status ){
-			SNPRINTF(errormsg,sizeof(errormsg))"%s",Link_err_str(status));
+			plp_snprintf(errormsg,sizeof(errormsg), "%s",Link_err_str(status));
 			close(sock); sock = -1;
 			goto error;
 		}
@@ -206,7 +180,7 @@ int Send_request(
  error:
 	if( status || errormsg[0] ){
 		char line[SMALLBUFFER];
-		SNPRINTF( line,sizeof(line)) "Printer '%s@%s' - ",
+		plp_snprintf( line,sizeof(line), "Printer '%s@%s' - ",
 			RemotePrinter_DYN, RemoteHost_DYN );
 		if( Write_fd_str( output, line ) < 0 
 			|| Write_fd_str( output, errormsg ) < 0 

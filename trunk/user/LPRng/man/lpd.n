@@ -1,5 +1,5 @@
-.ds VE LPRng-3.9.0
-.TH LPD 8 \*(VE "LPRng"
+.TH LPD 8 2008-03-14 "LPRng" "lpd daemon"
+
 .hy 0
 .de NP
 .IP \\n(nP
@@ -19,35 +19,44 @@
 .ps -2
 .\}
 ..
-.ig
-lpd.8,v 3.45 1998/03/29 18:37:49 papowell Exp
-..
 .SH NAME
 lpd \- line printer daemon
 .SH SYNOPSIS
 .B lpd
-[\-Llogfile] [\-F] [\-V] [\-Ddebugopt] [-p port]
+.RB [ \-L
+.IR logfile ]
+.RB [ \-F ]
+.RB [ \-V ]
+.RB [ \-D
+.IR debugopt ]
+.RB [ -p
+.IR port ]
 .SH DESCRIPTION
-.PP
 The lpd program is the printer server program of the LPRng software
 suite.
 This software is an enhanced and modified version of the Berkeley LPD
-software. 
+software.
 .SH OPTIONS
-.IP "\fB\-L\fI logfile" 5
+.TP
+.BI \-L " logfile"
 specifies an alternate file to be used for logging error and debugging
 messages.
 The
 .IR syslog (8)
 facility is used to log critical messages as well.
-.IP "\fB\-F" 5
+Please note that you need to create the file by yourself, a 'touch' is sufficient.
+This is needed for security reasons.
+.TP
+.B \-F
 Under normal operation, the LPD server will run in
 background mode.
-The -F flag forces it to run in forground mode,
+The -F flag forces it to run in foreground mode,
 where it is more easily debugged.
-.IP "\fB\-V" 5
+.TP
+.B \-V
 Print program version information.
-.IP "\fB\-D\fI debugopt" 5
+.TP
+.BI \-D " debugopt"
 Debugging is controlled using the 
 .B \-D
 option. This accepts a comma-separated list of debugging
@@ -58,8 +67,9 @@ or
 to set an overall default value.
 The available facilities can be determined by
 invoking LPD with the \-D= parameter.
-.IP "\fB\-p\fI port" 5
-Bind to the specified port rather than port 515 specfied by RFC1179.
+.TP
+.BI \-p " port"
+Bind to the specified port rather than port 515 specified by RFC1179.
 .SH OPERATION
 .PP
 .I Lpd
@@ -72,7 +82,7 @@ Note that the lpd server needs only run on systems where actual printing
 or spooling is taking place.
 .IR lpr (1)
 and other related programs transfer files using network facilities to the
-.I lpd .
+.IR lpd .
 .PP
 When started,
 .I lpd
@@ -106,7 +116,7 @@ The same action is taken when sent a
 command by the
 .IR lpc (1)
 program.
-At an interveral specified by
+At an interval specified by
 the
 .I poll_time
 configuration variable,
@@ -152,7 +162,7 @@ M for removal (i.e.- LPRM request),
 Q for queue information (i.e.- LPRM request),
 and so forth.
 The
-.l X
+.B X
 key indicates the initial connection to the LPD spooler,
 and can be used to control connections from remote systems.
 The
@@ -183,7 +193,7 @@ capability,
 a group name starting with a
 \f(CW@\fR
 will be treated as a netgroup name,
-and current user name from the job file will bechecked to see if
+and current user name from the job file will be checked to see if
 it is in the group.
 Similarly,
 the
@@ -191,7 +201,7 @@ REMOTEGROUP entry will check a remote user name.
 The
 PORT
 entry can be used to ensure that a connection to the server
-orignates from a specified range of ports.
+originates from a specified range of ports.
 For more details,
 see the
 .BR lpd.perm (5)
@@ -250,7 +260,7 @@ KEY:
 	AU= authentication information
 	IFIP= IP address of remote end of connection
 	
-Match: S = string with wild card, IP = IPaddress[/netmask],
+Match: S = string with wild card, IP = IP address[/netmask],
 	N = low[-high] number range, V = exact value match
 SERVICE: 'X' - Connection request; 'R' - lpr request from remote host;
     'P' - print job in queue; 'Q' - lpq request, 'M' - lprm request;
@@ -273,7 +283,7 @@ starting with C) had a value starting with A or B.
 .PP
 There is a subtle problem with names and IP addresses which are
 obtained for 'multi-homed hosts', i.e. - those with multiple
-ethernet interfaces,  and for IPV6 (IP Version 6),  in which a host
+Ethernet interfaces,  and for IPV6 (IP Version 6),  in which a host
 can have multiple addresses,  and for the normal host which can have
 both a short name and a fully qualified domain name.
 In addition,
@@ -285,10 +295,10 @@ of the origination of the request,  as reported by the information
 returned by the accept() system call.  Note that this information may
 be IPV4 or IPV6 information,  depending on the origination of the
 system.  This information is used by gethostbyaddr() to obtain the
-orginating host fully qualified domain name (FQDN) and set of IP addresses.
+originating host fully qualified domain name (FQDN) and set of IP addresses.
 Note that this FQDN will be for the originating interface,  and may
-not be the cannonical host name.  Some systems which use the Domain Name Server
-(DNS) system may add the cannonical system name as an alias.
+not be the canonical host name.  Some systems which use the Domain Name Server
+(DNS) system may add the canonical system name as an alias.
 .PP
 When performing an IP address match,  the entire list of IP addresses
 for a system will now be checked.  If one of these matches, then success
@@ -305,7 +315,6 @@ a DNS entry.
   REJECT NOT REMOTEHOST=*
 .br
 .SH "PRINTCAP DATABASE"
-.PP
 Individual printer operations are controlled by values in the
 printcap database.
 See
@@ -373,7 +382,7 @@ the main printcap file, _PRINTCAP_PATH_
 has entries for all printers.
 Note that these entries do not specify the spool directories (sd and cd fields),
 but this could be provided.
-On a host with a printer specific information can be provided in serveral ways.
+On a host with a printer specific information can be provided in several ways.
 The simplest is to simply put an additional entry in the shared printcap file,
 with the
 .I oh
@@ -392,7 +401,7 @@ This can be used to simplify the management of client and server entries.
 .PP
 The printcap information is obtained in the following order.
 If the lpd_printcap_path configuration value is nonblank
-then the lpd server will proccess only this information
+then the lpd server will process only this information
 otherwise it uses the printcap_path information.
 All client programs use the contents of the configuration
 printcap_path variable to get a list of locations of printcap files.
@@ -428,7 +437,7 @@ its standard input.
 The filter must provide a printcap entry for the requested printer on its standard output.
 .PP
 The filter can be used to interface to databases or nonstandard information sources
-which do not produce printcap information in an acceptible form.
+which do not produce printcap information in an acceptable form.
 .SH "SPOOL DIRECTORY CONTENTS"
 .PP
 Each spool queue has a spool directory 
@@ -453,7 +462,7 @@ control.printer	CD	queue control information
 *hfAnnn	SD	job hold file
 *cfAnnnHOST	SD	job control file
 *dfAnnnHOST	SD	job data file
-*bfAnnn.*	SD	tempory files
+*bfAnnn.*	SD	temporary files
 .sp
 .fi
 .PP
@@ -684,7 +693,6 @@ the
 .I error
 field records information that would prevent a job from being printed.
 .SH "JOB SUBMISSION"
-.PP
 The LPR program is used to submit a job to the LPRng system.
 The LPR program opens a connection to the LPD server and
 then transfer the job control file and data files.
@@ -694,7 +702,7 @@ spool to the requested printer,
 and then checks to see if the printer is accepting jobs.
 If both conditions are met,
 the job is accepted and the control and data files
-are placed int the spool directory.
+are placed in the spool directory.
 The LPRng software sends the control file first,
 followed by the data files.
 .PP
@@ -711,7 +719,6 @@ so by default LPR will create a temporary file.
 The LPR -k (seKure) option specifies this direct transmission mode
 be used.
 .SH "JOB TRANSMISSION"
-.PP
 When LPR is to send a job to the server,
 it must determine the location of the server.
 It does this by examining the values of the
@@ -745,7 +752,6 @@ If this flag is specified,  then LPR and other client programs will
 send the job to the server running on the localhost.
 This overrides the default_host information.
 .SH "FORWARDING OPERATIONS"
-.PP
 The LPD system can forward jobs from one spool directory to another.
 This is controlled by the following options.
 .IP 1. 5
@@ -800,7 +806,7 @@ and then after the
 .I connect_interval
 seconds it is retried.
 The procedure repeated
-indefinately for printing,
+indefinitely for printing,
 but only once for status or control operations.
 A
 connect_timeout value of 0 indicates no timeout;
@@ -814,7 +820,7 @@ seconds before trying to reconnect.
 Normally job files are forwarded to a printer without
 modification.
 The
-.b lpd_bounce
+.B lpd_bounce
 flag makes the queue a
 .I "bounce queue"
 and allows banners to be generated and
@@ -1244,13 +1250,15 @@ and should only be used as a last resort for specific problems.
 .IP 4. 5
 The options for the filter command line will be replaced by appropriate
 values.
-Option specifications have the form $[0| ][-][']X.
+Option specifications have the form $[0| ][-]X.
+.\" Option specifications have the form $[0| ][-][']X.
 The default option expansion has the form $X -> -X'value';
 the form $0X or $(space)X adds a space after the -X, i.e.- $0X -> -X 'value';
-the form $-X suppresses the -X, i.e. - $-X -> 'value';
-and the form $'X' suppresses the quotes around the value.
-Note that the 0,-, and ' can be combined. For example, $-'X -> value.
-The options will be exanded as follows:
+the form $-X suppresses the -X, i.e. - $-X -> value.
+.\" the form $-X suppresses the -X, i.e. - $-X -> 'value';
+.\" and the form $'X suppresses the quotes around the value.
+.\" Note that the 0,-, and ' can be combined. For example, $-'X -> value.
+The options will be expanded as follows:
 .RS
 .sp
 .nf
@@ -1358,6 +1366,8 @@ the spool directory for the printer
 the control directory for the printer
 .IP PRINTCAP_ENTRY 5
 the printcap entry for the printer
+.IP PPD 5
+the content of the ppd field in printcap (if there is any)
 .IP CONTROL 5
 the control file for the print job
 .IP "pass_env environment variables" 5
@@ -1426,7 +1436,7 @@ before printing the next job.
 .PP
 The as and ae filters will have STDOUT set to the printing device and or filter,
 and the STDERR set to the error log file for the print queue,
-and fild descriptor 3 set to the destination specified by the
+and file descriptor 3 set to the destination specified by the
 af field.
 .PP
 As a convenience, all format filters for printing will be
@@ -1441,8 +1451,8 @@ allowing filters to query the accounting program and/or update
 the information directly.
 .SH "LOGGING INFORMATION"
 .PP
-In order to provide a centrallized method to track job status and information,
-the printcap/configurtion variable
+In order to provide a centralized method to track job status and information,
+the printcap/configuration variable
 logger_destination enable the send of status and other information to a remote
 destination.
 The logger_destination value has the form
@@ -1498,7 +1508,7 @@ The
 value specifies the type of authentication to be used
 for client to server authentication.
 Typical values would be
-pgp, kerberos, etc.
+kerberos, md5, etc.
 If the authentication type is not built-in,
 the client programs use the
 .I auth_client_filter
@@ -1626,12 +1636,12 @@ the client authenticator will transfer the contents of the
 temporary file to the server authenticator, using FD 0.  It will
 then wait for reply status on FD 0.   If the transfer step fails,
 or there is no reply status of the correct format,  the client
-authenticator will print any recieved information on FD 1,
+authenticator will print any received information on FD 1,
 error information on FD 2, and then exit with error code JFAIL.
 .NP
 After receiving the files on FD 0,  the server authenticator
 will perform the required authentication procedures and leave
-the results in tempfile.  The server authentictor will write
+the results in tempfile.  The server authenticator will write
 the following to FD 1,  for use by the server:
 .RS
 .nf
@@ -1677,7 +1687,7 @@ Print job transfers:
 	\eREQ_SECUREprinter F user controfilename\en
 .RE
 .sP
-After receiving a 0 acknowlegement byte,
+After receiving a 0 acknowledgment byte,
 the src server will invoke its authenticator with the arguments
 below.
 The forward_user value will default to the
@@ -1690,7 +1700,7 @@ program -C -Pprinter -nserver_user \e
 	-Rforward_user -Ttempfile
 .RE
 .NP
-On the destintation server the authenticator is invoked with the arguments:
+On the destination server the authenticator is invoked with the arguments:
 .RS
 .nf
 .ta 4n +4n
@@ -1724,7 +1734,7 @@ the lpd server on dickory would have the form:
 .ti +5n
 lpr/astart2.astart.com@ASTART.COM
 .PP
-User to server authenticaiton process will use the user's principal
+User to server authentication process will use the user's principal
 name,
 and generate a service name for the server.
 The name generation is controlled by the following configuration
@@ -1781,7 +1791,7 @@ this information can be matched by the AUTHUSER tag.
 For a command sent from a client or forwarded from a server,
 AUTHUSER matches the auth_user_id provided for the user when
 sent to a server.
-(This information will be forwared by a remote server).
+(This information will be forwarded by a remote server).
 For a forwarded command,
 FWDUSER refers to the authentication information
 for the server doing the forwarding.
@@ -1804,8 +1814,19 @@ ACCEPT FWDUSER=FFEDBEEFDEAF REMOTEHOST=serverhost
 REJECT AUTH=FWD
 .RE
 .fi
+
+.SH ENVIRONMENT
+The lpd action can also be manipulated by using environment variables.
+
+.TP
+.B LPR_TMP
+
+.SS Authentication
+.TP
+.B MD5KEYFILE
+Used for md5 signated file transmission
+
 .SH FILES
-.PP
 The files used by LPRng are set by values in the
 printer configuration file.
 The following are a commonly used set of default values.
@@ -1823,29 +1844,35 @@ _LOCKFILE_	lock file for queue control
 /var/spool/lpd/QUEUE/status	status file
 .fi
 .SH "SEE ALSO"
-lpd.conf(5),
-lpc(8),
-checkpc(8),
-lpr(1),
-lpq(1),
-lprm(1),
-printcap(5),
-lpd.perms(5),
-pr(1), lprng_certs(1), lprng_index_certs(1).
+.BR lpd.conf (5),
+.BR lpc (8),
+.BR checkpc (8),
+.BR lpr (1),
+.BR lpq (1),
+.BR lprm (1),
+.BR printcap (5),
+.BR lpd.perms (5),
+.BR pr (1).
+.SH "AUTHOR"
+Patrick Powell <papowell@lprng.com>.
 .SH DIAGNOSTICS
-.nf
 Most of the diagnostics are self explanatory.
 If you are puzzled over the exact cause of failure,
 set the debugging level on (-D5) and run again.
 The debugging information will 
 help you to pinpoint the exact cause of failure.
-.fi
 .SH "HISTORY"
 LPRng is a enhanced printer spooler system
 with functionality similar to the Berkeley LPR software.
-The LPRng mailing list is lprng@lprng.com;
-subscribe by sending mail to lprng-request@lprng.com with
-the word subscribe in the body.
-The software is available from ftp://ftp.lprng.com/pub/LPRng.
-.SH "AUTHOR"
-Patrick Powell <papowell@lprng.com>.
+The LPRng developer mailing list is lprng-devel@lists.sourceforge.net;
+subscribe by visiting 
+.B https://lists.sourceforge.net/lists/listinfo/lprng-devel
+or sending mail to 
+.B lprng-request@lists.sourceforge.net
+with
+the word 
+.I subscribe 
+in the body.
+.br
+The software is available via 
+.B http://lprng.sourceforge.net

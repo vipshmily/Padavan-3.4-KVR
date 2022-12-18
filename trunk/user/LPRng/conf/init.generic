@@ -1,0 +1,35 @@
+#
+# -- START --
+# init.generic.sh
+# This file can be installed in /usr/local/etc/init.d or
+# /etc/init.d as appropriate as lprng.sh or lprng.init or
+# lpd.init depending on your system.
+#
+# You will most likely have to make symlinks to it from /etc/rc<level>.d
+# directories called S<number>lprng (to run at that level, where number
+# indicates when to start it) or K<number>lprng (to not run at that level)
+
+# replace this with the absolute path to where you installed lpd at:
+LPD_PATH=/usr/sbin/lpd
+
+# if -e does not list all processes, try -ax
+PSHOWALL=-e
+
+# ignore INT signal
+trap '' 2
+
+case "$1" in
+    restart ) 
+			$0 stop
+			sleep 1
+			$0 start
+            ;;
+    stop  )
+    		# or replace with some other method to stop it:
+		kill -INT `ps $PSHOWALL | awk '/lpd/{ print $1;}'` >/dev/null 2>&1
+            ;;
+    start )
+            echo -n ' printer';
+            $LPD_PATH
+            ;;
+esac

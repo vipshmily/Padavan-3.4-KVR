@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -23,13 +7,9 @@
  *
  ***************************************************************************/
 
- static char *const _id =
-"$Id: sendauth.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 #include "lp.h"
 #include "user_auth.h"
 #include "sendjob.h"
-#include "globmatch.h"
 #include "permission.h"
 #include "getqueue.h"
 #include "errorcodes.h"
@@ -70,6 +50,8 @@
  *      wait for an ACK
  ***************************************************************************/
 
+static void Put_in_auth( int tempfd, const char *key, char *value );
+
 /*
  * Send_auth_transfer
  *  1. we send the command line and wait for ACK of 0
@@ -95,7 +77,7 @@
 
 int Send_auth_transfer( int *sock, int transfer_timeout,
 	struct job *job, struct job *logjob, char *error, int errlen, char *cmd,
-	struct security *security, struct line_list *info )
+	const struct security *security, struct line_list *info )
 {
 	struct stat statb;
 	int ack, len, n, fd;		/* ACME! The best... */
@@ -113,9 +95,9 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
 
 	if(DEBUGL1)Dump_line_list("Send_auth_transfer: info ", info );
 
-	destination = Find_str_value(info, DESTINATION, Value_sep );
-	from = Find_str_value(info, FROM, Value_sep );
-	client = Find_str_value(info, CLIENT, Value_sep );
+	destination = Find_str_value(info, DESTINATION );
+	from = Find_str_value(info, FROM );
+	client = Find_str_value(info, CLIENT );
 
 	if( safestrcmp(security->config_tag, "kerberos") ){
 		Put_in_auth(fd,DESTINATION,destination);
@@ -126,34 +108,34 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
 		}
 	} else {
 		if( cmd && (Write_fd_str(fd,cmd) < 0 || Write_fd_str(fd,"\n") < 0) ){
-			SNPRINTF(error, errlen) "Send_auth_transfer: '%s' write failed - %s",
+			plp_snprintf(error, errlen, "Send_auth_transfer: '%s' write failed - %s",
 				tempfile, Errormsg(errno) );
 			goto error;
 		}
 		if( Is_server && (Write_fd_str(fd,client) < 0 || Write_fd_str(fd,"\n") < 0) ){
-			SNPRINTF(error, errlen) "Send_auth_transfer: '%s' write failed - %s",
+			plp_snprintf(error, errlen, "Send_auth_transfer: '%s' write failed - %s",
 				tempfile, Errormsg(errno) );
 			goto error;
 		}
 	}
 
 	if( Write_fd_str(fd,"\n") < 0 ){
-		SNPRINTF(error, errlen) "Send_auth_transfer: '%s' write failed - %s",
+		plp_snprintf(error, errlen, "Send_auth_transfer: '%s' write failed - %s",
 			tempfile, Errormsg(errno) );
 		goto error;
 	}
 
-	s = Find_str_value(info, CMD, Value_sep );
+	s = Find_str_value(info, CMD );
 	if( job ){
         status = Send_normal( &fd, job, logjob, transfer_timeout, fd, 0);
         if( status ) return( status );
 		errno = 0;
 		if( stat(tempfile,&statb) ){
 			Errorcode = JABORT;
-			LOGERR_DIE(LOG_INFO)"Send_auth_transfer: stat '%s' failed",
+			logerr_die(LOG_INFO, "Send_auth_transfer: stat '%s' failed",
 				tempfile);
 		}
-		SNPRINTF( buffer,sizeof(buffer))" %0.0f",(double)(statb.st_size) );
+		plp_snprintf( buffer,sizeof(buffer), " %0.0f",(double)(statb.st_size) );
 		secure = safestrdup3(s,buffer,"\n",__FILE__,__LINE__);
 	} else {
 		secure = safestrdup2(s,"\n",__FILE__,__LINE__);
@@ -169,29 +151,29 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
 		/* open output file */
 		if( (fd = Checkwrite(tempfile,&statb,O_WRONLY|O_TRUNC,1,0)) < 0){
 			Errorcode = JABORT;
-			LOGERR_DIE(LOG_INFO) "Send_auth_transfer: open '%s' for write failed",
+			logerr_die(LOG_INFO, "Send_auth_transfer: open '%s' for write failed",
 				tempfile);
 		}
 		/* we turn off IO from the socket */
 		shutdown(*sock,1);
 		if( (s = safestrchr(secure,'\n')) ) *s = 0;
-		SNPRINTF( error, errlen)
+		plp_snprintf( error, errlen,
 			"error '%s' sending '%s' to %s@%s\n",
 			Link_err_str(status), secure, RemotePrinter_DYN, RemoteHost_DYN );
 		Write_fd_str( fd, error );
 		error[0] = 0;
 		DEBUG2("Send_auth_transfer: starting read");
 		len = 0;
-		while( (n = read(*sock,buffer+len,sizeof(buffer)-1-len)) > 0 ){
+		while( (n = Read_fd_len_timeout(Send_query_rw_timeout_DYN, *sock,buffer+len,sizeof(buffer)-1-len)) > 0 ){
 			buffer[n+len] = 0;
 			DEBUG4("Send_auth_transfer: read '%s'", buffer);
 			while( (s = strchr(buffer,'\n')) ){
 				*s++ = 0;
 				DEBUG2("Send_auth_transfer: doing '%s'", buffer);
-				SNPRINTF(error,errlen)"%s\n", buffer );
+				plp_snprintf(error,errlen, "%s\n", buffer );
 				if( Write_fd_str(fd,error) < 0 ){
 					Errorcode = JABORT;
-					LOGERR(LOG_INFO) "Send_auth_transfer: write '%s' failed",
+					logerr(LOG_INFO, "Send_auth_transfer: write '%s' failed",
 						tempfile );
 					goto error;
 				}
@@ -201,10 +183,10 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
 		}
 		if( buffer[0] ){
 			DEBUG2("Send_auth_transfer: doing '%s'", buffer);
-			SNPRINTF(error,errlen)"%s\n", buffer );
+			plp_snprintf(error,errlen, "%s\n", buffer );
 			if( Write_fd_str(fd,error) < 0 ){
 				Errorcode = JABORT;
-				LOGERR(LOG_INFO) "Send_auth_transfer: write '%s' failed",
+				logerr(LOG_INFO, "Send_auth_transfer: write '%s' failed",
 					tempfile );
 				goto error;
 			}
@@ -232,13 +214,13 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
 	if( secure ) free(secure); secure = 0;
 	if( error[0] ){
 		if( job ){
-			SETSTATUS(logjob)"Send_auth_transfer: %s", error );
+			setstatus(logjob, "Send_auth_transfer: %s", error );
 			Set_str_value(&job->info,ERROR,error);
 			Set_nz_flag_value(&job->info,ERROR_TIME,time(0));
 		}
 		if( (fd = Checkwrite(tempfile,&statb,O_WRONLY|O_TRUNC,1,0)) < 0){
 			Errorcode = JFAIL;
-			LOGERR_DIE(LOG_INFO)"Send_auth_transfer: cannot open '%s'", tempfile );
+			logerr_die(LOG_INFO, "Send_auth_transfer: cannot open '%s'", tempfile );
 		}
 		Write_fd_str(fd,error);
 		close( fd ); fd = -1;
@@ -247,11 +229,11 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
 	if( *sock >= 0 ){
 		if( (fd = Checkread(tempfile,&statb)) < 0 ){
 			Errorcode = JFAIL;
-			LOGERR_DIE(LOG_INFO)"Send_auth_transfer: cannot open '%s'", tempfile );
+			logerr_die(LOG_INFO, "Send_auth_transfer: cannot open '%s'", tempfile );
 		}
 		if( dup2( fd, *sock ) == -1 ){
 			Errorcode = JFAIL;
-			LOGERR_DIE(LOG_INFO)"Send_auth_transfer: dup2(%d,%d)", fd, *sock );
+			logerr_die(LOG_INFO, "Send_auth_transfer: dup2(%d,%d)", fd, *sock );
 		}
 		if( fd != *sock ) close(fd); fd = -1;
 	}
@@ -270,11 +252,12 @@ int Send_auth_transfer( int *sock, int transfer_timeout,
  * to send to the server requesting the encryption
  **************************************************************************/
 
-struct security *Fix_send_auth( char *name, struct line_list *info,
+const struct security *Fix_send_auth( char *name, struct line_list *info,
 	struct job *job, char *error, int errlen )
 {
-	struct security *security = 0;
-	char buffer[SMALLBUFFER], *tag, *key, *from, *client, *destination;
+	const struct security *security = 0;
+	char buffer[SMALLBUFFER], *from, *client, *destination;
+	const char *tag, *server_tag, *key;
 
 	if( name == 0 ){
 		if( Is_server ){
@@ -285,16 +268,13 @@ struct security *Fix_send_auth( char *name, struct line_list *info,
 	}
 	DEBUG1("Fix_send_auth: name '%s'", name );
 	if( name ){
-		for( security = SecuritySupported; security->name; ++security ){
-			DEBUG1("Fix_send_auth: security '%s'", security->name );
-			if( !Globmatch(security->name, name ) ) break;
-		}
-		DEBUG1("Fix_send_auth: name '%s' matches '%s'", name, security->name );
-		if( security->name == 0 ){
-			security = 0;
-			SNPRINTF(error, errlen)
-				"Send_auth_transfer: '%s' security not supported", name );
+		security = FindSecurity(name);
+		if( !security ){
+			plp_snprintf(error, errlen,
+				"Fix_send_auth: '%s' security not supported", name );
 			goto error;
+		} else {
+			DEBUG1("Fix_send_auth: name '%s' matches '%s'", name, security->name );
 		}
 	} else {
 		DEBUG1("Fix_send_auth: no security" );
@@ -307,7 +287,7 @@ struct security *Fix_send_auth( char *name, struct line_list *info,
 	}
 
 	if( !(tag = security->config_tag) ) tag = security->name;
-	SNPRINTF(buffer,sizeof(buffer))"%s_", tag );
+	plp_snprintf(buffer,sizeof(buffer), "%s_", tag );
 	Find_default_tags( info, Pc_var_list, buffer );
 	Find_tags( info, &Config_line_list, buffer );
 	Find_tags( info, &PC_entry_line_list, buffer );
@@ -315,37 +295,38 @@ struct security *Fix_send_auth( char *name, struct line_list *info,
 	if(DEBUGL1)Dump_line_list("Fix_send_auth: found info", info );
 
 	if( !(tag = security->config_tag) ) tag = security->name;
+	if( !(server_tag = security->server_tag) ) server_tag = tag;
 	if( Is_server ){
 		/* forwarding */
 		key = "F";
-		from = Find_str_value(info,ID,Value_sep);
-		if(!from)from = Find_str_value(info,"server_principal",Value_sep);
+		from = Find_str_value(info,ID);
+		if(!from)from = Find_str_value(info,"server_principal");
 		if( from == 0 && safestrcmp(tag,"kerberos") && safestrcmp(tag,"none") ){
-			SNPRINTF(error, errlen)
-			"Send_auth_transfer: '%s' security missing '%s_id' info", tag, tag );
+			plp_snprintf(error, errlen,
+			"Fix_send_auth: '%s' security missing '%s_id' info", tag, tag );
 			goto error;
 		}
 		Set_str_value(info,FROM,from);
 		if( job ){
-			client = Find_str_value(&job->info,AUTHUSER,Value_sep);
+			client = Find_str_value(&job->info,AUTHUSER);
 			Set_str_value(info,CLIENT,client);
 		} else {
 			client = (char *)Perm_check.authuser;
 		}
 		if( client == 0 
-			&& !(client = Find_str_value(info,"default_client_name",Value_sep))
+			&& !(client = Find_str_value(info,"default_client_name"))
 			&& safestrcmp(tag,"none") ){
-			SNPRINTF(error, errlen)
-			"Send_auth_transfer: security '%s' missing authenticated client", tag );
+			plp_snprintf(error, errlen,
+			"Fix_send_auth: security '%s' missing authenticated client", tag );
 			goto error;
 		}
 		Set_str_value(info,CLIENT,client);
-		destination = Find_str_value(info,FORWARD_ID,Value_sep);
-		if(!destination)destination = Find_str_value(info,"forward_principal",Value_sep);
+		destination = Find_str_value(info,FORWARD_ID);
+		if(!destination)destination = Find_str_value(info,"forward_principal");
 		if( destination == 0 && safestrcmp(tag, "kerberos")
 			&& safestrcmp(tag, "none")){
-			SNPRINTF(error, errlen)
-			"Send_auth_transfer: '%s' security missing '%s_forward_id' info", tag, tag );
+			plp_snprintf(error, errlen,
+			"Fix_send_auth: '%s' security missing '%s_forward_id' info", tag, tag );
 			goto error;
 		}
 	} else {
@@ -355,26 +336,25 @@ struct security *Fix_send_auth( char *name, struct line_list *info,
 		Set_str_value(info,FROM,from);
 		client = Logname_DYN;
 		Set_str_value(info,CLIENT,client);
-		destination = Find_str_value(info,ID,Value_sep);
-		if(!destination)destination = Find_str_value(info,"server_principal",Value_sep);
+		destination = Find_str_value(info,ID);
+		if(!destination)destination = Find_str_value(info,"server_principal");
 		if( destination == 0 && safestrcmp(tag, "kerberos")
 			&& safestrcmp(tag, "none") ){
-			SNPRINTF(error, errlen)
-			"Send_auth_transfer: '%s' security missing '%s_id' info", tag, tag );
+			plp_snprintf(error, errlen,
+			"Fix_send_auth: '%s' security missing destination '%s_id' info", tag, tag );
 			goto error;
 		}
 	}
 
 	Set_str_value(info,DESTINATION,destination);
 
-	DEBUG1("Send_auth_transfer: pr '%s', key '%s', from '%s',"
-		" destination '%s'",
-		RemotePrinter_DYN,key, from, tag);
-	SNPRINTF( buffer, sizeof(buffer))
+	DEBUG1("Fix_send_auth: pr '%s', key '%s', from '%s', name '%s', tag '%s'",
+		RemotePrinter_DYN,key, from, server_tag, tag);
+	plp_snprintf( buffer, sizeof(buffer),
 		"%c%s %s %s %s",
-		REQ_SECURE,RemotePrinter_DYN,key, from, tag );
+		REQ_SECURE,RemotePrinter_DYN,key, from, server_tag );
 	Set_str_value(info,CMD,buffer);
-	DEBUG1("Send_auth_transfer: sending '%s'", buffer );
+	DEBUG1("Fix_send_auth: sending '%s'", buffer );
 
  error:
 	if( error[0] ) security = 0;
@@ -396,7 +376,7 @@ void Put_in_auth( int tempfd, const char *key, char *value )
 		|| Write_fd_str(tempfd,"\n") < 0
 		){
 		Errorcode = JFAIL;
-		LOGERR_DIE(LOG_INFO)"Put_in_auth: cannot write to file" );
+		logerr_die(LOG_INFO, "Put_in_auth: cannot write to file" );
 	}
 	if( v ) free(v); v = 0;
 }

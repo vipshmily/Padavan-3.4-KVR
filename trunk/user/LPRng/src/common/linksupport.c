@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,9 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: linksupport.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
 
 
 /***************************************************************************
@@ -45,7 +26,7 @@
  *  2. set the REUSE option on socket
  *  3. does a bind to port determined by Link_dest_port_num();
  *
- * void Link_close( int socket )
+ * void Link_close( int timeout, int socket )
  *    closes the link to the remote host
  *
  * int Link_send( char *host, int *socket,int timeout,
@@ -164,10 +145,6 @@
 #include "errorcodes.h"
 /**** ENDINCLUDE ****/
 
-/*JY1110*/
-//extern char clientaddr[32];//JY1110
-/**/
-
 /***************************************************************************
  * int Link_open(char *host, int port,  int timeout );
  * 1. Set up an inet socket;  a socket has a local host/local port and
@@ -188,7 +165,7 @@
  * Thus,  all of these restrictions are somewhat bogus.  We use the
  * configuration file 'PORT' restrictions instead
  ***************************************************************************/
-//extern char printerstatus[32];//JY1106
+
 
 int Link_setreuse( int sock )
 {
@@ -201,7 +178,7 @@ int Link_setreuse( int sock )
 	return( status );
 }
 
-int Link_setkeepalive( int sock )
+static int Link_setkeepalive( int sock )
 {
 	int status = 0;
 #ifdef SO_KEEPALIVE
@@ -218,7 +195,7 @@ int Link_setkeepalive( int sock )
  */
 
 
-int connect_timeout( int timeout,
+static int connect_timeout( int timeout,
 	int sock, struct sockaddr *name, int namelen)
 {
 	int status = -1;
@@ -236,8 +213,9 @@ int connect_timeout( int timeout,
 	return( status );
 }
 
-int getconnection ( char *xhostname,
-	int timeout, int connection_type, struct sockaddr *bindto, char *unix_socket_path )
+static int getconnection ( char *xhostname,
+	int timeout, int connection_type, struct sockaddr *bindto, char *unix_socket_path,
+	char *errmsg, int errlen )
 {
 	int sock;	         /* socket */
 	int i, err;            /* ACME Generic Integers */
@@ -280,12 +258,14 @@ int getconnection ( char *xhostname,
 			LookupHost_IP.fqdn, LookupHost_IP.h_addr_list.count );
 		dest_sin.sin_family = LookupHost_IP.h_addrtype;
 		if( LookupHost_IP.h_length > (int)sizeof( dest_sin.sin_addr ) ){
-			FATAL(LOG_ALERT) "getconnection: addresslength outsize value");
+			Errorcode = JABORT;
+			fatal(LOG_ALERT, "getconnection: addresslength outsize value");
 		}
 		memcpy( &dest_sin.sin_addr,
 			LookupHost_IP.h_addr_list.list[address_count],
 			LookupHost_IP.h_length );
 	} else if( inet_pton( AF_Protocol(), hostname, &dest_sin.sin_addr ) != 1 ){
+		(void) plp_snprintf(errmsg, errlen, "getconnection: cannot get address for '%s'", hostname );
 		DEBUGF(DNW2)("getconnection: cannot get address for '%s'", hostname );
 		return( LINK_OPEN_FAIL );
 	}
@@ -302,7 +282,7 @@ int getconnection ( char *xhostname,
 		 * and his amazingly detailed reference monographs.
 		 */
 		struct sockaddr_un dest_un;     /* unix socket address */
-		bzero( (char *)&dest_un, sizeof(dest_un) );
+		memset( &dest_un, 0, sizeof(dest_un) );
 
 		DEBUGF(DNW1)("getconnection: using unix socket");
 		plp_block_all_signals( &oblock );
@@ -314,27 +294,13 @@ int getconnection ( char *xhostname,
 		dest_un.sun_family = AF_UNIX;
 #endif
 		sock = socket(dest_un.sun_family, SOCK_STREAM, 0);
-#ifdef WINDOW_1
-{
-int windowsize=1024;
-//aaaaaa=fopen("/tmp/qqqqq", "a");
-if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsize)) == -1 ) {	
-;
-//fprintf(aaaaaa, "linksupport: getconnection: opensocket FAILED!!!!!\n");
-} else {
-;
-//fprintf(aaaaaa, "linksupport: getconnection: opensocket ok!!!\n");
-}
-//fclose(aaaaaa);
-}
-#endif
 		err = errno;
 		if( UID_root ) (void)To_euid( euid );
 		plp_set_signal_mask( &oblock, 0 );
 		Max_open(sock);
 		if( sock < 0 ){
 			errno = err;
-			LOGERR_DIE(LOG_DEBUG) "getconnection: UNIX domain socket call failed");
+			logerr_die(LOG_DEBUG, "getconnection: UNIX domain socket call failed");
 		}
 		DEBUGF(DNW2) ("getconnection: unix domain socket %d", sock);
 		/*
@@ -350,11 +316,9 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 			(struct sockaddr *) &dest_un, sizeof(dest_un));
 		err = errno;
 
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW2)(
 			"getconnection: connect sock %d, status %d, err '%s', timedout %d",
 			sock, status, Errormsg(err), Alarm_timed_out );
-#endif
 		if( status < 0 || Alarm_timed_out ){
 			(void) close (sock);
 			sock = LINK_OPEN_FAIL;
@@ -363,10 +327,8 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 					use_host);
 				err = errno = ETIMEDOUT;
 			} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
 				DEBUGF(DNW1)("getconnection: connection to '%s' failed '%s'",
 					use_host, Errormsg(err) );
-#endif
 			}
 		}
 		errno = err;
@@ -375,7 +337,10 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 	if( ISNULL(dest_port) ) dest_port = Lpd_port_DYN;
 	dest_sin.sin_port = Link_dest_port_num(dest_port);
 	if( dest_sin.sin_port == 0 ){
-		LOGMSG(LOG_INFO)
+		(void) plp_snprintf(errmsg, errlen,
+		"getconnection: using illegal port '%s' for connection to '%s'!\n",
+			dest_port, hostname );
+		logmsg(LOG_INFO,
 		"getconnection: using illegal port '%s' for connection to '%s'!\n",
 			dest_port, hostname );
 		return( JABORT );
@@ -476,25 +441,13 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 	plp_block_all_signals( &oblock );
 	if( UID_root ) (void)To_euid_root();
 	sock = socket(AF_Protocol(), connection_type, 0);
-#ifdef WINDOW_1
-{
-int windowsize=1024;
-//aaaaaa=fopen("/tmp/qqqqq", "a");
-if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsize)) == -1) {
-//fprintf(aaaaaa, "linksupport: getconnection: opensocket: again FAILED!!!!!!\n");
-} else{
-//fprintf(aaaaaa, "linksupport: getconnection: opensocket: again ok!!!!!!\n");
-}
-//fclose(aaaaaa);
-}
-#endif
 	err = errno;
 	if( UID_root ) (void)To_euid( euid );
 	plp_set_signal_mask( &oblock, 0 );
 	Max_open(sock);
 	if( sock < 0 ){
 		errno = err;
-		LOGERR_DIE(LOG_DEBUG) "getconnection: socket call failed");
+		logerr_die(LOG_DEBUG, "getconnection: socket call failed");
 	}
 	DEBUGF(DNW2) ("getconnection: socket %d", sock);
 
@@ -535,7 +488,7 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 				DEBUGF(DNW2) ("getconnection: sock %d, reuse status %d",
 					sock, status );
 				if( status < 0 ){
-					LOGERR(LOG_ERR) "getconnection: set SO_REUSEADDR failed" );
+					logerr(LOG_ERR, "getconnection: set SO_REUSEADDR failed" );
 				}
 			}
 			if( status >= 0 ){
@@ -558,14 +511,14 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 				if( UID_root ) (void)To_euid( euid );
 				plp_set_signal_mask( &oblock, 0 );
 				if( status < 0 ){
-					LOGERR(LOG_ERR) "getconnection: set SO_KEEPALIVE failed" );
+					logerr(LOG_ERR, "getconnection: set SO_KEEPALIVE failed" );
 				}
 			}
 		} while( ++port_number && status < 0 && ++port_count < range );
 		if( status < 0 ){
 			close( sock );
 			sock = LINK_OPEN_FAIL;
-			LOGERR(LOG_DEBUG) "getconnection: cannot bind to port");
+			logerr(LOG_DEBUG, "getconnection: cannot bind to port");
 			return( sock );
 		}
 	}
@@ -583,11 +536,9 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 		(struct sockaddr *) &dest_sin, sizeof(dest_sin));
 	err = errno;
 
-#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGF(DNW2)(
 		"getconnection: connect sock %d, status %d, err '%s', timedout %d",
 		sock, status, Errormsg(err), Alarm_timed_out );
-#endif
 	if( status < 0 || Alarm_timed_out ){
 		(void) close (sock);
 		sock = LINK_OPEN_FAIL;
@@ -596,10 +547,8 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 				use_host);
 			err = errno = ETIMEDOUT;
 		} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
 			DEBUGF(DNW1)("getconnection: connection to '%s' failed '%s'",
 				use_host, Errormsg(err) );
-#endif
 		}
 		if( err == ECONNREFUSED ){
 			sock = LINK_ECONNREFUSED;
@@ -624,14 +573,10 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 			goto next_addr;
 		}
 	} else {
-#if defined(HAVE_SOCKLEN_T)
 		socklen_t len;
-#else
-		int len;
-#endif
 		len = sizeof( src_sin );
 		if( getsockname( sock, (struct sockaddr *)&src_sin, &len ) < 0 ){
-			LOGERR_DIE(LOG_ERR)"getconnnection: getsockname failed" );
+			logerr_die(LOG_ERR, "getconnnection: getsockname failed" );
 		}
 		DEBUGF(DNW1)( "getconnection: sock %d, src ip %s, port %d", sock,
 			inet_ntoa( src_sin.sin_addr ), ntohs( src_sin.sin_port ) );
@@ -641,10 +586,8 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 			Set_linger( sock, Socket_linger_DYN );
 		}
 	}
-#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGF(DNW1)("getconnection: connection to '%s' socket %d, errormsg '%s'",
 		use_host, sock, Errormsg(err) );
-#endif
 	errno = err;
 	return (sock);
 }
@@ -652,19 +595,13 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 void Set_linger( int sock, int n )
 {
 #ifdef SO_LINGER
-#if defined(HAVE_SOCKLEN_T)
 	socklen_t len;
-#else
-	int len;
-#endif
 	struct linger option;
 	len = sizeof( option );
 
 	DEBUGF(DNW2) ("Set_linger: SO_LINGER socket %d, value %d", sock, n );
 	if( getsockopt( sock,SOL_SOCKET,SO_LINGER,(char *)&option, &len) == -1 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW2) ("Set_linger: getsockopt linger failed - '%s'", Errormsg(errno) );
-#endif
 		return;
 	}
 	DEBUGF(DNW4) ("Set_linger: SO_LINGER socket %d, onoff %d, linger %d",
@@ -678,9 +615,7 @@ void Set_linger( int sock, int n )
 	}
 	if( setsockopt( sock, SOL_SOCKET, SO_LINGER,
 			(char *)&option, sizeof(option) ) == -1 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW2) ("Set_linger: setsockopt linger %d failed - '%s'", n, Errormsg(errno) );
-#endif
 	}
 #else
 	DEBUGF(DNW2) ("Set_linger: NO SO_LINGER, socket %d, value %d", sock, n);
@@ -723,7 +658,7 @@ int Link_listen( char *port_name )
 				LookupHost_IP.fqdn, LookupHost_IP.h_addr_list.count );
 			sinaddr.sin_family = LookupHost_IP.h_addrtype;
 			if( LookupHost_IP.h_length > (int)sizeof( sinaddr.sin_addr ) ){
-				FATAL(LOG_ALERT) "getconnection: addresslength outsize value");
+				fatal(LOG_ALERT, "getconnection: addresslength outsize value");
 			}
 			/* use the first address in the list */
 			memcpy( &sinaddr.sin_addr,
@@ -732,7 +667,7 @@ int Link_listen( char *port_name )
 		} else if( inet_pton( AF_Protocol(), port_name, &sinaddr.sin_addr ) != 1 ){
 			*s = '%';
 			Errorcode = JABORT;
-			FATAL(LOG_ERR) "Link_listen: bad lpd_port value, cannot resolve IP address '%s'",
+			fatal(LOG_ERR, "Link_listen: bad lpd_port value, cannot resolve IP address '%s'",
 				port_name );
 		}
 		sinaddr.sin_port = Link_dest_port_num(s+1);
@@ -755,25 +690,11 @@ int Link_listen( char *port_name )
 		|| Link_setreuse( sock ) < 0
 		|| (Keepalive_DYN && Link_setkeepalive( sock ) < 0)
 		|| bind(sock, (struct sockaddr *)&sinaddr, sizeof(sinaddr)) < 0;
-#ifdef WINDOW_1
-{
-int windowsize=1024;
-//aaaaaa=fopen("/tmp/qqqqq", "a");
-if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsize)) == -1) {
-//fprintf(aaaaaa, "linksupport: Link_listen: opensocket FAILED!!!!!!\n");
-} else{
-//fprintf(aaaaaa, "linksupport: Link_listen: opensocket ok!!!!!!\n");
-}
-//fclose(aaaaaa);
-}
-#endif
 	err = errno;
 	if( UID_root ) (void)To_euid( euid );
 	if( status ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW4)("Link_listen: bind to lpd port %d failed '%s'",
 			port, Errormsg(err));
-#endif
 		if( sock >= 0 ){
 			(void)close( sock );
 			sock = -1;
@@ -784,7 +705,7 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 	status = listen(sock, 64 );	/* backlog of 10 is inadequate */
 	err = errno;
 	if( status ){
-		LOGERR_DIE(LOG_ERR) "Link_listen: listen failed");
+		logerr_die(LOG_ERR, "Link_listen: listen failed");
 		(void)close( sock );
 		sock = -1;
 		err = errno;
@@ -796,12 +717,7 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 }
 
 int Unix_link_listen( char *unix_socket_path )
-#ifdef ORIGINAL_DEBUG//JY@1020
 {
-#else
-{}
-#endif
-#ifdef ORIGINAL_DEBUG//JY@1020
 	int sock;                   /* socket */
 	int status;                 /* socket */
 	struct sockaddr_un sunaddr;     /* inet socket address */
@@ -830,22 +746,12 @@ int Unix_link_listen( char *unix_socket_path )
 	if( UID_root ) (void)To_euid_root();
 	unlink( sunaddr.sun_path );
 	status = ((sock = socket (sunaddr.sun_family, SOCK_STREAM, 0)) < 0);
-#ifdef WINDOW_1
-int windowsize=1024;
-//aaaaaa=fopen("/tmp/qqqqq", "a");
-if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsize)) == -1) {
-//fprintf(aaaaaa, "linksupport: Unix_link_listen: opensocket FAILED!!!!!!\n");
-}else{
-//fprintf(aaaaaa, "linksupport: Unix_link_listen: opensocket ok!!!!!\n");
-}
-//fclose(aaaaaa);
-#endif
 	err = errno;
 	if( UID_root ) (void)To_euid( euid );
 	Max_open(sock);
 	if( sock < 0 ){
 		errno = err;
-		LOGERR_DIE(LOG_DEBUG) "Unix_link_listen: UNIX domain socket call failed");
+		logerr_die(LOG_DEBUG, "Unix_link_listen: UNIX domain socket call failed");
 	}
 
 	omask = umask(0);
@@ -855,10 +761,8 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 	if( UID_root ) (void)To_euid( euid );
 	umask(omask);
 	if( status ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW4)("Unix_link_listen: bind to unix port %s failed '%s'",
 			Unix_socket_path_DYN, Errormsg(err));
-#endif
 		if( sock >= 0 ){
 			(void)close( sock );
 			sock = -1;
@@ -871,7 +775,7 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 	err = errno;
 	if( UID_root ) (void)To_euid( euid );
 	if( status ){
-		LOGERR_DIE(LOG_ERR) "Unix_link_listen: listen failed");
+		logerr_die(LOG_ERR, "Unix_link_listen: listen failed");
 		(void)close( sock );
 		sock = -1;
 		err = errno;
@@ -881,34 +785,32 @@ if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsi
 	errno = err;
 	return (sock);
 }
-#endif
 
 int Link_open(char *host, int timeout, struct sockaddr *bindto,
-	char *unix_socket_path )
+	char *unix_socket_path, char *errmsg, int errlen )
 {
 	int sock;
 	DEBUGF(DNW4) ("Link_open: host '%s', timeout %d",
 		host, timeout);
-	sock = Link_open_type( host, timeout, SOCK_STREAM, bindto, unix_socket_path );
+	sock = Link_open_type( host, timeout, SOCK_STREAM, bindto, unix_socket_path, errmsg, errlen );
 	DEBUGF(DNW4) ("Link_open: socket %d", sock );
 	return(sock);
 }
 
 int Link_open_type(char *host, int timeout, int connection_type,
-	struct sockaddr *bindto, char * unix_socket_path )
+	struct sockaddr *bindto, char * unix_socket_path, char *errmsg, int errlen )
 {
 	int sock = -1;
 	DEBUGF(DNW4)(
 		"Link_open_type: host '%s', timeout %d, type %d",
 		host, timeout, connection_type );
-	sock = getconnection( host, timeout, connection_type, bindto, unix_socket_path );
+	sock = getconnection( host, timeout, connection_type, bindto, unix_socket_path, errmsg, errlen );
 	DEBUGF(DNW4) ("Link_open_type: socket %d", sock );
 	return( sock );
 }
 
-#ifdef ORIGINAL_DEBUG//JY@1020
 int Link_open_list( char *hostlist, char **result,
-	int timeout, struct sockaddr *bindto, char *unix_socket_path )
+	int timeout, struct sockaddr *bindto, char *unix_socket_path, char *errmsg, int errlen )
 {
 	int sock = -1, i, err = 0;
 	struct line_list list;
@@ -924,7 +826,7 @@ int Link_open_list( char *hostlist, char **result,
 	err = errno = 0;
 	for( i = 0; sock < 0 && i < list.count; ++i ){
 		DEBUGF(DNW4) ("Link_open_list: host trying '%s'", list.list[i] );
-		sock = getconnection( list.list[i], timeout, SOCK_STREAM, bindto, unix_socket_path );
+		sock = getconnection( list.list[i], timeout, SOCK_STREAM, bindto, unix_socket_path, errmsg, errlen );
 		err = errno;
 		DEBUGF(DNW4) ("Link_open_list: result host '%s' socket %d", list.list[i], sock );
 		if( sock >= 0 ){
@@ -938,21 +840,20 @@ int Link_open_list( char *hostlist, char **result,
 	Free_line_list(&list);
 	return( sock );
 }
-#endif
 
 /***************************************************************************
- * void Link_close( int socket )
+ * void Link_close( int timeout, int socket )
  *    closes the link to the remote host
  *  We first do a shutdown(*sock,1) and THEN do a close
  ***************************************************************************/
 
-void Link_close( int *sock )
+void Link_close( int timeout, int *sock )
 {
 	char buf[SMALLBUFFER];
 	DEBUGF(DNW4) ("Link_close: closing socket %d", *sock );
 	if( *sock >= 0 ){
 		shutdown(*sock,1);
-		while( read(*sock,buf,sizeof(buf)) > 0 );
+		while( Read_fd_len_timeout(timeout, *sock,buf,sizeof(buf)) > 0 );
 		(void)close(*sock);
 	}
 	*sock = -1;
@@ -983,7 +884,7 @@ void Link_close( int *sock )
  ***************************************************************************/
 
 int Link_send( char *host, int *sock, int timeout,
-	char *sendstr, int count, int *ack )
+	const char *sendstr, int count, int *ack )
 {
 	int i;      /* Watch out for longjmp * ACME Integers, Inc. */
 	int status;		/* return status */
@@ -1003,7 +904,7 @@ int Link_send( char *host, int *sock, int timeout,
 
 	DEBUGF(DNW1)( "Link_send: host '%s' socket %d, timeout %d",
 		host, *sock, timeout );
-	DEBUGF(DNW1)( "Link_send: str '%s', count %d, ack 0x%x",
+	DEBUGF(DNW1)( "Link_send: str '%s', count %d, ack 0x%p",
 		sendstr, count , ack );
 
 	/*
@@ -1019,10 +920,8 @@ int Link_send( char *host, int *sock, int timeout,
 			DEBUGF(DNW2)("Link_send: write to '%s' timed out", host);
 			status = LINK_TRANSFER_FAIL;
 		} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
 			DEBUGF(DNW2)("Link_send: write to '%s' failed '%s'",
 				host, Errormsg(err) );
-#endif
 			status = LINK_TRANSFER_FAIL;
 		}
 	}
@@ -1041,10 +940,8 @@ int Link_send( char *host, int *sock, int timeout,
 				DEBUGF(DNW2)("Link_send: ack read from '%s' timed out", host);
 				status = LINK_TRANSFER_FAIL;
 			} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
 				DEBUGF(DNW2)("Link_send: ack read from '%s' failed - %s",
 					host, Errormsg(err) );
-#endif
 				status = LINK_TRANSFER_FAIL;
 			}
 		} else if( i == 0 ){
@@ -1066,12 +963,10 @@ int Link_send( char *host, int *sock, int timeout,
 			/* delay.tv_usec = 1000; */
 			FD_ZERO( &readfds );
 			FD_SET( *sock, &readfds );
-			i = select( (*sock)+1,
-				FD_SET_FIX((fd_set *))&readfds,
-				FD_SET_FIX((fd_set *))0,
-				FD_SET_FIX((fd_set *))0, &delay );
+			i = select( (*sock)+1, &readfds,
+				NULL, NULL, &delay );
 			if( i > 0 ){
-				LOGMSG( LOG_ERR)
+				logmsg( LOG_ERR,
 				"Link_send: PROTOCOL ERROR - pending input from '%s' after ACK received",
 				host );
 			}
@@ -1081,7 +976,6 @@ int Link_send( char *host, int *sock, int timeout,
 	return (status);
 }
 
-#ifdef ORIGINAL_DEBUG//JY@1020
 /***************************************************************************
  * int Link_copy( char *host, int *socket, int timeout,
  *  char *src, int fd, int count)
@@ -1093,7 +987,7 @@ int Link_send( char *host, int *sock, int timeout,
  *      returns 0 if successful, LINK errorcode if failure
  ***************************************************************************/
 int Link_copy( char *host, int *sock, int readtimeout, int writetimeout,
-	char *src, int fd, double pcount)
+	const char *src, int fd, double pcount)
 {
 	char buf[LARGEBUFFER];      /* buffer */
 	int len;              /* ACME Integer, Inc. */
@@ -1124,11 +1018,9 @@ int Link_copy( char *host, int *sock, int readtimeout, int writetimeout,
 		if( Alarm_timed_out || len <= 0 ){
 			/* EOF on input */
 			if( pcount && count > 0 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 				DEBUGF(DNW4)(
 					"Link_copy: read from '%s' failed, %0.0f bytes left - %s",
 					src, count, Errormsg(err) );
-#endif
 				status = LINK_TRANSFER_FAIL;
 			} else {
 				DEBUGF(DNW4)("Link_copy: read status %d count %0.0f", len, count );
@@ -1145,10 +1037,8 @@ int Link_copy( char *host, int *sock, int readtimeout, int writetimeout,
 				DEBUGF(DNW4)("Link_copy: write to '%s' timed out", host);
 				status = LINK_TRANSFER_FAIL;
 			} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
 				DEBUGF(DNW4)("Link_copy: write to '%s' failed - %s",
 					host, Errormsg(err) );
-#endif
 				status = LINK_TRANSFER_FAIL;
 			}
 		}
@@ -1163,12 +1053,9 @@ int Link_copy( char *host, int *sock, int readtimeout, int writetimeout,
 		memset( &delay,0,sizeof(delay));
 		FD_ZERO( &readfds );
 		FD_SET( *sock, &readfds );
-		i = select( *sock+1,
-			FD_SET_FIX((fd_set *))&readfds,
-			FD_SET_FIX((fd_set *))0,
-			FD_SET_FIX((fd_set *))0, &delay );
+		i = select( *sock+1, &readfds, NULL, NULL, &delay );
 		if( i != 0 ){
-			LOGMSG( LOG_ERR)
+			logmsg( LOG_ERR,
 			"Link_copy: PROTOCOL ERROR - pending input from '%s' after transfer",
 			host );
 		}
@@ -1176,7 +1063,6 @@ int Link_copy( char *host, int *sock, int readtimeout, int writetimeout,
 	DEBUGF(DNW4)("Link_copy: status %d", status );
 	return( status );
 }
-#endif
 
 
 /***************************************************************************
@@ -1196,7 +1082,7 @@ int Link_dest_port_num( char *port )
 	if( port == 0 ) port = Lpd_port_DYN;
 	if( port == 0 ){
 		Errorcode = JABORT;
-		FATAL( LOG_ERR)
+		fatal( LOG_ERR,
 			"Link_dest_port_num: LOGIC ERROR! no port number!");
 	}
 	if( (s = strchr(port, '%')) ) port = s+1;
@@ -1285,10 +1171,8 @@ int Link_line_read(char *host, int *sock, int timeout,
 			status = LINK_TRANSFER_FAIL;
 		}
 	} else if( i < 0 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW4)("Link_line_read: read from '%s' failed - %s", host,
 			Errormsg(err) );
-#endif
 		status = LINK_TRANSFER_FAIL;
 	} else if( lf == 0 ){
 		DEBUGF(DNW4)("Link_line_read: no LF on line from '%s'", host );
@@ -1300,74 +1184,6 @@ int Link_line_read(char *host, int *sock, int timeout,
 	errno = err;
 	return( status );
 }
-
-
-#ifdef ORIGINAL_DEBUG//JY@1020
-/***************************************************************************
- * int Link_line_peek(char *host, int *sock, int timeout,
- *	  char *str, int *count )
- *    peeks at input on socket
- *       and copies characters from socket to str until '\n'
- *        or max chars found.
- *    *count points to maximum number of bytes to read;
- *      updated with actual value read
- *    if \n not found within timeout seconds,
- *      terminate action with error.
- *    if timeout == 0, wait indefinitely
- *    returns 0 if '\n' read or *count characters
- *            LINK errorcode otherwise
- ***************************************************************************/
-
-int Link_line_peek(char *host, int *sock, int timeout,
-	  char *buf, int *count )
-{
-	int err = 0;	/* ACME Integer, Inc. */
-	int status, max, len;				/* status of operation */
-
-	status = 0;	/* shut up GCC */
-	max = *count;
-	*count = 0;
-	buf[0] = 0;
-	DEBUGF(DNW1) ("Link_line_peek: peeking for %d from '%s' on %d, timeout %d",
-		max, host, *sock, timeout );
-	/* check for valid socket */
-	if(*sock < 0) {
-		DEBUGF(DNW1)("Link_line_peek: bad socket" );
-		*count = 0;
-		return (LINK_OPEN_FAIL);
-	}
-	/*
-	 * set up timeout and then do operation
-	 */
-	len = -1;
-	if( Set_timeout() ){
-		Set_timeout_alarm( timeout );
-		len = recv( *sock, buf, max, MSG_PEEK );
-	} else {
-		len = -1;
-	}
-	err = errno;
-	DEBUGF(DNW1)( "Link_line_peek: read %d, timeout %d, '%s'", len, Alarm_timed_out, buf);
-	/*
-	 * conditions will be:
-	 * long line, timeout, error, or OK
-	 */
-	if( len <= 0 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
-		DEBUGF(DNW1)("Link_line_peek: read from '%s' failed - %s", host,
-			Errormsg(err) );
-#endif
-		status = LINK_TRANSFER_FAIL;
-	} else {
-		*count = len;
-		status = 0;
-	}
-
-	DEBUGF(DNW1)("Link_line_peek: status %d, len %d", status, len );
-	errno = err;
-	return( status );
-}
-#endif
 
 /***************************************************************************
  * int Link_read(char *host, int *sock, int timeout,
@@ -1421,156 +1237,17 @@ int Link_read(char *host, int *sock, int timeout,
 
 	if( Alarm_timed_out ){
 		DEBUGF(DNW2)("Link_read: read %d from '%s' timed out",
-			len, host, i );
+			len, host );
 		status = LINK_TRANSFER_FAIL;
 	} else if( i < 0 ) {
-#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGF(DNW2)("Link_read: read %d from '%s' failed, returned %d - %s",
 			len, host, i, Errormsg(err) );
-#endif
 		status = LINK_TRANSFER_FAIL;
 	}
 
 	errno = err;
 	return( status );
 }
-#ifdef TEST_WRITE//JYWeng
-
-/***************************************************************************
- * int Link_file_read( char *host, int *sock, int readtimeout,
- *    int writetimeout, int fd, int *count, int *ack )
- *    reads and copies '*count' characters from socket to fd
- *    *count points to maximum number of bytes to read;
- *      updated with actual value read
- *    if ack then will read an additional ACK character
- *       returns value in *ack
- *    if read does not complete within timeout seconds,
- *      terminate action with error.
- *    if timeout == 0, wait indefinitely
- *    returns 0 *count not read
- *
- ***************************************************************************/
-
-int Link_file_read_test(char *host, int *sock, int readtimeout, int writetimeout,
-	  int fd, double *count, int *ack )
-{
-	char str[LARGEBUFFER];		/* input buffer pointer */
-	int i, l, cnt;			/* number to read or write */
-	int status;				/* status of operation */
-	int err;					/* error */
-	double len;
-	double readcount;
-
-	currten_sock = sock;//JY1120
-	len = i = status = cnt = 0;	/* shut up GCC */
-	readcount = 0;
-	*ack = 0;
-	DEBUGF(DNW1) ("Link_file_read: reading %0.0f from '%s' on %d",
-		*count, host, *sock );
-	/* check for valid socket */
-	if(*sock < 0) {
-		DEBUGF(DNW2)( "Link_file_read: bad socket" );
-		return (LINK_OPEN_FAIL);
-	}
-	/*
-	 * set up timeout and then do the transfer
-	 */
-
-	/* do the read */
-	len = *count;
-/*1106test status*/
-//plp_signal_break(SIGUSR, );
-check_prn_status("Printing", clientaddr);
-/**/
-	while( status == 0 && (*count == 0 || len > 0) ){
-		DEBUGF(DNW2)("Link_file_read: doing data read" );
-		l = sizeof(str);
-		if( *count && l > len ) l = len;
-		i = Read_fd_len_timeout( readtimeout, *sock, str, l );
-		err = errno;
-		if( Alarm_timed_out ){
-			DEBUGF(DNW2)( "Link_file_read: read from '%s' timed out", host);
-			status = LINK_TRANSFER_FAIL;
-		} else if( i > 0 ){
-			DEBUGF(DNW2)("Link_file_read: len %0.0f, readlen %d, read %d", len, l, i );
-			if( *count ) len -= i;
-			readcount += i;
-#if 1 //JYWeng
-/*1106test status*/
-//strcpy(printerstatus, "Printing");
-/**/
-
-writetimeout = 600;//JY1110
-//JY1110			cnt = write(fd_print, str, i );
-			cnt = Write_fd_len_timeout(writetimeout, fd_print, str, i);
-
-#else
-aaaaaa=fopen("/tmp/a12345", "a");
-fprintf(aaaaaa, "Linksupport: write_fd_len_timeout\n");
-fclose(aaaaaa);
-			cnt = Write_fd_len_timeout(writetimeout, fd, str, i );
-sleep(10);
-#endif
-			err = errno;
-			if( Alarm_timed_out || cnt < 0 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
-				DEBUGF(DNW2)( "Link_file_read: write %d to fd %d failed - %s",
-					i, fd, Errormsg(err) );
-#endif
-				status = LINK_TRANSFER_FAIL; 
-			}
-		} else if( *count ){
-#ifdef ORIGINAL_DEBUG//JY@1020
-			DEBUGF(DNW2)("Link_file_read: read from '%s' failed - %s",
-				host, Errormsg(err) );
-#endif
-			status = LINK_TRANSFER_FAIL;
-		} else {
-			break;
-		}
-	}
-#if JYDEBUG //JYWeng
-aaaaaa=fopen("/tmp/a12345", "a");
-fprintf(aaaaaa, "Linksupport: loop end!\n");
-fclose(aaaaaa);
-//close(fd_print);
-#endif
-	if( *count ){
-		*count -= len;
-	} else {
-		*count = readcount;
-	}
-
-	if( *count && status == 0 && ack ){
-		DEBUGF(DNW2)("Link_file_read: doing end marker byte read" );
-		i = Read_fd_len_timeout(readtimeout, *sock, str, 1 );
-		err = errno;
-
-		if( Alarm_timed_out ){
-			DEBUGF(DNW2)( "Link_file_read: end marker byte read from '%s' timed out", host);
-			status = LINK_TRANSFER_FAIL;
-		} else if( i > 0 ){
-			DEBUGF(DNW2)("Link_file_read: end marker read count %d value %d", i, *str );
-			*ack = *str;
-			if( *ack ){
-				DEBUGF(DNW2)( "Link_file_read: nonzero end marker '%d'", *ack );
-				status = LINK_ACK_FAIL;
-			}
-		} else if( i == 0 ){
-			DEBUGF(DNW2)("Link_file_read: EOF and no end marker" );
-		} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
-			DEBUGF(DNW2)("Link_file_read: end marker read from '%s' failed - %s",
-				host, Errormsg(err) );
-#endif
-			status = LINK_TRANSFER_FAIL;
-		}
-	}
-
-	DEBUGF(DNW2)("Link_file_read: status %d", status );
-	return( status );
-}
-#endif
 
 /***************************************************************************
  * int Link_file_read( char *host, int *sock, int readtimeout,
@@ -1626,21 +1303,16 @@ int Link_file_read(char *host, int *sock, int readtimeout, int writetimeout,
 			DEBUGF(DNW2)("Link_file_read: len %0.0f, readlen %d, read %d", len, l, i );
 			if( *count ) len -= i;
 			readcount += i;
-//JY1111			cnt = Write_fd_len_timeout(writetimeout, fd, str, i );
-sleep(10);
+			cnt = Write_fd_len_timeout(writetimeout, fd, str, i );
 			err = errno;
 			if( Alarm_timed_out || cnt < 0 ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 				DEBUGF(DNW2)( "Link_file_read: write %d to fd %d failed - %s",
 					i, fd, Errormsg(err) );
-#endif
 				status = LINK_TRANSFER_FAIL; 
 			}
 		} else if( *count ){
-#ifdef ORIGINAL_DEBUG//JY@1020
 			DEBUGF(DNW2)("Link_file_read: read from '%s' failed - %s",
 				host, Errormsg(err) );
-#endif
 			status = LINK_TRANSFER_FAIL;
 		} else {
 			break;
@@ -1670,10 +1342,8 @@ sleep(10);
 		} else if( i == 0 ){
 			DEBUGF(DNW2)("Link_file_read: EOF and no end marker" );
 		} else {
-#ifdef ORIGINAL_DEBUG//JY@1020
 			DEBUGF(DNW2)("Link_file_read: end marker read from '%s' failed - %s",
 				host, Errormsg(err) );
-#endif
 			status = LINK_TRANSFER_FAIL;
 		}
 	}
@@ -1700,7 +1370,7 @@ sleep(10);
 /* PAIR(LINK_PERM_FAIL), */
 
  static struct link_err {
-    char *str;
+    const char *str;
     int value;
 } link_err[] = {
 { "NO ERROR", 0 },
@@ -1730,7 +1400,7 @@ const char *Link_err_str (int n)
 	s = link_err[i].str;
 	if( s == 0 ){
 		s = buf;
-		(void) SNPRINTF (buf, sizeof(buf)) "link error %d", n);
+		(void) plp_snprintf(buf, sizeof(buf), "link error %d", n);
 	}
     return(s);
 }
@@ -1754,7 +1424,7 @@ const char *Ack_err_str (int n)
 	s = ack_err[i].str;
 	if( s == 0 ){
 		s = buf;
-		(void) SNPRINTF (buf, sizeof(buf)) "ack error %d", n);
+		(void) plp_snprintf(buf, sizeof(buf), "ack error %d", n);
 	}
     return(s);
 }
@@ -1788,7 +1458,7 @@ int AF_Protocol(void)
  int inet_pton( int family, const char *strptr, void *addr )
 {
 	if( family != AF_INET ){
-		FATAL(LOG_ERR) "inet_pton: bad family '%d'", family );
+		fatal(LOG_ERR, "inet_pton: bad family '%d'", family );
 	}
 #if defined(HAVE_INET_ATON)
 	return( inet_aton( strptr, addr ) );
@@ -1822,7 +1492,7 @@ int AF_Protocol(void)
 {
 	char *s;
 	if( family != AF_INET ){
-		FATAL(LOG_ERR) "inet_ntop: bad family '%d'", family );
+		fatal(LOG_ERR, "inet_ntop: bad family '%d'", family );
 	}
 	s = inet_ntoa(((struct in_addr *)addr)[0]);
 	mystrncpy( str, s, len );
@@ -1860,10 +1530,10 @@ const char *inet_ntop_sockaddr( struct sockaddr *addr,
 		|| addr->sa_family == AF_UNIX 
 #endif
 		){
-		SNPRINTF (str, len) "%s", Unix_socket_path_DYN );
+		plp_snprintf(str, len, "%s", Unix_socket_path_DYN );
 		return( str );
 	} else {
-		FATAL(LOG_ERR) "inet_ntop_sockaddr: bad family '%d'",
+		fatal(LOG_ERR, "inet_ntop_sockaddr: bad family '%d'",
 			addr->sa_family );
 	}
 	return( inet_ntop( addr->sa_family, a, str, len ) );

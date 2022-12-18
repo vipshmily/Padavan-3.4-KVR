@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: stty.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 
 #include "lp.h"
 #include "stty.h"
@@ -232,14 +212,14 @@ void Do_stty( int fd )
 		|| ioctl( fd, TIOCGETC, &termctrl) < 0
 		|| ioctl( fd, TIOCLGET, &localmode) < 0
 		|| ioctl( fd, TIOCGLTC, &linectrl) < 0 ){
-		LOGERR_DIE(LOG_INFO) "cannot get tty parameters");
+		logerr_die(LOG_INFO, "cannot get tty parameters");
 	}
 	DEBUG2("stty: before mode 0x%x, lmode 0x%x, speed 0x%x",
 			 mode.sg_flags, localmode, mode.sg_ispeed);
 	if( Baud_rate_DYN ){
 		for( i = 0; bauds[i].baud && Baud_rate_DYN != bauds[i].baud; i++);
 		if( i == 0) {
-			FATAL(LOG_INFO) "illegal baud rate %d", Baud_rate_DYN );
+			fatal(LOG_INFO, "illegal baud rate %d", Baud_rate_DYN );
 		}
 		mode.sg_ispeed = mode.sg_ospeed = bauds[i].speed;
 	}
@@ -262,7 +242,7 @@ void Do_stty( int fd )
 			++count;
 			option = l.list[count];
 			if( option == 0) {
-				FATAL(LOG_INFO) "stty: missing parameter for %s", arg);
+				fatal(LOG_INFO, "stty: missing parameter for %s", arg);
 			}
 			if( option[0] == '^') {
 				if( option[1] == '?') {
@@ -286,17 +266,17 @@ void Do_stty( int fd )
 			DEBUG3("stty: ldisc %s", arg);
 			linedisc = NTTYDISC;
 			if( ioctl( fd, TIOCSETD, &linedisc) < 0)
-				LOGERR_DIE(LOG_INFO) "stty: TIOCSETD ioctl failed");
+				logerr_die(LOG_INFO, "stty: TIOCSETD ioctl failed");
 			continue;
 		}
 		if( !safestrcasecmp( "old", arg)) {
 			DEBUG3("stty: ldisc %s", arg);
 			linedisc = 0;
 			if( ioctl( fd, TIOCSETD, &linedisc) < 0)
-				LOGERR_DIE(LOG_INFO) "stty: TIOCSETD ioctl failed");
+				logerr_die(LOG_INFO, "stty: TIOCSETD ioctl failed");
 			continue;
 		}
-		FATAL(LOG_INFO) "unknown mode: %s\n", arg);
+		fatal(LOG_INFO, "unknown mode: %s\n", arg);
 	}
 	DEBUG2("stty: after mode 0x%x, lmode 0x%x, speed 0x%x",
 			 mode.sg_flags, localmode, mode.sg_ispeed);
@@ -304,7 +284,7 @@ void Do_stty( int fd )
 		|| ioctl( fd, TIOCSETC, &termctrl) < 0
 		|| ioctl( fd, TIOCSLTC, &linectrl) < 0
 		|| ioctl( fd, TIOCLSET, &localmode) < 0) {
-		LOGERR_DIE(LOG_NOTICE) "cannot set tty parameters");
+		logerr_die(LOG_NOTICE, "cannot set tty parameters");
 	}
 	Free_line_list(&l);
 }
@@ -576,7 +556,7 @@ void Do_stty( int fd )
 
 	DEBUG3("Do_stty: using TERMIO, fd %d", fd );
 	if( ioctl( fd, TCGETA, &tio) < 0) {
-		LOGERR_DIE(LOG_INFO) "cannot get tty parameters");
+		logerr_die(LOG_INFO, "cannot get tty parameters");
 	}
 	DEBUG2("stty: before imode 0x%x, omode 0x%x, cmode 0x%x, lmode 0x%x",
 			 tio.c_iflag, tio.c_oflag, tio.c_cflag, tio.c_lflag);
@@ -584,7 +564,7 @@ void Do_stty( int fd )
 	if( Baud_rate_DYN ){
 		for( i = 0; bauds[i].baud && Baud_rate_DYN != bauds[i].baud; i++);
 		if( i == 0) {
-			FATAL(LOG_INFO) "illegal baud rate %d", Baud_rate_DYN);
+			fatal(LOG_INFO, "illegal baud rate %d", Baud_rate_DYN);
 		}
 		tio.c_cflag &= ~CBAUD;
 		tio.c_cflag |= bauds[i].speed;
@@ -617,7 +597,7 @@ void Do_stty( int fd )
 			tio.c_cflag |= bauds[i].speed;
 			continue;
 		}
-		FATAL(LOG_INFO) "unknown mode: %s\n", arg);
+		fatal(LOG_INFO, "unknown mode: %s\n", arg);
 	}
 
 	if( Read_write_DYN && (tio.c_cflag & ICANON) == 0) {
@@ -631,7 +611,7 @@ void Do_stty( int fd )
 	DEBUG2("stty: before imode 0x%x, omode 0x%x, cmode 0x%x, lmode 0x%x",
 			 tio.c_iflag, tio.c_oflag, tio.c_cflag, tio.c_lflag);
 	if( ioctl( fd, TCSETA, &tio) < 0) {
-		LOGERR_DIE(LOG_NOTICE) "cannot set tty parameters");
+		logerr_die(LOG_NOTICE, "cannot set tty parameters");
 	}
 	Free_line_list(&l);
 }
@@ -646,7 +626,7 @@ void Do_stty( int fd )
 #endif
 
  static struct bauds {
-	char *string;
+	const char *string;
 	int baud;
 	int speed;
 }     bauds[] = {
@@ -694,9 +674,9 @@ void Do_stty( int fd )
 };
 
  struct s_term_dat {
-	char *name;
-	uint or_dat;
-	uint and_dat;
+	const char *name;
+	unsigned int or_dat;
+	unsigned int and_dat;
 };
 
 #undef FLAGS
@@ -778,8 +758,12 @@ void Do_stty( int fd )
 #endif
 #ifdef TABDLY
 	{"TAB0", TAB0, TABDLY},
+#ifdef TAB1
 	{"TAB1", TAB1, TABDLY},
+#endif
+#ifdef TAB2
 	{"TAB2", TAB2, TABDLY},
+#endif
 	{"TAB3", TAB3, TABDLY},
 #endif
 #ifdef BSDLY
@@ -923,7 +907,7 @@ void Do_stty( int fd )
  struct termios t_dat;
 
  static struct special {
-	char *name;
+	const char *name;
 	char *cp;
 }       special[] = {
 
@@ -948,7 +932,7 @@ void Do_stty( int fd )
 
 	DEBUG3("Do_stty: using TERMIOS, fd %d", fd );
 	if( tcgetattr( fd, &t_dat) < 0 ){
-		LOGERR_DIE(LOG_INFO) "cannot get tty parameters");
+		logerr_die(LOG_INFO, "cannot get tty parameters");
 	}
 #ifdef USE_TERMIOX
 	if( ioctl( fd, TCGETX, &tx_dat) < 0 ){
@@ -962,7 +946,7 @@ void Do_stty( int fd )
 	if( Baud_rate_DYN ){
 		for( i = 0; bauds[i].baud && Baud_rate_DYN != bauds[i].baud; i++);
 		if( i == 0 ){
-			FATAL(LOG_INFO) "illegal baud rate %d", Baud_rate_DYN );
+			fatal(LOG_INFO, "illegal baud rate %d", Baud_rate_DYN );
 		}
 		DEBUG2("stty: before baudrate : cflag 0x%x",(int)t_dat.c_cflag);
 
@@ -1034,7 +1018,7 @@ void Do_stty( int fd )
 			++count;
 			option = l.list[count];
 			if( option == 0 ){
-				FATAL(LOG_INFO) "stty: missing parameter for %s", arg);
+				fatal(LOG_INFO, "stty: missing parameter for %s", arg);
 			}
 			if( option[0] == '^' ){
 				if( option[1] == '?' ){
@@ -1058,7 +1042,7 @@ void Do_stty( int fd )
 			continue;
 		}
 #endif /* USE_TERMIOX */
-		FATAL(LOG_INFO) "unknown mode: %s\n", arg);
+		fatal(LOG_INFO, "unknown mode: %s\n", arg);
 	}
 
 	if( Read_write_DYN && (t_dat.c_lflag & ICANON) == 0 ){
@@ -1072,12 +1056,12 @@ void Do_stty( int fd )
 		(int)t_dat.c_cflag, (int)t_dat.c_lflag);
 
 	if( tcsetattr( fd, TCSANOW, &t_dat) < 0 ){
-		LOGERR_DIE(LOG_NOTICE) "cannot set tty parameters");
+		logerr_die(LOG_NOTICE, "cannot set tty parameters");
 	}
 
 #ifdef USE_TERMIOX
 	if( termiox_fail == 0 && ioctl( fd, TCSETX, &tx_dat) < 0 ){
-		LOGERR_DIE(LOG_NOTICE) "cannot set tty parameters (termiox)");
+		logerr_die(LOG_NOTICE, "cannot set tty parameters (termiox)");
 	}
 #endif
 	Free_line_list(&l);

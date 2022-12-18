@@ -1,26 +1,10 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
- * $Id: debug.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
+ * $Id: debug.h,v 1.74 2004/09/24 20:19:59 papowell Exp $
  ***************************************************************************/
 
 
@@ -82,8 +66,6 @@ EXTERN int DbgTest;	/* debug flags */
 #define DEBUG6      DEBUGC(6,0)
 #define DEBUGL6     DEBUGL(6,0)
 
-/* PROTOTYPES */
-
 #endif
 
 /* Flags for debugging */
@@ -140,29 +122,8 @@ EXTERN int DbgTest;	/* debug flags */
 
 #define IP_TEST 0x0001		/* test IP address */
 
-void Parse_debug( char *arg, int interactive);
+void Parse_debug( const char *arg, int interactive);
 
-
-/* we define these and then run gcc -Wformat -Wall to find
- * debug statements with bad formats
- */
-#if defined(FORMAT_TEST)
-#undef DEBUG1
-#undef DEBUG2
-#undef DEBUG3
-#undef DEBUG4
-#undef DEBUG5
-#undef DEBUG6
-#undef DEBUG7
-#define DEBUG1 printf
-#define DEBUG2 printf
-#define DEBUG3 printf
-#define DEBUG4 printf
-#define DEBUG5 printf
-#define DEBUG6 printf
-#define DEBUG7 printf
-#endif
-
-/* PROTOTYPES */
+/* PRO TO TYPES */
 
 #endif

@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: lpf.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 
 /***************************************************************************
  *  Filter template and frontend.
@@ -113,23 +93,29 @@
  * compiling with the -DDEBUG option.
  */
 
+#include <config.h>
 #include "portable.h"
-
-/* VARARGS3 */
-#ifdef HAVE_STDARGS
-int	plp_snprintf (char *str, size_t count, const char *fmt, ...);
-int	plp_vsnprintf (char *str, size_t count, const char *fmt, va_list arg);
-#else
-int plp_snprintf ();
-int plp_vsnprintf ();
-#endif
+#include "plp_snprintf.h"
 
 /* VARARGS2 */
 #ifdef HAVE_STDARGS
- void safefprintf (int fd, char *format,...);
+ static void safefprintf (int fd, const char *format,...) PRINTFATTR(2,3)
+;
 #else
- void safefprintf ();
+ static void safefprintf ();
 #endif
+#ifdef HAVE_STDARGS
+static void logerr(const char *msg, ...) PRINTFATTR(1,2)
+#else
+static void logerr( va_alist ) va_dcl
+#endif
+;
+#ifdef HAVE_STDARGS
+static void logerr_die(const char *msg, ...) PRINTFATTR(1,2)
+#else
+static void logerr_die( va_alist ) va_dcl
+#endif
+;
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -149,10 +135,6 @@ int plp_vsnprintf ();
 
 #ifdef HAVE_SYS_FILE_H
 # include <sys/file.h>
-#endif
-
-#ifndef HAVE_ERRNO_DECL
-extern int errno;
 #endif
 
 #ifdef HAVE_SYS_FCNTL_H
@@ -184,31 +166,29 @@ XX ** NO VARARGS ** XX
 # endif
 #endif
 
-char *Time_str(int shortform, time_t t);
+static char *lpf_time_str(void);
+static void filter_pgm(const char *stop);
 
 /*
  * default exit status, causes abort
  */
-int errorcode;
-char *name;		/* name of filter */
+static int errorcode = 2;
+static const char *name;		/* name of filter */
 /* set from flags */
-int debug, width, length, xwidth, ylength, literal, indent;
-char *zopts, *class, *job, *login, *accntname, *host, *accntfile, *format;
-char *printer, *controlfile, *bnrname, *comment;
-char *queuename, *errorfile;
-int npages;	/* number of pages */
-char *statusfile;
-char filter_stop[] = "\031\001";	/* sent to cause filter to suspend */
-int  accounting_fd;
-int crlf;	/* change lf to CRLF */
+static int debug = 0;
+static int width = 80, length = 72, xwidth = 1440, ylength = -1;
+static int literal = 0, indent = 0;
+static const char *zopts = NULL, *class = NULL, *job = NULL, *login = NULL;
+static const char *accntname = NULL, *host = NULL, *accntfile= NULL;
+static const char *format = NULL, *printer = NULL, *controlfile = NULL;
+static const char *bnrname = NULL, *comment = NULL, *queuename = NULL;
+static const char *errorfile = NULL, *statusfile = NULL;
+static int npages;	/* number of pages */
+static int accounting_fd;
+static int crlf = 0;	/* change lf to CRLF */
 
-void getargs( int argc, char *argv[], char *envp[] );
-void logerr( char *msg, ... );
-void logerr_die( char *msg, ... );
-extern void banner( void );
-extern void doaccnt( void );
-extern void filter_pgm( char * );
-int of_filter;
+static void getargs( int argc, char *argv[], char *envp[] );
+static int of_filter;
 
 int main( int argc, char *argv[], char *envp[] )
 {
@@ -244,14 +224,14 @@ int main( int argc, char *argv[], char *envp[] )
 	(void)signal( SIGQUIT, SIG_DFL );
 	(void)signal( SIGCHLD, SIG_DFL );
 	if( of_filter || (format && format[0] == 'o') ){
-		filter_pgm( filter_stop );
+		filter_pgm( "\031\001" );
 	} else {
 		filter_pgm( (char *)0 );
 	}
 	return(0);
 }
 
-int Write_fd_str( int fd, const char *msg )
+static int Write_fd_str( int fd, const char *msg )
 {
 	int n;
 	n = strlen(msg);
@@ -260,7 +240,7 @@ int Write_fd_str( int fd, const char *msg )
 
 /* VARARGS2 */
 #ifdef HAVE_STDARGS
- void safefprintf (int fd, char *format,...)
+ void safefprintf (int fd, const char *format,...)
 #else
  void safefprintf (va_alist) va_dcl
 #endif
@@ -277,7 +257,7 @@ int Write_fd_str( int fd, const char *msg )
     VA_SHIFT (format, char *);
 
 	buf[0] = 0;
-	(void) VSNPRINTF (buf, sizeof(buf)) format, ap);
+	(void) plp_vsnprintf(buf, sizeof(buf), format, ap);
 	Write_fd_str(fd,buf);
 }
 
@@ -285,49 +265,25 @@ int Write_fd_str( int fd, const char *msg )
  * Extract the necessary definitions for error message reporting
  ****************************************************************************/
 
-#if !defined(HAVE_STRERROR)
-# undef  num_errors
-# if defined(HAVE_SYS_ERRLIST)
-#  if !defined(HAVE_DECL_SYS_ERRLIST)
-     extern const char *const sys_errlist[];
-#  endif
-#  if defined(HAVE_SYS_NERR)
-#   if !defined(HAVE_DECL_SYS_NERR)
-      extern int sys_nerr;
-#   endif
-#   define num_errors    (sys_nerr)
-#  endif
-# endif
-# if !defined(num_errors)
-#   define num_errors   (-1)            /* always use "errno=%d" */
-# endif
-#endif
-
-const char * Errormsg ( int err )
-{
-    const char *cp;
-
-#if defined(HAVE_STRERROR)
-	cp = strerror(err);
+#ifdef HAVE_STRERROR
+#define Errormsg strerror
 #else
-# if defined(HAVE_SYS_ERRLIST)
-    if (err >= 0 && err <= num_errors) {
-		cp = sys_errlist[err];
-    } else
-# endif
-	{
+static const char * Errormsg ( int err )
+{
+	if( err == 0 ){
+		return "No Error";
+	} else {
 		static char msgbuf[32];     /* holds "errno=%d". */
-		(void) SNPRINTF(msgbuf, sizeof(msgbuf)) "errno=%d", err);
-		cp = msgbuf;
-    }
-#endif
-    return (cp);
+		(void) plp_snprintf(msgbuf, sizeof(msgbuf), "errno=%d", err);
+		return msgbuf;
+	}
 }
+#endif
 
 #ifdef HAVE_STDARGS
-void logerr(char *msg, ...)
+static void logerr(const char *msg, ...)
 #else
-void logerr( va_alist ) va_dcl
+static void logerr( va_alist ) va_dcl
 #endif
 {
 #ifndef HAVE_STDARGS
@@ -340,19 +296,19 @@ void logerr( va_alist ) va_dcl
 	VA_START(msg);
 	VA_SHIFT(msg, char *);
 
-	(void)SNPRINTF(buf,sizeof(buf)) "%s: ", name);
+	(void)plp_snprintf(buf,sizeof(buf), "%s: ", name);
 	n = strlen(buf);
-	(void)VSNPRINTF(buf+n,sizeof(buf)-n) msg, ap);
+	(void)plp_vsnprintf(buf+n,sizeof(buf)-n, msg, ap);
 	n = strlen(buf);
-	(void)SNPRINTF(buf+n,sizeof(buf)-n) "- %s\n", Errormsg(err) );
+	(void)plp_snprintf(buf+n,sizeof(buf)-n, "- %s\n", Errormsg(err) );
 	Write_fd_str(2,buf);
 	VA_END;
 }
 
 #ifdef HAVE_STDARGS
-void logerr_die(char *msg, ...)
+static void logerr_die(const char *msg, ...)
 #else
-void logerr_die( va_alist ) va_dcl
+static void logerr_die( va_alist ) va_dcl
 #endif
 {
 #ifndef HAVE_STDARGS
@@ -365,11 +321,11 @@ void logerr_die( va_alist ) va_dcl
 	VA_START(msg);
 	VA_SHIFT(msg, char *);
 
-	(void)SNPRINTF(buf,sizeof(buf)) "%s: ", name);
+	(void)plp_snprintf(buf,sizeof(buf), "%s: ", name);
 	n = strlen(buf);
-	(void)VSNPRINTF(buf+n,sizeof(buf)-n) msg, ap);
+	(void)plp_vsnprintf(buf+n,sizeof(buf)-n, msg, ap);
 	n = strlen(buf);
-	(void)SNPRINTF(buf+n,sizeof(buf)-n) "- %s\n", Errormsg(err) );
+	(void)plp_snprintf(buf+n,sizeof(buf)-n, "- %s\n", Errormsg(err) );
 	Write_fd_str(2,buf);
 	VA_END;
 	exit(errorcode);
@@ -380,22 +336,19 @@ void logerr_die( va_alist ) va_dcl
  *	writes the accounting information to the accounting file
  *  This has the format: user host printer pages format date
  */
-void doaccnt(void)
+static void doaccnt(void)
 {
-	time_t t;
 	char buffer[256];
 	FILE *f;
 	int l, len, c;
 
-	t = time((time_t *)0);
-		
-	SNPRINTF(buffer, sizeof(buffer)) "%s\t%s\t%s\t%7d\t%s\t%s\n",
-		login? login: "NULL", 
-		host? host: "NULL", 
-		printer? printer: "NULL", 
+	plp_snprintf(buffer, sizeof(buffer), "%s\t%s\t%s\t%7d\t%s\t%s\n",
+		login? login: "NULL",
+		host? host: "NULL",
+		printer? printer: "NULL",
 		npages,
-		format? format: "NULL", 
-		Time_str(0,0));
+		format? format: "NULL",
+		lpf_time_str());
 	len = strlen( buffer );
 	if( accounting_fd < 0 ){
 		if(accntfile && (f = fopen(accntfile, "a" )) != NULL ) {
@@ -412,19 +365,20 @@ void doaccnt(void)
 	}
 }
 
-void getargs( int argc, char *argv[], char *envp[] )
+static void getargs( int argc, char *argv[], char *envp[] )
 {
 	int i, c;		/* argument index */
 	char *arg, *optargv;	/* argument */
 	char *s, *end;
+	const char *n;
 
 	if( (name = argv[0]) == 0 ) name = "FILTER";
-	if( (s = strrchr( name, '/' )) ){
-		++s;
+	if( (n = strrchr( name, '/' )) ){
+		++n;
 	} else {
-		s = name;
+		n = name;
 	}
-	of_filter =  (strstr( s, "of" ) != 0);
+	of_filter =  (strstr( n, "of" ) != 0);
 	for( i = 1; i < argc && (arg = argv[i])[0] == '-'; ++i ){
 		if( (c = arg[1]) == 0 ){
 			FPRINTF( STDERR, "missing option flag");
@@ -437,7 +391,7 @@ void getargs( int argc, char *argv[], char *envp[] )
 		}
 		optargv = &arg[2];
 		if( arg[2] == 0 ){
-			optargv = argv[i++];
+			optargv = argv[++i];
 			if( optargv == 0 ){
 				FPRINTF( STDERR, "missing option '%c' value", c );
 				i = argc;
@@ -536,7 +490,7 @@ void getargs( int argc, char *argv[], char *envp[] )
 /*
  * suspend_ofilter():  suspends the output filter, waits for a signal
  */
-void suspend_ofilter(void)
+static void suspend_ofilter(void)
 {
 	fflush(stdout);
 	fflush(stderr);
@@ -550,7 +504,7 @@ void suspend_ofilter(void)
  * if any.
  ******************************************/
 
-void filter_pgm(char *stop)
+static void filter_pgm(const char *stop)
 {
 	int c;
 	int state, i, xout, lastc;
@@ -631,32 +585,21 @@ void filter_pgm(char *stop)
  * Thu Aug 4 12:34:17 BST 1994 -> 12:34:17
  */
 
-char *Time_str(int shortform, time_t t)
+static char *lpf_time_str(void)
 {
     static char buffer[99];
 	struct tm *tmptr;
 	struct timeval tv;
 
 	tv.tv_usec = 0;
-	if( t == 0 ){
-		if( gettimeofday( &tv, 0 ) == -1 ){
-			logerr_die( "Time_str: gettimeofday failed");
-		}
-		t = tv.tv_sec;
+	if( gettimeofday( &tv, 0 ) == -1 ){
+		logerr_die( "Time_str: gettimeofday failed");
 	}
-	tmptr = localtime( &t );
-	if( shortform ){
-		SNPRINTF( buffer, sizeof(buffer))
-			"%02d:%02d:%02d.%03d",
-			tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec,
-			(int)(tv.tv_usec/1000) );
-	} else {
-		SNPRINTF( buffer, sizeof(buffer))
-			"%d-%02d-%02d-%02d:%02d:%02d.%03d",
-			tmptr->tm_year+1900, tmptr->tm_mon+1, tmptr->tm_mday,
-			tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec,
-			(int)(tv.tv_usec/1000) );
-	}
-	/* now format the time */
+	tmptr = localtime( &tv.tv_sec );
+	plp_snprintf( buffer, sizeof(buffer),
+		"%d-%02d-%02d-%02d:%02d:%02d.%03d",
+		tmptr->tm_year+1900, tmptr->tm_mon+1, tmptr->tm_mday,
+		tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec,
+		(int)(tv.tv_usec/1000) );
 	return( buffer );
 }

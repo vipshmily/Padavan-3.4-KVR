@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: monitor.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 
 #include "lp.h"
 #include "linelist.h"
@@ -43,9 +23,6 @@
  *   default is to use UDP.
  */
 
-
-extern int errno;
-
 int udp_open( int port );
 int tcp_open( int port );
 
@@ -61,7 +38,7 @@ fd_set readfds;
 fd_set testfds;
 int debug;
 
-char *prog = "???";
+const char *prog = "???";
 
 /*****************************************************************
  * Command line options and Debugging information
@@ -80,7 +57,7 @@ struct info {
 struct info *inbuffers;
 int max_in_buffers;
 
-void Add_buffer( int n )
+static void Add_buffer( int n )
 {
 	int len = max_in_buffers, count;
 
@@ -102,7 +79,7 @@ void Add_buffer( int n )
 		n, Cast_ptr_to_long(inbuffers), max_in_buffers );
 }
 
-void Clear_buffer( int n )
+static void Clear_buffer( int n )
 {
 	struct info *in;
 	if(debug)FPRINTF(STDERR,"Clear_buffer: n %d\n", n );
@@ -111,7 +88,7 @@ void Clear_buffer( int n )
 	in->len = 0;
 }
 
-struct info *Save_outbuf_len( int n,  char *str, int len )
+static struct info *Save_outbuf_len( int n,  char *str, int len )
 {
 	struct info *in;
 
@@ -139,7 +116,7 @@ struct info *Save_outbuf_len( int n,  char *str, int len )
 	return( in );
 }
 
-void usage(void)
+static void usage(void)
 {
 	char *s;
 
@@ -228,25 +205,19 @@ int main(int argc, char *argv[] )
 			}
 		}
 		if( debug ) FPRINTF(STDERR,"monitor: starting wait, max %d\n", i );
-		n = select( i,
-			FD_SET_FIX((fd_set *))&testfds,
-			FD_SET_FIX((fd_set *))0, FD_SET_FIX((fd_set *))0,
+		n = select( i, &testfds, NULL, NULL,
 			(struct timeval *)0 );
 		err = errno;
 		if( debug ) FPRINTF(STDERR,"monitor: select returned %d\n", n );
 		if( n < 0 ){
-			FPRINTF( STDERR, "select error - %s\n", Errormsg(errno) );
+			FPRINTF( STDERR, "select error - %s\n", Errormsg(err) );
 			if( err != EINTR ) break;
 		}
 		if( n > 0 ) for( i = 0; i < max_port; ++i ){
 			if( FD_ISSET(i, &testfds) ){
 				if( debug ) FPRINTF(STDERR,"monitor: input on %d\n", i );
 				if( i == tcp_fd ){
-#if defined(HAVE_SOCKLEN_T)
 					socklen_t len;
-#else
-					int len;
-#endif
 					struct sockaddr_in sinaddr;
 					len = sizeof( sinaddr );
 					i = accept( tcp_fd, (struct sockaddr *)&sinaddr, &len );
@@ -260,7 +231,7 @@ int main(int argc, char *argv[] )
 					if( i >= max_port ) max_port = i+1;
 					FD_SET(i, &readfds);
 				} else {
-					c = read( i, buffer, sizeof(buffer)-1 );
+					c = ok_read( i, buffer, sizeof(buffer)-1 );
 					if( c == 0 ){
 						/* closed connection */
 						FPRINTF(STDOUT, "closed connection %d\n", i );
@@ -303,18 +274,18 @@ void Decode( char *in )
 
 	FPRINTF(STDOUT,"****\n");
 	if( debug )FPRINTF(STDOUT, "Decode: %s\n", in );
-	if((s = safestrpbrk(in,Value_sep)) ){
+	if((s = safestrpbrk(in,Hash_value_sep)) ){
 		*s++ = 0;
 		Unescape(s);
 		Free_line_list(&l);
-		Split(&l,s,Line_ends,1,Value_sep,1,1,1,0);
+		Split(&l,s,Line_ends,1,Hash_value_sep,1,1,1,0);
 		for( i = 0; i < l.count; ++i ){
 			t = l.list[i];
 			if( debug || safestrncasecmp(t,VALUE,5) ){
 				FPRINTF(STDOUT,"%s\n", t );
 			}
 		}
-		s = Find_str_value(&l,VALUE,Value_sep);
+		s = Find_str_value(&l,VALUE);
 		if( s ) Unescape(s);
 		if( !safestrcasecmp(in,TRACE) ){
 			FPRINTF(STDOUT,"TRACE: '%s'\n", s );
@@ -367,7 +338,7 @@ void Decode( char *in )
 }
 int udp_open( int port )
 {
-	int i, fd, err;
+	int i, fd;
 	struct sockaddr_in sinaddr;
 
 	sinaddr.sin_family = AF_INET;
@@ -376,14 +347,13 @@ int udp_open( int port )
 
 	fd = socket( AF_INET, SOCK_DGRAM, 0 );
 	Max_open(fd);
-	err = errno;
+
 	if( fd < 0 ){
-		FPRINTF(STDERR,"udp_open: socket call failed - %s\n", Errormsg(err) );
+		FPRINTF(STDERR,"udp_open: socket call failed - %s\n", Errormsg(errno) );
 		return( -1 );
 	}
-	i = -1;
+
 	i = bind( fd, (struct sockaddr *) & sinaddr, sizeof (sinaddr) );
-	err = errno;
 
 	if( i < 0 ){
 		FPRINTF(STDERR,"udp_open: bind to '%s port %d' failed - %s\n",
@@ -407,7 +377,7 @@ int udp_open( int port )
 
 int tcp_open( int port )
 {
-	int i, fd, err;
+	int i, fd;
 	struct sockaddr_in sinaddr;
 
 	sinaddr.sin_family = AF_INET;
@@ -415,23 +385,15 @@ int tcp_open( int port )
 	sinaddr.sin_port = htons( port );
 
 	fd = socket( AF_INET, SOCK_STREAM, 0 );
-#ifdef WINDOW_1
-int windowsize=1024;
-setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsize));
-aaaaaa=fopen("/tmp/qqqqq", "a");
-fprintf(aaaaaa, " monitor: tcp_send\n");
-fclose(aaaaaa);
-#endif
 	Max_open(fd);
-	err = errno;
+
 	if( fd < 0 ){
-		FPRINTF(STDERR,"tcp_open: socket call failed - %s\n", Errormsg(err) );
+		FPRINTF(STDERR,"tcp_open: socket call failed - %s\n", Errormsg(errno) );
 		return( -1 );
 	}
 	i = Link_setreuse( fd );
 	if( i >= 0 ) i = bind( fd, (struct sockaddr *) & sinaddr, sizeof (sinaddr) );
 	if( i >= 0 ) i = listen( fd, 10 );
-	err = errno;
 
 	if( i < 0 ){
 		FPRINTF(STDERR,"tcp_open: connect to '%s port %d' failed - %s\n",

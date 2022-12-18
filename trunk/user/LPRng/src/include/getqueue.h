@@ -1,26 +1,10 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
- * $Id: getqueue.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
+ * $Id: getqueue.h,v 1.4 2005/04/14 20:05:20 papowell Exp $
  ***************************************************************************/
 
 
@@ -28,7 +12,7 @@
 #ifndef _GETQUEUE_H
 #define _GETQUEUE_H
 
-EXTERN char *CTRL_A_str DEFINE( = "\001" );
+EXTERN const char *CTRL_A_str DEFINE( = "\001" );
 
 /* SSL */
 EXTERN const char * ACTION				DEFINE( = "action" );
@@ -52,6 +36,7 @@ EXTERN const char * CLIENT				DEFINE( = "client" );
 EXTERN const char * CMD					DEFINE( = "cmd" );
 EXTERN const char * COPIES				DEFINE( = "copies" );
 EXTERN const char * COPY_DONE			DEFINE( = "copy_done" );
+EXTERN const char * HFDATAFILES			DEFINE( = "hfdatafiles" );
 EXTERN const char * DATAFILES			DEFINE( = "datafiles" );
 EXTERN const char * DATAFILE_COUNT		DEFINE( = "datafile_count" );
 EXTERN const char * DATE				DEFINE( = "D" );
@@ -90,6 +75,7 @@ EXTERN const char * HOST				DEFINE( = "host" );
 EXTERN const char * HPFORMAT			DEFINE( = "hpformat" );
 EXTERN const char * ID					DEFINE( = "id" );
 EXTERN const char * IDENTIFIER			DEFINE( = "A" );
+EXTERN const char * INCOMING_PID		DEFINE( = "incoming_pid" );
 EXTERN const char * INCOMING_TIME		DEFINE( = "incoming_time" );
 EXTERN const char * INPUT				DEFINE( = "input" );
 EXTERN const char * JOBNAME				DEFINE( = "J" );
@@ -100,18 +86,16 @@ EXTERN const char * JOB_TIME_USEC		DEFINE( = "job_time_usec" );
 EXTERN const char * KEYID				DEFINE( = "keyid" );
 EXTERN const char * LOCALHOST			DEFINE( = "localhost" );
 EXTERN const char * LOG					DEFINE( = "log" );
-EXTERN const char * LOGGER				DEFINE( = "logger" );
 EXTERN const char * LOGNAME				DEFINE( = "P" );
 EXTERN const char * LP					DEFINE( = "lp" );
 EXTERN const char * LPC					DEFINE( = "lpc" );
 EXTERN const char * LPD					DEFINE( = "lpd" );
 EXTERN const char * LPD_CONF			DEFINE( = "LPD_CONF" );
 EXTERN const char * LPD_PORT			DEFINE( = "lpd_port" );
-EXTERN const char * LPD_REQUEST			DEFINE( = "lpd_request" );
 EXTERN const char * MAILNAME			DEFINE( = "M" );
-EXTERN const char * MAIL_FD				DEFINE( = "mail_fd" );
 EXTERN const char * MOVE				DEFINE( = "move" );
 EXTERN const char * MOVE_DEST			DEFINE( = "move_dest" );
+EXTERN const char * MOVE_COUNT			DEFINE( = "move_count" );
 EXTERN const char * MSG					DEFINE( = "msg" );
 EXTERN const char * NAME				DEFINE( = "name" );
 EXTERN const char * NEW_DEST			DEFINE( = "new_dest" );
@@ -119,7 +103,6 @@ EXTERN const char * NONEP				DEFINE( = "none" );
 EXTERN const char * NUMBER				DEFINE( = "number" );
 EXTERN const char * OPENNAME			DEFINE( = "openname" );
 EXTERN const char * ORIG_IDENTIFIER		DEFINE( = "orig_identifier" );
-EXTERN const char * PGP					DEFINE( = "pgp" );
 EXTERN const char * PORT				DEFINE( = "port" );
 EXTERN const char * PRINTABLE			DEFINE( = "printable" );
 EXTERN const char * PRINTER				DEFINE( = "printer" );
@@ -150,10 +133,12 @@ EXTERN const char * SPOOLING_DISABLED 	DEFINE( = "spooling_disabled" );
 EXTERN const char * START_TIME			DEFINE( = "start_time" );
 EXTERN const char * STATE				DEFINE( = "state" );
 EXTERN const char * STATUS_CHANGE		DEFINE( = "status_change" );
-EXTERN const char * STATUS_FD			DEFINE( = "status_fd" );
 EXTERN const char * SUBSERVER			DEFINE( = "subserver" );
 EXTERN const char * TRACE				DEFINE( = "trace" );
-EXTERN const char * TRANSFERNAME		DEFINE( = "transfername" );
+/* EXTERN const char * TRANSFERNAME		DEFINE( = "transfername" ); */
+EXTERN const char * DFTRANSFERNAME		DEFINE( = "dftransfername" );
+EXTERN const char * XXCFTRANSFERNAME		DEFINE( = "cftransfername" );
+EXTERN const char * NTRANSFERNAME		DEFINE( = "ntransfername" );
 EXTERN const char * OTRANSFERNAME		DEFINE( = "otransfername" );
 EXTERN const char * UNIXSOCKET			DEFINE( = "unixsocket" );
 EXTERN const char * UPDATE				DEFINE( = "update" );
@@ -179,14 +164,11 @@ int Get_file_image_and_split( const char *file,
 	int sort, const char *keysep, int uniq, int trim, int nocomments,
 	char **return_image );
 void Check_for_hold( struct job *job, struct line_list *spool_control );
-void Setup_job( struct job *job, struct line_list *spool_control,
-	const char *cf_name, const char *hf_name, int check_for_existence );
 int Get_hold_class( struct line_list *info, struct line_list *sq );
-void Append_Z_value( struct job *job, char *s );
-int Setup_cf_info( struct job *job, int check_for_existence );
-char *Make_hf_image( struct job *job );
-int Set_hold_file( struct job *job, struct line_list *perm_check, int fd );
-void Get_hold_file( struct job *job, char *hf_name );
+int Set_job_ticket_from_cf_info( struct job *job, char *cf_file_image, int read_cf_file );
+char *Make_job_ticket_image( struct job *job );
+int Set_job_ticket_file( struct job *job, struct line_list *perm_check, int fd );
+void Get_job_ticket_file( int *lock_fd, struct job *job, char *job_ticket_name );
 void Get_spool_control( const char *file, struct line_list *info );
 void Set_spool_control( struct line_list *perm_check, const char *file,
 	struct line_list *info );
@@ -198,11 +180,11 @@ void strval( const char *key, struct line_list *list, struct job *job,
 	int reverse );
 void Make_sort_key( struct job *job );
 int Setup_printer( char *prname, char *error, int errlen, int subserver );
-int Read_pid( int fd, char *str, int len );
+pid_t Read_pid( int fd);
+pid_t Read_pid_from_file( const char *filename);
 int Write_pid( int fd, int pid, char *str );
 int Patselect( struct line_list *token, struct line_list *cf, int starting );
 int Check_format( int type, const char *name, struct job *job );
-char *Find_start(char *str, const char *key );
 char *Frwarding(struct line_list *l);
 int Pr_disabled(struct line_list *l);
 int Sp_disabled(struct line_list *l);
@@ -216,7 +198,7 @@ void Free_job( struct job *job );
 void Copy_job( struct job *dest, struct job *src );
 char *Fix_job_number( struct job *job, int n );
 char *Make_identifier( struct job *job );
-void Dump_job( char *title, struct job *job );
+void Dump_job( const char *title, struct job *job );
 void Job_printable( struct job *job, struct line_list *spool_control,
 	int *pprintable, int *pheld, int *pmove, int *perr, int *pdone );
 int Server_active( char *file );
@@ -224,15 +206,11 @@ void Update_destination( struct job *job );
 int Get_destination( struct job *job, int n );
 int Get_destination_by_name( struct job *job, char *name );
 int Trim_status_file( int status_fd, char *file, int max, int min );
-char *Fix_datafile_info( struct job *job, char *number, char *suffix,
-	char *xlate_format );
-int ordercomp(  const void *left, const void *right, const void *orderp);
-void Fix_control( struct job *job, char *filter, char *xlate_format );
-int Create_control( struct job *job, char *error, int errlen,
-	char *xlate_format );
+char *Fix_datafile_infox( struct job *job, const char *number, const char *suffix,
+	const char *xlate_format, int update_df_names );
+void Fix_control( struct job *job, char *filter, char *xlate_format,
+	int update_df_names );
 void Init_buf(char **buf, int *max, int *len);
 void Put_buf_len( const char *s, int cnt, char **buf, int *max, int *len );
 void Put_buf_str( const char *s, char **buf, int *max, int *len );
-void Free_buf(char **buf, int *max, int *len);
-
 #endif

@@ -1,9 +1,10 @@
 #!/bin/sh
-date=`date`;
+date=`LC_ALL=C date`;
 AWK=@AWK@
 cat <<EOF
-# lpd.conf generated from $1 on $date
-#   The values in this file are the default values.
+# lpd.conf generated for version $1 compiled on $date
+#   The values in this file are the built-in default values. (Which may depend
+#   on the build-options used when your LPRng was compiled).
 #   If you modify the file,  set the value to something other than the default
 #   For example,
 #     # default force_localhost
@@ -11,11 +12,15 @@ cat <<EOF
 #   To set it to OFF or 0, change this to read:
 #     force_localhost@
 
+# You can either modify this file, or an included one:
+@INCLUDELPDCONFLOCAL@include $2
+
 EOF
 
 ${AWK} '
 /XXSTART/,/END/{
 	if ( $0 ~ /XXSTARTXX/ ) next;
+	if ( $0 ~ /^$/ ) next;
 	if ( $0 ~ /END/ ) next;
 	if ( $0 ~ /^\{/ ) {
 		print "XXX" $0;

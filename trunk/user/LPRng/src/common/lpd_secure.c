@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: lpd_secure.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
 
 #include "lp.h"
 #include "user_auth.h"
@@ -39,7 +19,6 @@
 #include "fileopen.h"
 #include "lpd_rcvjob.h"
 #include "child.h"
-#include "globmatch.h"
 #include "lpd_jobs.h"
 #include "krb5_auth.h"
 #include "lpd_secure.h"
@@ -63,10 +42,13 @@
  * 
  ***************************************************************************/
 
+static int Do_secure_work( char *jobsize, int from_server,
+	char *tempfile, struct line_list *header_info );
+static const struct security *Fix_receive_auth( char *name, struct line_list *info );
+
 /*************************************************************************
  * Receive_secure() - receive a secure transfer
  *************************************************************************/
-#ifdef ORIGINAL_DEBUG//JY@1020
 int Receive_secure( int *sock, char *input )
 {
 	char *printername;
@@ -80,7 +62,7 @@ int Receive_secure( int *sock, char *input )
 	struct line_list args, header_info, info;
 	struct stat statb;
 	char *tempfile = 0;
-	struct security *security = 0;
+	const struct security *security = 0;
 
 	Name = "RCVSEC";
 	memset( error, 0, sizeof(error));
@@ -95,7 +77,7 @@ int Receive_secure( int *sock, char *input )
 	Split(&args,input+1,Whitespace,0,0,0,0,0,0);
 	DEBUGFC(DRECV1)Dump_line_list("Receive_secure - input", &args);
 	if( args.count != 5 && args.count != 4 ){
-		SNPRINTF( error+1, sizeof(error)-1)
+		plp_snprintf( error+1, sizeof(error)-1,
 			_("bad command line '%s'"), input );
 		ack = ACK_FAIL;	/* no retry, don't send again */
 		status = JFAIL;
@@ -127,7 +109,7 @@ int Receive_secure( int *sock, char *input )
 	/* set up the authentication support information */
 
 	if( Is_clean_name( printername ) ){
-		SNPRINTF( error+1, sizeof(error)-1)
+		plp_snprintf( error+1, sizeof(error)-1,
 			_("bad printer name '%s'"), input );
 		ack = ACK_FAIL;	/* no retry, don't send again */
 		status = JFAIL;
@@ -138,7 +120,7 @@ int Receive_secure( int *sock, char *input )
 
 	if( Setup_printer( printername, error+1, sizeof(error)-1, 0 ) ){
 		if( jobsize ){
-			SNPRINTF( error+1, sizeof(error)-1)
+			plp_snprintf( error+1, sizeof(error)-1,
 				_("bad printer '%s'"), printername );
 			ack = ACK_FAIL;	/* no retry, don't send again */
 			status = JFAIL;
@@ -149,7 +131,7 @@ int Receive_secure( int *sock, char *input )
 
 		db = Debug;
 		dbf = DbgFlag;
-		s = Find_str_value(&Spool_control,DEBUG,Value_sep);
+		s = Find_str_value(&Spool_control,DEBUG);
 		if(!s) s = New_debug_DYN;
 		Parse_debug( s, 0 );
 
@@ -180,14 +162,14 @@ int Receive_secure( int *sock, char *input )
 	}
 
 	if( !(security = Fix_receive_auth(authtype, &info)) ){
-		SNPRINTF( error+1, sizeof(error)-1)
+		plp_snprintf( error+1, sizeof(error)-1,
 			_("unsupported authentication '%s'"), authtype );
 		ack = ACK_FAIL;	/* no retry, don't send again */
 		status = JFAIL;
 		goto error;
 	}
 	if( !security->server_receive ){
-		SNPRINTF( error+1, sizeof(error)-1)
+		plp_snprintf( error+1, sizeof(error)-1,
 			_("no receive method supported for '%s'"), authtype );
 		ack = ACK_FAIL;	/* no retry, don't send again */
 		status = JFAIL;
@@ -202,21 +184,21 @@ int Receive_secure( int *sock, char *input )
 		DEBUGF(DRECV2)("Receive_secure: spooling_disabled %d",
 			Sp_disabled(&Spool_control) );
 		if( Sp_disabled(&Spool_control) ){
-			SNPRINTF( error+1, sizeof(error)-1)
+			plp_snprintf( error+1, sizeof(error)-1,
 				_("%s: spooling disabled"), Printer_DYN );
 			ack = ACK_RETRY;	/* retry */
 			status = JFAIL;
 			goto error;
 		}
 		if( Max_job_size_DYN > 0 && (read_len+1023)/1024 > Max_job_size_DYN ){
-			SNPRINTF( error+1, sizeof(error)-1)
+			plp_snprintf( error+1, sizeof(error)-1,
 				_("%s: job size %0.0f is larger than %d K"),
 				Printer_DYN, read_len, Max_job_size_DYN );
 			ack = ACK_RETRY;
 			status = JFAIL;
 			goto error;
 		} else if( !Check_space( read_len, Minfree_DYN, Spool_dir_DYN ) ){
-			SNPRINTF( error+1, sizeof(error)-1)
+			plp_snprintf( error+1, sizeof(error)-1,
 				_("%s: insufficient file space"), Printer_DYN );
 			ack = ACK_RETRY;
 			status = JFAIL;
@@ -230,12 +212,12 @@ int Receive_secure( int *sock, char *input )
 	DEBUGF(DRECV1)("Receive_secure: sock %d, user '%s', jobsize '%s'",  
 		*sock, user, jobsize );
 
-	status = security->server_receive( sock,
+	status = security->server_receive( sock, Send_job_rw_timeout_DYN,
 		user, jobsize, from_server, authtype,
 		&info,
 		error+1, sizeof(error)-1,
 		&header_info,
-		security, tempfile );
+		security, tempfile, Do_secure_work);
 
  error:
 	DEBUGF(DRECV1)("Receive_secure: status %d, ack %d, error '%s'",
@@ -267,12 +249,9 @@ int Receive_secure( int *sock, char *input )
 		}
 	}
 	cleanup(0);
-	return(0);
 }
-#endif
 
-#ifdef ORIGINAL_DEBUG//JY@1020
-int Do_secure_work( char *jobsize, int from_server,
+static int Do_secure_work( char *jobsize, int from_server,
 	char *tempfile, struct line_list *header_info )
 {
 	int n, len, linecount = 0, done = 0, fd, status = 0;
@@ -284,7 +263,7 @@ int Do_secure_work( char *jobsize, int from_server,
 	error[0] = 0;
 	if( (fd = Checkread(tempfile,&statb)) < 0 ){ 
 		status = JFAIL;
-		SNPRINTF( error, sizeof(error))
+		plp_snprintf( error, sizeof(error),
 			"Do_secure_work: reopen of '%s' failed - %s",
 				tempfile, Errormsg(errno));
 		goto error;
@@ -296,7 +275,7 @@ int Do_secure_work( char *jobsize, int from_server,
 	linecount = 0;
 
 	while( !done && n < (int)sizeof(buffer)-1
-		&& (len = read( fd, buffer+n, sizeof(buffer)-1-n )) > 0 ){
+		&& (len = Read_fd_len_timeout( Send_query_rw_timeout_DYN, fd, buffer+n, sizeof(buffer)-1-n )) > 0 ){
 		buffer[n+len] = 0;
 		DEBUGF(DRECV1)("Do_secure_work: read %d - '%s'", len, buffer );
 		while( !done && (s = safestrchr(buffer,'\n')) ){
@@ -341,13 +320,14 @@ int Do_secure_work( char *jobsize, int from_server,
 	if( (status = Check_secure_perms( header_info, from_server, error, sizeof(error))) ){
 		goto error;
 	}
+	DEBUGFC(DRECV1)Dump_line_list("Do_secure_work - header after check", header_info );
 
 
 	buffer[0] = 0;
 	if( jobsize ){
 		if( (fd = Checkread(tempfile, &statb) ) < 0 ){
 			status = JFAIL;
-			SNPRINTF( error, sizeof(error))
+			plp_snprintf( error, sizeof(error),
 				"Do_secure_work: reopen of '%s' for read failed - %s",
 					tempfile, Errormsg(errno));
 			goto error;
@@ -355,7 +335,7 @@ int Do_secure_work( char *jobsize, int from_server,
 		status = Scan_block_file( fd, error, sizeof(error), header_info );
 		if( (fd = Checkwrite(tempfile,&statb,O_WRONLY|O_TRUNC,1,0)) < 0 ){
 			status = JFAIL;
-			SNPRINTF( error, sizeof(error))
+			plp_snprintf( error, sizeof(error),
 				"Do_secure_work: reopen of '%s' for write failed - %s",
 					tempfile, Errormsg(errno));
 			goto error;
@@ -363,13 +343,13 @@ int Do_secure_work( char *jobsize, int from_server,
 	} else {
 		if( (fd = Checkwrite(tempfile,&statb,O_WRONLY|O_TRUNC,1,0)) < 0 ){
 			status = JFAIL;
-			SNPRINTF( error, sizeof(error))
+			plp_snprintf( error, sizeof(error),
 				"Do_secure_work: reopen of '%s' for write failed - %s",
 					tempfile, Errormsg(errno));
 			goto error;
 		}
-		if( (s = Find_str_value(header_info,INPUT,Value_sep)) ){
-			Dispatch_input( &fd, s );
+		if( (s = Find_str_value(header_info,INPUT)) ){
+			Dispatch_input( &fd, s, "from secure link" );
 		}
 	}
 
@@ -383,7 +363,7 @@ int Do_secure_work( char *jobsize, int from_server,
 			tempfile, error );
 		if( (fd = Checkwrite(tempfile,&statb,O_WRONLY|O_TRUNC,1,0)) < 0 ){
 			Errorcode = JFAIL;
-			LOGERR_DIE(LOG_INFO) "Do_secure_work: reopen of '%s' for write failed",
+			logerr_die(LOG_INFO, "Do_secure_work: reopen of '%s' for write failed",
 				tempfile );
 		}
 		Write_fd_str(fd,error);
@@ -392,15 +372,15 @@ int Do_secure_work( char *jobsize, int from_server,
 	DEBUGF(DRECV1)("Do_secure_work: returning %d", status );
 	return( status );
 }
-#endif
+
 
 /***************************************************************************
  * void Fix_auth() - get the Use_auth_DYN value for the remote printer
  ***************************************************************************/
 
-struct security *Fix_receive_auth( char *name, struct line_list *info )
+static const struct security *Fix_receive_auth( char *name, struct line_list *info )
 {
-	struct security *s;
+	const struct security *s;
 
 	if( name == 0 ){
 		if( Is_server ){
@@ -410,14 +390,14 @@ struct security *Fix_receive_auth( char *name, struct line_list *info )
 		}
 	}
 
-	for( s = SecuritySupported; s->name && Globmatch(s->name, name ); ++s );
-	DEBUG1("Fix_receive_auth: name '%s' matches '%s'", name, s->name );
-	if( s->name == 0 ){
-		s = 0;
-	} else {
-		char buffer[64], *str;
+	s = FindSecurity(name);
+	if( s != NULL ){
+		char buffer[64];
+		const char *str;
+
+		DEBUG1("Fix_receive_auth: name '%s' matches '%s'", name, s->name );
 		if( !(str = s->config_tag) ) str = s->name;
-		SNPRINTF(buffer,sizeof(buffer))"%s_", str );
+		plp_snprintf(buffer,sizeof(buffer), "%s_", str );
 		Find_default_tags( info, Pc_var_list, buffer );
 		Find_tags( info, &Config_line_list, buffer );
 		Find_tags( info, &PC_entry_line_list, buffer );
@@ -438,24 +418,24 @@ int Check_secure_perms( struct line_list *options, int from_server,
 	 * line 3 - INPUT=\00x  - command line
 	 */
 	char *authfrom, *authuser;
-	authfrom = Find_str_value(options,AUTHFROM,Value_sep);
-	if( !authfrom ) authfrom = Find_str_value(options,FROM,Value_sep);
-	authuser = Find_str_value(options,AUTHUSER,Value_sep);
+	authfrom = Find_str_value(options,AUTHFROM);
+	if( !authfrom ) authfrom = Find_str_value(options,FROM);
+	authuser = Find_str_value(options,AUTHUSER);
 	if( !from_server ){
 		if( !authuser && authfrom ) authuser = authfrom;
 	}
-	if( !authuser ) authuser = Find_str_value(options,CLIENT,Value_sep);
+	if( !authuser ) authuser = Find_str_value(options,CLIENT);
 	Set_str_value(options, AUTHTYPE, Perm_check.authtype );
 	Set_str_value(options, AUTHFROM, authfrom );
 	Set_str_value(options, AUTHUSER, authuser );
-	Perm_check.authfrom = Find_str_value(options,AUTHFROM,Value_sep);
-	Perm_check.authuser = authuser = Find_str_value(options,AUTHUSER,Value_sep);
+	Perm_check.authfrom = Find_str_value(options,AUTHFROM);
+	Perm_check.authuser = authuser = Find_str_value(options,AUTHUSER);
 	if( !authuser ){
-		SNPRINTF( error, errlen) "Printer %s@%s: missing authentication client id",
+		plp_snprintf( error, errlen, "Printer %s@%s: missing authentication client id",
 			Printer_DYN,Report_server_as_DYN?Report_server_as_DYN:ShortHost_FQDN );
 		return( JABORT );
 	}
-	Perm_check.authca = Find_str_value(options,AUTHCA,Value_sep);
+	Perm_check.authca = Find_str_value(options,AUTHCA);
 	DEBUGFC(DRECV1)Dump_line_list("Check_secure_perms - after",options);
 	DEBUGFC(DRECV1)Dump_perm_check( "Check_secure_perms - checking", &Perm_check );
 	return(0);

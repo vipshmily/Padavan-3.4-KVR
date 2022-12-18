@@ -1,27 +1,12 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
- * $Id: lp.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
  ***************************************************************************/
+
+
 
 #ifndef _LP_H_
 #define _LP_H_ 1
@@ -75,12 +60,13 @@ struct line_list;
 EXTERN int Optind;			/* next argv to process */
 EXTERN int Opterr DEFINE(=1); /* Zero disables errors msgs */
 EXTERN char *Optarg;		/* Pointer to option argument */
-EXTERN char *Name;			/* Name of program */
+EXTERN const char *Name;	/* Name of program */
 
-extern char *Copyright[];	/* Copyright info */
+
+extern const char *Copyright[];	/* Copyright info */
 #define Version	Copyright[0]
 EXTERN int Is_server;		/* LPD sets to non-zero */
-EXTERN int Server_pid;		/* PID of server */
+EXTERN pid_t Server_pid;		/* PID of server */
 EXTERN int Is_lpr;			/* LPR sets to non-zero */
 EXTERN int Logger_fd;		/* for logger */
 EXTERN int Mail_fd;			/* for mail */
@@ -112,14 +98,6 @@ extern struct call_list Calls[];
 #endif
 
 
-
-#ifdef HAVE_STDARGS
-void setstatus( struct job *job, char *fmt, ... );
-void setmessage( struct job *job, const char *header, char *fmt, ... );
-#else 
-void setstatus( va_alist );
-void setmessage( va_alist );
-#endif
 void send_to_logger( int sfd, int mfd, struct job *job, const char *header, char *msg );
 
 /***************************************************************************
@@ -281,6 +259,7 @@ EXTERN int Check_for_nonprintable_DYN;	/* lpr check for nonprintable file */
 EXTERN int Check_for_protocol_violations_DYN;	/* check for RFC1179 protocol violations */
 EXTERN char* Chooser_DYN;	/* choose the destination for a load balance queue */
 EXTERN int Chooser_interval_DYN;	/* interval between tests for load balance destination */
+EXTERN int Chooser_scan_queue_DYN;	/* scan the queue */
 EXTERN char* Chooser_routine_DYN;	/* choose the destination for a load balance queue */
 EXTERN int Class_in_status_DYN;	/* Show class in status information */
 EXTERN char* Comment_tag_DYN; /* comment identifying printer (LPQ) */
@@ -301,9 +280,11 @@ EXTERN char* Default_priority_DYN;	/* default priority */
 EXTERN char* Default_remote_host_DYN;
 EXTERN char* Default_tmp_dir_DYN;	/* default temporary file directory */
 EXTERN char* Destinations_DYN; /* printers that a route filter may return and we should query */
+EXTERN int   Discard_large_jobs_DYN;  /* discard jobs that exceed max job size */
 EXTERN int   Done_jobs_DYN;        /* keep the last NN done jobs */
 EXTERN int   Done_jobs_max_age_DYN; /* keep the done jobs for at least max age seconds */
 EXTERN int Direct_DYN;		/* allow LPR to send jobs to a socket */
+EXTERN int Discard_zero_length_jobs_DYN;		/* discard zero length jobs */
 EXTERN int Exit_linger_timeout_DYN;	/* we set this timeout on all of the sockets */
 EXTERN int FF_on_close_DYN; /* print a form feed when device is closed */
 EXTERN int FF_on_open_DYN; /* print a form feed when device is opened */
@@ -355,6 +336,10 @@ EXTERN int Long_number_DYN; /* long job number (6 digits) */
 EXTERN char* Lp_device_DYN; /* device name or lp-pipe command to send output to */
 EXTERN int Lpd_bounce_DYN; /* force LPD to do bounce queue filtering */
 EXTERN char* Lpd_listen_port_DYN; /* lpd listens on this port, "off" does not open port */
+#ifdef IPP_STUBS
+EXTERN char* Ipp_listen_port_DYN; /* lpd listens on this port, "off" does not open port */
+EXTERN char* Ipp_port_DYN; /* ipp protocol port */
+#endif /* not IPP_STUBS */
 EXTERN char* Lpd_path_DYN; /* LPD path for server use */
 EXTERN char* Lpd_port_DYN;	/* client/lpd connect to remote (non-local) lpd servers on this port */
 EXTERN char* Lpd_printcap_path_DYN;
@@ -367,12 +352,14 @@ EXTERN char* Lpr_opts_DYN;		/* addional options for LPR */
 EXTERN int Lpr_send_try_DYN; /* number of times for lpr to try sending job */
 EXTERN char* Mail_from_DYN;
 EXTERN char* Mail_operator_on_error_DYN;
+
+EXTERN int Max_accounting_file_size_DYN;	/* maximum accounting file size */
 EXTERN int Max_connect_interval_DYN;	/* maximum connect interval */
 EXTERN int Max_copies_DYN; /* maximum copies allowed */
 EXTERN int Max_datafiles_DYN; /* maximum datafiles */
 EXTERN int Max_job_size_DYN; /* maximum job size (1Kb blocks, 0 = unlimited) */
-EXTERN int Max_accounting_file_size_DYN;	/* maximum accounting file size */
 EXTERN int Max_log_file_size_DYN;	/* maximum log file size */
+EXTERN int Max_move_count_DYN;	/* maximum number of moves or forwards */
 EXTERN int Max_servers_active_DYN;	/* maximum number of servers active */
 EXTERN int Max_status_line_DYN; /* maximum status line size */
 EXTERN int Max_status_size_DYN;
@@ -382,6 +369,7 @@ EXTERN int Min_printable_count_DYN; /* minimum printable characters for printabl
 EXTERN int Min_status_size_DYN;
 EXTERN int Minfree_DYN; /* minimum space (Kb) to be left in spool filesystem */
 EXTERN int Minfree_DYN; /**/
+
 EXTERN int Ms_time_resolution_DYN;
 EXTERN int Network_connect_grace_DYN; /* grace period for reconnections */
 EXTERN char* New_debug_DYN; /* debug level set for queue handler */
@@ -397,11 +385,13 @@ EXTERN int Page_length_DYN; /* page length (in lines) */
 EXTERN int Page_width_DYN; /* page width (in characters) */
 EXTERN int Page_x_DYN; /* page width in pixels (horizontal) */
 EXTERN int Page_y_DYN; /* page length in pixels (vertical) */
+EXTERN char* Pc_entries_required_DYN;	/* make sure these entries are in PRINTCAP_ENTRY */
 EXTERN char* Pass_env_DYN;	/* pass these environment variables */
-EXTERN char* Pgp_path_DYN;	/* pgp path */
+EXTERN char *Plugin_path_DYN; /* plugin path */
 EXTERN int Poll_time_DYN; /* force polling job queues */
 EXTERN int Poll_start_interval_DYN; /* interval between trying to start servers */
 EXTERN int Poll_servers_started_DYN; /* maximum servers to start at one time */
+EXTERN char* Ppd_file_DYN;	/* ppd file */
 EXTERN char* Pr_program_DYN; /* pr program for p format */
 EXTERN char* Prefix_Z_DYN; /* prefix -Z options on outgoing or filter*/
 EXTERN char* Prefix_option_to_option_DYN; /* prefix option to option, ie, "z,o" */
@@ -480,23 +470,6 @@ EXTERN char* Xlate_format_DYN;	/* translate format ids on outgoing jobs */
 extern int dmalloc_outfile;
 #endif
 
-#endif
+#define ok_read read
 
-//JYWENG20031106status
-int *currten_sock;//JY1120
-char printerstatus[32];
-char clientaddr[32];//JY1110
-int fd_print;//JY1110
-FILE *STATUSFILE;//JY1113
-typedef struct lptStatus//JY1114: move from lpd.c
-{
-    int     pid;        //PID of the process using the printer
-    char    addr[32];   //IP address of the Process
-    char    busy;       //TRUE if the Printer is busy otherwise FALSE
-} LPT_STATUS;
-LPT_STATUS          lptstatus;  //Golbal variable to store the status of server
-#define FALSE   0
-#define TRUE    1
-#define ONLINE	"On-line"
-#define printf(fmt, args...) 
-//
+#endif

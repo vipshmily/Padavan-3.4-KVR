@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -23,17 +7,13 @@
  *
  ***************************************************************************/
 
- static char *const _id =
-"$Id: getprinter.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
-
-
 #include "lp.h"
 #include "gethostinfo.h"
 #include "getprinter.h"
 #include "getqueue.h"
 #include "child.h"
 /**** ENDINCLUDE ****/
-#ifdef REMOVE
+
 /***************************************************************************
  Get_printer()
     determine the name of the printer - Printer_DYN variable
@@ -75,7 +55,7 @@ char *Get_printer(void)
 		if( s == 0 ) s = Default_printer_DYN;
 	}
 	if( s == 0 ){
-		FATAL(LOG_ERR) "No printer name available, usage: 'lpr -Pprinter filename'" );
+		fatal(LOG_ERR, "No printer name available, usage: 'lpr -Pprinter filename'" );
 	}
 	Set_DYN(&Printer_DYN,s);
 	Expand_vars();
@@ -151,24 +131,20 @@ void Fix_Rm_Rp_info(char *report_conflict, int report_len )
 			}
 			Set_DYN(&Printer_DYN,s);
 
-#ifdef ORIGINAL_DEBUG//JY@1020
 			DEBUG2("Fix_Rm_Rp_info: from printcap found '%s'", Printer_DYN );
 			if(DEBUGL2)Dump_line_list("Fix_Rm_Rp_info - PC_alias_line_list",
 				&PC_alias_line_list );
 			if(DEBUGL2)Dump_line_list("Fix_Rm_Rp_info - PC_entry_line_list",
 				&PC_entry_line_list );
-#endif
 		}
-#ifdef ORIGINAL_DEBUG//JY@1020
 		if(DEBUGL2)Dump_line_list("Fix_Rm_Rp_info - final PC_entry_line_list",
 			&PC_entry_line_list );
-#endif
 		Find_default_tags( &PC_entry_line_list, Pc_var_list, "client." );
 		Find_tags( &PC_entry_line_list, &Config_line_list, "client." );
 		Find_tags( &PC_entry_line_list, &PC_entry_line_list, "client." );
 		Set_var_list( Pc_var_list, &PC_entry_line_list);
 		if( RemoteHost_DYN && Lp_device_DYN && report_conflict ){
-			SNPRINTF(report_conflict,report_len)
+			plp_snprintf(report_conflict,report_len,
 				"conflicting printcap entries :lp=%s:rm=%s",
 				Lp_device_DYN, RemoteHost_DYN );
 		}
@@ -248,19 +224,17 @@ void Fix_Rm_Rp_info(char *report_conflict, int report_len )
 		Set_DYN(&Printer_DYN,s);
 		DEBUG2("Fix_Rm_Rp_info: found '%s'", Printer_DYN );
 	}
-#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL2)Dump_line_list("Fix_Rm_Rp_info - PC_alias_line_list",
 		&PC_alias_line_list );
 	if(DEBUGL2)Dump_line_list("Fix_Rm_Rp_info - PC_entry_line_list",
 		&PC_entry_line_list );
-#endif
 	/* now get the Server_xxx variables */
 	Find_default_tags( &PC_entry_line_list, Pc_var_list, "server." );
 	Find_tags( &PC_entry_line_list, &Config_line_list, "server." );
 	Find_tags( &PC_entry_line_list, &PC_entry_line_list, "server." );
 	Set_var_list( Pc_var_list, &PC_entry_line_list);
 	if( RemoteHost_DYN && Lp_device_DYN && report_conflict ){
-		SNPRINTF(report_conflict,report_len)
+		plp_snprintf(report_conflict,report_len,
 			"conflicting printcap entries :lp=%s:rm=%s",
 			Lp_device_DYN, RemoteHost_DYN );
 	}
@@ -268,7 +242,7 @@ void Fix_Rm_Rp_info(char *report_conflict, int report_len )
 		Set_DYN(&RemotePrinter_DYN, Lp_device_DYN );
 		s = safestrchr( RemotePrinter_DYN, '@');
 		if( s ) *s++ = 0;
-		if( *s == 0 ) s = 0;
+		else if( *s == 0 ) s = 0;
 		Set_DYN(&RemoteHost_DYN, s );
 		if( (s = safestrchr(RemoteHost_DYN,'%')) ){
 			Set_DYN(&Unix_socket_path_DYN, 0 );
@@ -281,7 +255,7 @@ void Fix_Rm_Rp_info(char *report_conflict, int report_len )
 		; /* we use defaults */
 	} else if( Server_names_DYN == 0 ){
 		if( report_conflict ){
-			SNPRINTF(report_conflict,report_len)
+			plp_snprintf(report_conflict,report_len,
 				"no :rm, :lp, or :sv entry" );
 		}
 	}
@@ -299,12 +273,69 @@ void Fix_Rm_Rp_info(char *report_conflict, int report_len )
  done:
 
 	Expand_vars();
+	/*
+	 * make sure that these entries are in the printcap file
+	 */
+	if( Pc_entries_required_DYN){
+		struct line_list list;
+		struct keywords *var_list = Pc_var_list;
+		int i;
+		Init_line_list( &list );
+		Split(&list,Pc_entries_required_DYN,File_sep,0,0,0,0,0,0);
+		for( i = 0; i < list.count; ++i ){
+			const char *t;
+			int mid;
+			char *s = list.list[i];
+			if( ISNULL(s) ) continue;
+			DEBUG3( "Fix_Rm_Rp_info: checking '%s'", s );
+			if( !Find_first_key( &PC_entry_line_list, s, Hash_value_sep, &mid ) ){
+				t = safestrpbrk(PC_entry_line_list.list[mid], Option_value_sep );
+				DEBUG1( "Fix_Rm_Rp_info: FOUND %s VALUE %s", s, t );
+				continue;
+			}
+			if( !Find_first_key( &Config_line_list, s, Hash_value_sep, &mid ) ){
+				t = safestrpbrk(Config_line_list.list[mid], Hash_value_sep );
+				DEBUG1( "Fix_Rm_Rp_info: CONFIG %s VALUE %s", s, t );
+				Set_str_value(&PC_entry_line_list, s, t);
+				continue;
+			}
+			for( var_list = Pc_var_list; var_list->keyword; ++var_list ){
+				if( !strcmp(var_list->keyword, s) ){
+					int type = var_list->type;				/* type of entry */
+					int v;
+					void *p = var_list->variable;	/* address of variable */
+					if( !(p) ) break;
+					switch(type){
+					case FLAG_K:
+						v =	*(int *)(p);
+						DEBUG1( "Fix_Rm_Rp_info: VAR %s FLAG %d", var_list->keyword, v);
+						Set_flag_value(&PC_entry_line_list, var_list->keyword, v);
+						break;
+					case INTEGER_K:
+						v =	*(int *)(p);
+						DEBUG1( "Fix_Rm_Rp_info: VAR %s INT %d", var_list->keyword, v);
+						Set_decimal_value(&PC_entry_line_list, var_list->keyword, v);
+						break;
+					case STRING_K:
+						t = *(char **)(p);
+						DEBUG1( "Fix_Rm_Rp_info: VAR %s= '%s'", var_list->keyword, t );
+						if( t ){
+							Set_str_value(&PC_entry_line_list, var_list->keyword, t);
+						}
+						break;
+					default:
+						break;
+					}
+					break;
+				}
+			}
+		}
+		Free_line_list( &list );
+	}
 	DEBUG1("Fix_Rm_Rp_info: Printer '%s', Queue '%s', Lp '%s', Rp '%s', Rh '%s'",
 		Printer_DYN, Queue_name_DYN, Lp_device_DYN,
 		RemotePrinter_DYN, RemoteHost_DYN );
-#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL2)Dump_parms("Fix_Rm_Rp_info", Pc_var_list);
-#endif
 }
 
 /***************************************************************************
@@ -318,7 +349,7 @@ void Fix_Rm_Rp_info(char *report_conflict, int report_len )
 
 void Get_all_printcap_entries(void)
 {
-	char *s, *t;
+	const char *s, *t;
 	int i;
 
 	/*
@@ -332,7 +363,7 @@ void Get_all_printcap_entries(void)
 			&PC_alias_line_list,
 			&PC_names_line_list, &PC_order_line_list,
 			&PC_info_line_list, 0, 0 )) ){
-		if( !(t = Find_str_value( &PC_entry_line_list, ALL, Value_sep )) ){
+		if( !(t = Find_str_value( &PC_entry_line_list, ALL )) ){
 			t = "all";
 		}
 		DEBUG1("Get_all_printcap_entries: '%s' has '%s'",s,t);
@@ -346,9 +377,7 @@ void Get_all_printcap_entries(void)
 			}
 		}
 	}
-#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL1)Dump_line_list("Get_all_printcap_entries- All_line_list", &All_line_list );
-#endif
 }
 
 void Show_formatted_info( void )
@@ -364,9 +393,7 @@ void Show_formatted_info( void )
 			"%s: '%s'",
 			Printer_DYN, error );
 	}
-#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL1)Dump_line_list("Aliases",&PC_alias_line_list);
-#endif
 	s = Join_line_list_with_sep(&PC_alias_line_list,"|");
 	if( Write_fd_str( 1, s ) < 0 ) cleanup(0);
 	if(s) free(s); s = 0;
@@ -412,4 +439,3 @@ void Show_all_printcap_entries( void )
 		Show_formatted_info();
 	}
 }
-#endif

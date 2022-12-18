@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /**************************************************************************
  * Copyright 1994-2003 Patrick Powell, San Diego, CA <papowell@lprng.com>
  **************************************************************************/
@@ -500,9 +484,8 @@
  *************************************************/
  
  
- static char *const _id = "plp_snprintf V2000.08.18 Copyright Patrick Powell 1988-2000 "
- "$Id: plp_snprintf.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $"
- " LOCAL REVISIONS: <NONE>";
+static const char *const _id = "plp_snprintf V2000.08.18 Copyright Patrick Powell 1988-2000 "
+ " - lprng ";
 
 /* varargs declarations: */
 
@@ -544,19 +527,24 @@
 	double dvalue;
 };
 
+#ifdef __GNUC__
+# define PRINTFATTR(fmtofs,dotsofs) __attribute__ ((format (printf, fmtofs, dotsofs)))
+#else
+# define PRINTFATTR(fmtofs,dotsofs)
+#endif
+#include "plp_snprintf.h"
+
 #undef CVAL 
 #define CVAL(s) (*((unsigned char *)s))
-#define safestrlen(s) ((s)?strlen(s):0)
 
-
- static char * plp_Errormsg ( int err, char *buffer );
+ static char * plp_Errormsg ( int err );
  static void dopr( int visible_control, char **buffer, int *left,
 	const char *format, va_list args );
  static void fmtstr( int visible_control, char **buffer, int *left,
-	char *value, int ljust, int len, int zpad, int precision );
+	const char *value, int ljust, int len, int precision );
  static void fmtnum(  char **buffer, int *left,
 	union value *value, int base, int dosign,
-	int ljust, int len, int zpad, int precision );
+	int ljust, int len, int zpad );
 #if defined(HAVE_QUAD_T)
  static void fmtquad(  char **buffer, int *left,
 	union value *value, int base, int dosign,
@@ -565,7 +553,7 @@
  static void fmtdouble( char **bufer, int *left,
 	int fmt, double value,
 	int ljust, int len, int zpad, int precision );
- static void dostr(  char **buffer, int *left, char *str );
+ static void dostr(  char **buffer, int *left, const char *str );
  static void dopr_outch(  char **buffer, int *left, int c );
 /* VARARGS3 */
 #ifdef HAVE_STDARGS
@@ -691,7 +679,7 @@
 			longflag = quadflag =
 			ljust = len = zpad = base = signed_val = 0;
 			precision = -1; set_precision = 0;
-		nextch: 
+		nextch:
 			ch = *format++;
 			switch( ch ){
 			case 0:
@@ -722,9 +710,10 @@
 #if !defined( HAVE_QUAD_T )
 					dostr( buffer, left, "*no quad_t support *");
 					return;
-#endif
+#else
 					quadflag = 1;
 					goto nextch;
+#endif
 			case 'u': case 'U':
 				if( base == 0 ){ base = 10; signed_val = 0; }
 			case 'o': case 'O':
@@ -769,27 +758,25 @@
 						value.value = va_arg( args, unsigned int );
 					}
 				}
-				fmtnum( buffer, left,  &value,base,signed_val, ljust, len, zpad, precision ); break;
+				fmtnum( buffer, left,  &value,base,signed_val, ljust, len, zpad ); break;
 			case 's':
 				strvalue = va_arg( args, char *);
-				fmtstr( visible_control, buffer, left, strvalue,ljust,len, zpad, precision );
+				fmtstr( visible_control, buffer, left, strvalue,ljust,len, precision );
 				break;
 			case 'c':
 				ch = va_arg( args, int );
 				{ char b[2];
 					b[0] = ch;
 					b[1] = 0;
-					fmtstr( 0, buffer, left, b,ljust,len, zpad, precision );
+					fmtstr( 0, buffer, left, b,ljust,len, precision );
 				}
 				break;
 			case 'f': case 'g': case 'e':
 				dval = va_arg( args, double );
 				fmtdouble( buffer, left, ch, dval,ljust,len, zpad, precision ); break;
 			case 'm':
-				{ char shortbuffer[32];
 				fmtstr( visible_control, buffer, left,
-					plp_Errormsg(err, shortbuffer),ljust,len, zpad, precision );
-				}
+					plp_Errormsg(err),ljust,len, precision );
 				break;
 			case '%': dopr_outch( buffer, left, ch ); continue;
 			default:
@@ -812,7 +799,7 @@
  */
  static void
  fmtstr( int visible_control, char **buffer, int *left,
-	 char *value, int ljust, int len, int zpad, int precision )
+	 const char *value, int ljust, int len, int precision )
 {
 	int padlen, strlenv, i, c;	/* amount to pad */
 
@@ -853,7 +840,7 @@
  static void
  fmtnum( char **buffer, int *left,
 	union value *value, int base, int dosign, int ljust,
-	int len, int zpad, int precision )
+	int len, int zpad )
 {
 	int signvalue = 0;
 #if defined(HAVE_LONG_LONG)
@@ -949,7 +936,7 @@
 	}
 	convert[2*i] = 0;
 
-	place = safestrlen(convert);
+	place = strlen(convert);
 	padlen = len - place;
 	if( padlen < 0 ) padlen = 0;
 	if( ljust ) padlen = -padlen;
@@ -980,10 +967,10 @@
 
 #endif
 
- static void mystrcat(char *dest, char *src )
+ static void mystrcat(char *dest, const char *src )
 {
 	if( dest && src ){
-		dest += safestrlen(dest);
+		dest += strlen(dest);
 		strcpy(dest,src);
 	}
 }
@@ -1007,20 +994,20 @@
 	if( ljust ) mystrcat(formatstr, "-" ); /* 1 */
 	if( zpad ) mystrcat(formatstr, "0" );	/* 1 */
 	if( len >= 0 ){
-		sprintf( formatstr+safestrlen(formatstr), "%d", len ); /* 3 */
+		sprintf( formatstr+strlen(formatstr), "%d", len ); /* 3 */
 	}
 	if( precision >= 0 ){
-		sprintf( formatstr+safestrlen(formatstr), ".%d", precision ); /* 3 */
+		sprintf( formatstr+strlen(formatstr), ".%d", precision ); /* 3 */
 	}
 	/* format string will be at most 10 chars long ... */
-	sprintf( formatstr+safestrlen(formatstr), "%c", fmt );
+	sprintf( formatstr+strlen(formatstr), "%c", fmt );
 	/* this is easier than trying to do the portable dtostr */
 	/* fprintf(stderr,"format string '%s'\n", formatstr); */
 	sprintf( convert, formatstr, value );
 	dostr( buffer, left, convert );
 }
 
- static void dostr( char **buffer, int *left, char *str  )
+ static void dostr( char **buffer, int *left, const char *str  )
 {
 	if(str)while(*str) dopr_outch( buffer, left, *str++ );
 }
@@ -1061,7 +1048,7 @@
 # endif
 #endif
 
- static char * plp_Errormsg ( int err, char *buffer /* int maxlen = 32 */)
+ static char * plp_Errormsg ( int err)
 {
     char *cp;
 

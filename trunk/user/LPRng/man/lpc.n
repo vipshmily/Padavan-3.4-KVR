@@ -1,5 +1,5 @@
 .ds VE LPRng-3.9.0
-.TH LPC 1 \*(VE "LPRng"
+.TH LPC 8 \*(VE "LPRng"
 .ig
 lpc.1,v 3.36 1998/03/29 18:37:49 papowell Exp
 Mon Jul 17 20:14:17 PDT 1995 Patrick Powell
@@ -49,7 +49,7 @@ disable or enable a single printer's or all printer's spooling queue,
 move jobs to the top a queue
 .IP \(bu 3
 find the status of printers, and their associated
-spooling queues and printer dameons,
+spooling queues and printer daemons,
 .IP \(bu 3
 start and stop printer servers for a queue with multiple print servers,
 .IP \(bu 3
@@ -101,7 +101,7 @@ Alias for -Pall.
 Printer spool queue to operate on.
 if no name is given,
 the -P option,
-the printer selected by the value of the PRINTER enviroment variable,
+the printer selected by the value of the PRINTER environment variable,
 or the first entry in the printcap file will be used.
 When all printers are selected,
 the LPC command will first attempt to find the
@@ -251,7 +251,7 @@ hold printer { jobid }
 Holds the specified printer job (or jobs) in the queue.
 The job will not be
 printed even if spooling and printing is enabled. It must be released
-with the relase command.
+with the release command.
 The holdall command
 or :ah: printcap flag can enable automatic holding of spooled jobs.
 .br

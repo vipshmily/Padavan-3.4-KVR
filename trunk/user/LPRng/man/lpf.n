@@ -1,8 +1,4 @@
-.ds VE LPRng-3.9.0
-.TH LPF 1 \*(VE "LPRng"
-.ig
-Thu Jul 20 07:19:29 PDT 1995 Patrick Powell
-..
+.TH LPF 1 2006-12-09 "LPRng" "lpf filter"
 .SH NAME
 lpf \- general printer filter
 .SH SYNOPSIS
@@ -128,20 +124,26 @@ lprm(1),
 printcap(5),
 lpd.perms(5),
 pr(1), lprng_certs(1), lprng_index_certs(1).
+.SH "AUTHOR"
+Patrick Powell <papowell@lprng.com>.
 .SH DIAGNOSTICS
-.nf
 Most of the diagnostics are self explanatory.
 If you are puzzled over the exact cause of failure,
 set the debugging level on (-D5) and run again.
 The debugging information will 
 help you to pinpoint the exact cause of failure.
-.fi
 .SH "HISTORY"
 LPRng is a enhanced printer spooler system
 with functionality similar to the Berkeley LPR software.
-The LPRng mailing list is lprng@lprng.com;
-subscribe by sending mail to lprng-request@lprng.com with
-the word subscribe in the body.
-The software is available from ftp://ftp.lprng.com/pub/LPRng.
-.SH "AUTHOR"
-Patrick Powell <papowell@lprng.com>.
+The LPRng developer mailing list is lprng-devel@lists.sourceforge.net;
+subscribe by visiting 
+.B https://lists.sourceforge.net/lists/listinfo/lprng-devel
+or sending mail to 
+.B lprng-request@lists.sourceforge.net
+with
+the word 
+.I subscribe 
+in the body.
+.br
+The software is available via 
+.B http://lprng.sourceforge.net

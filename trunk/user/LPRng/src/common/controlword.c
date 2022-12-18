@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -22,10 +6,6 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
-
- static char *const _id =
-"$Id: controlword.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
-
 
 #include "lp.h"
 #include "control.h"
@@ -65,6 +45,7 @@
 { "DEFAULTS", N_("DEFAULTS"), OP_DEFAULTS, 0, 0, 0, 0},
 { "FLUSH", N_("FLUSH"), OP_FLUSH, 0, 0, 0, 0},
 { "LANG", N_("LANG"), OP_LANG, 0, 0, 0, 0},
+{ "PPD", N_("PPD"), OP_PPD, 0, 0, 0, 0},
 
 {0,0,0,0,0,0,0}
 };
@@ -80,7 +61,7 @@ int Get_controlword( char *s )
 	return( Get_keyval( s, controlwords ) );
 }
 
-char *Get_controlstr( int c )
+const char *Get_controlstr( int c )
 {
 	return( Get_keystr( c, controlwords ) );
 }

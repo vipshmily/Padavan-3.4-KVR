@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -24,7 +8,7 @@
  ***************************************************************************/
 
  static char *const _id =
-"$Id: accounting.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+"$Id: accounting.c,v 1.74 2004/09/24 20:19:57 papowell Exp $";
 
 
 #include "lp.h"
@@ -110,31 +94,31 @@ int Do_accounting( int end, char *command, struct job *job, int timeout )
 		if( end == 0 && Accounting_check_DYN ){
 			tempfd = Make_temp_fd( 0 );
 		}
-		err = Filter_file( -1, tempfd, "ACCOUNTING_FILTER",
+		err = Filter_file( Send_query_rw_timeout_DYN,-1, tempfd, "ACCOUNTING_FILTER",
 			command, Filter_options_DYN, job, 0, 1 );
 		if( tempfd > 0 && lseek(tempfd,0,SEEK_SET) == -1 ){
 			Errorcode = JABORT;
-			LOGERR_DIE(LOG_INFO)"Do_accounting: lseek tempfile failed");
+			logerr_die(LOG_INFO, "Do_accounting: lseek tempfile failed");
 		}
 	} else if( !ISNULL(Accounting_file_DYN) ){
 		if( (cval(Accounting_file_DYN) == '|') ){
 			int fd = Make_temp_fd(0);
 			if( Write_fd_str( fd, args.list[0] ) < 0 ){
 				Errorcode= JFAIL;
-				LOGERR_DIE(LOG_INFO)"Do_accounting: write to tempfile of '%s' failed", command);
+				logerr_die(LOG_INFO, "Do_accounting: write to tempfile of '%s' failed", command);
 			}
 			if( fd > 0 && lseek(fd,0,SEEK_SET) == -1 ){
 				Errorcode= JFAIL;
-				LOGERR_DIE(LOG_INFO)"Do_accounting: seek of tempfile failed" );
+				logerr_die(LOG_INFO, "Do_accounting: seek of tempfile failed" );
 			}
 			if( end == 0 && Accounting_check_DYN ){
 				tempfd = Make_temp_fd( 0 );
 			}
-			err = Filter_file( fd, tempfd, "ACCOUNTING_FILTER",
+			err = Filter_file( Send_query_rw_timeout_DYN,fd, tempfd, "ACCOUNTING_FILTER",
 				Accounting_file_DYN, Filter_options_DYN, job, 0, 1 );
 			if( tempfd > 0 && lseek(tempfd,0,SEEK_SET) == -1 ){
 				Errorcode= JFAIL;
-				LOGERR_DIE(LOG_INFO)"Do_accounting: seek of tempfile failed" );
+				logerr_die(LOG_INFO, "Do_accounting: seek of tempfile failed" );
 			}
 			close(fd);
 		} else if( isalnum(cval(Accounting_file_DYN))
@@ -143,17 +127,17 @@ int Do_accounting( int end, char *command, struct job *job, int timeout )
 			char *host = Accounting_file_DYN;
 			
 			DEBUG2("Do_accounting: connecting to '%s'",host);
-			if( (tempfd = Link_open(host,timeout,0, 0 )) < 0 ){
+			if( (tempfd = Link_open(host,timeout,0, 0, msg, sizeof(msg) )) < 0 ){
 				err = errno;
 				Errorcode= JFAIL;
-				LOGERR_DIE(LOG_INFO)
+				logerr_die(LOG_INFO,
 					_("connection to accounting server '%s' failed '%s'"),
-					Accounting_file_DYN, Errormsg(err) );
+					Accounting_file_DYN, msg);
 			}
 			DEBUG2("Setup_accounting: socket %d", tempfd );
 			if( Write_fd_str( tempfd, args.list[0] ) < 0 ){
 				Errorcode= JFAIL;
-				LOGERR_DIE(LOG_INFO)"Do_accounting: write to '%s' failed", command);
+				logerr_die(LOG_INFO, "Do_accounting: write to '%s' failed", command);
 			}
 			shutdown(tempfd,1);
 		} else {
@@ -167,7 +151,7 @@ int Do_accounting( int end, char *command, struct job *job, int timeout )
 				if( Write_fd_str( tempfd, args.list[0] ) < 0 ){
 					err = errno;
 					Errorcode= JFAIL;
-					LOGERR_DIE(LOG_INFO)"Do_accounting: write to '%s' failed", command);
+					logerr_die(LOG_INFO, "Do_accounting: write to '%s' failed", command);
 				}
 				close(tempfd); tempfd = -1;
 			}
@@ -178,7 +162,7 @@ int Do_accounting( int end, char *command, struct job *job, int timeout )
 		msg[0] = 0;
 		len = 0;
 		while( len < (int)(sizeof(msg)-1)
-			&& (n = read(tempfd,msg+len,sizeof(msg)-1-len)) > 0 ){
+			&& (n = Read_fd_len_timeout(Send_query_rw_timeout_DYN,tempfd,msg+len,sizeof(msg)-1-len)) > 0 ){
 			msg[len+n] = 0;
 			DEBUG1("Do_accounting: read %d, '%s'", n, msg );
 		}
@@ -188,7 +172,7 @@ int Do_accounting( int end, char *command, struct job *job, int timeout )
 		err = JSUCC;
 		if( args.count && (s = args.list[0]) ){
 			if( (t = safestrchr(s,'\n')) ) *t = 0;
-			SETSTATUS(job)"accounting filter replied with '%s'", s);
+			setstatus(job, "accounting filter replied with '%s'", s);
 			if( *s == 0 || !safestrncasecmp( s, "accept", 6 ) ){
 				err = JSUCC;
 			} else if( !safestrncasecmp( s, "hold", 4 ) ){
@@ -198,7 +182,7 @@ int Do_accounting( int end, char *command, struct job *job, int timeout )
 			} else if( !safestrncasecmp( s, "fail", 4 ) ){
 				err = JFAIL;
 			} else {
-				SNPRINTF( msg, sizeof(msg))
+				plp_snprintf( msg, sizeof(msg),
 					"accounting check failed - status message '%s'", s );
 				err = JABORT;
 			}

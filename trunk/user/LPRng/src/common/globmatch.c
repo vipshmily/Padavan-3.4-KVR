@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -23,14 +7,12 @@
  *
  ***************************************************************************/
 
- static char *const _id =
-"$Id: globmatch.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
-
 #include "lp.h"
+#include "globmatch.h"
 
 /**** ENDINCLUDE ****/
 
-int glob_pattern( char *pattern, const char *str )
+static int glob_pattern( const char *pattern, const char *str )
 {
 	int result = 1;
 	int len, c, invert;
@@ -110,7 +92,7 @@ int glob_pattern( char *pattern, const char *str )
 	return( result );
 }
 
-int Globmatch( char *pattern, const char *str )
+int Globmatch( const char *pattern, const char *str )
 {
 	int result;
 
@@ -120,14 +102,5 @@ int Globmatch( char *pattern, const char *str )
 	if( str == 0 ) str = "";
 	result = glob_pattern( pattern, str );
 	DEBUG4("Globmatch: '%s' to '%s' result %d", pattern, str, result );
-	return( result );
-}
-
-int Globmatch_list( struct line_list *l, char *str )
-{
-	int result = 1, i;
-	for( i = 0; result && i < l->count; ++i ){
-		result = Globmatch(l->list[i],str);
-	}
 	return( result );
 }

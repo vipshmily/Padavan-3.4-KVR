@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: smbprint,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $
+# $Id: smbprint,v 1.67 2004/09/24 20:19:56 papowell Exp $
 #
 # Blatently lifted from some folks who blatently lifted it from
 # other folks,  who seem to have taken it from one of the very

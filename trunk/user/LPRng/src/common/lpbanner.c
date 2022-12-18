@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -23,10 +7,9 @@
  *
  ***************************************************************************/
 
- static char *const _id =
-"$Id: lpbanner.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
-
-#include "lp.h"
+#include <config.h>
+#include "portable.h"
+#include "plp_snprintf.h"
 
 /***************************************************************************
  *  Filter template and frontend.
@@ -54,8 +37,7 @@
  *  The front end will extract parameters,  then call the filter()
  *  routine,  which is responsible for carrying out the required filter
  *  actions. filter() is invoked with the printer device on fd 1,
- *	and error log on fd 2.  The npages variable is used to record the
- *  number of pages that were used.
+ *	and error log on fd 2.
  *  The "halt string", which is a sequence of characters that
  *  should cause the filter to suspend itself, is passed to filter.
  *  When these characters are detected,  the "suspend_ofilter()" routine should be
@@ -96,36 +78,23 @@
  * special   -snumber      int      Special Variable for passing flags
  * accntfile file          char*    AF, accounting file
  *
- * npages    - number of pages for accounting
  * debug     - sets debug level
  * verbose   - echo to a log file
  *
- *	The functions fatal(), logerr(), and logerr_die() can be used to report
- *	status. The variable errorcode can be set by the user before calling
- *	these functions, and will be the exit value of the program. Its default
- *	value will be 2 (abort status).
- *	fatal() reports a fatal message, and terminates.
- *	logerr() reports a message, appends information indicated by errno
- *	(see perror(2) for details), and then returns.
- *	logerr_die() will call logerr(), and then will exit with errorcode
- *	status.
- *	Both fatal() and logerr_die() call the cleanup() function before exit.
  *
  * DEBUGGING:  a simple minded debugging version can be enabled by
  * compiling with the -DDEBUG option.
  */
 
 
-int errorcode;
-char *name;		/* name of filter */
-int debug, verbose, width = 80, length = 66, xwidth, ylength, literal, indent;
-char *zopts, *class, *job, *login, *accntname, *host;
-char *printer, *accntfile, *format;
-char *controlfile;
-char *bnrname, *comment;
-int npages;	/* number of pages */
-int special;
-char *queuename, *errorfile;
+static const char *name;		/* name of filter */
+static int debug, verbose, width = 80, length = 66, xwidth, ylength, literal, indent;
+static char *zopts, *class, *job, *login, *accntname, *host;
+static char *printer, *accntfile, *format;
+static char *controlfile;
+static char *bnrname, *comment;
+static int special;
+static char *queuename, *errorfile;
 
 #define GLYPHSIZE 15
 struct glyph{
@@ -137,12 +106,18 @@ struct font{
 	int height;	/* height from top to bottom */
 	int width;	/* width in pixels */
 	int above;	/* max height above baseline */
-	struct glyph *glyph;	/* glyphs */
+	const struct glyph *glyph;	/* glyphs */
 };
 
-void banner( void );
-void cleanup( void );
-void getargs( int argc, char *argv[], char *envp[] );
+static void banner( void );
+static void getargs( int argc, char *argv[], char *envp[] );
+/* VARARGS2 */
+#ifdef HAVE_STDARGS
+ static void safefprintf (int fd, const char *format,...) PRINTFATTR(2,3)
+;
+#else
+ static void safefprintf ();
+#endif
 
 int main( int argc, char *argv[], char *envp[] )
 {
@@ -158,8 +133,7 @@ int main( int argc, char *argv[], char *envp[] )
 	return(0);
 }
 
-
-void getargs( int argc, char *argv[], char *envp[] )
+static void getargs( int argc, char *argv[], char *envp[] )
 {
 	int i, c;		/* argument index */
 	char *arg, *optargv;	/* argument */
@@ -177,7 +151,7 @@ void getargs( int argc, char *argv[], char *envp[] )
 		}
 		optargv = &arg[2];
 		if( arg[2] == 0 ){
-			optargv = argv[i++];
+			optargv = argv[++i];
 			if( optargv == 0 ){
 				FPRINTF( STDERR, "missing option '%c' value", c );
 				i = argc;
@@ -361,7 +335,7 @@ The struct glyph{} array is the set of glyphs for each character.
 #define X111111_ 0176
 #define X1111111 0177
 
-struct glyph g9x8[] = {
+static const struct glyph g9x8[] = {
 	{ ' ', 0, 8, {
 	X_______,
 	X_______,
@@ -1447,14 +1421,14 @@ struct glyph g9x8[] = {
   9 by 8 font:
   12 rows high, 8 cols wide, 9 lines above baseline
  */
-struct font Font9x8 = {
+static const struct font Font9x8 = {
 	12, 8, 9, g9x8 
 };
 
-void Out_line( void );
-void breakline( int c );
-void bigprint( struct font *font, char *line );
-void do_char( struct font *font, struct glyph *glyph,
+static void Out_line( void );
+static void breakline( int c );
+static void bigprint( const struct font *font, const char *line );
+static void do_char( const struct font *font, const struct glyph *glyph,
 	char *str, int line, int wid );
 /*
  * Print a banner
@@ -1471,26 +1445,28 @@ void do_char( struct font *font, struct glyph *glyph,
  *     - bottomblast
  */
 
-char bline[1024];
-int bigjobnumber, biglogname, bigfromhost, bigjobname;
-int top_break,	/* break lines at top of page */
+static char bline[1024];
+static int bigjobnumber, biglogname, bigfromhost, bigjobname;
+static int top_break,	/* break lines at top of page */
 	top_sep,	/* separator from info at top of page */
 	bottom_sep,	/* separator from info at bottom of page */
 	bottom_break;	/* break lines at bottom of page */
-int breaksize = 3;	/* numbers of rows in break */
+static int breaksize = 3;	/* numbers of rows in break */
 
 /*
  * userinfo: just p rintf the information
  */
  static void userinfo( void )
 {
-	(void) SNPRINTF( bline, sizeof(bline)) "User:  %s@%s (%s)", login, host, bnrname);
+	time_t tmp;
+	time(&tmp);
+	(void) plp_snprintf( bline, sizeof(bline), "User:  %s@%s (%s)", login, host, bnrname);
 	Out_line();
-	(void) SNPRINTF( bline, sizeof(bline)) "Date:  %s", Time_str(0,0));
+	strftime(bline,sizeof(bline),"Date: %b %d %H:%M:%S", localtime(&tmp));
 	Out_line();
-	(void) SNPRINTF( bline, sizeof(bline)) "Job:   %s", job );
+	(void) plp_snprintf( bline, sizeof(bline), "Job:   %s", job );
 	Out_line();
-	(void) SNPRINTF( bline, sizeof(bline)) "Class: %s", class );
+	(void) plp_snprintf( bline, sizeof(bline), "Class: %s", class );
 	Out_line();
 }
 
@@ -1499,7 +1475,7 @@ int breaksize = 3;	/* numbers of rows in break */
  * i.e.- printed on the page
  */
 
-void seebig( int *len, int bigletter_height, int *big )
+static void seebig( int *len, int bigletter_height, int *big )
 {
 	*big = 0;
 	if( *len > bigletter_height ){
@@ -1512,13 +1488,13 @@ void seebig( int *len, int bigletter_height, int *big )
  * banner: does all the actual work
  */
 
-char *isnull( char *s )
+static const char *isnull( const char *s )
 {
 	if( s == 0 ) s = "";
 	return( s );
 }
 
-void banner(void)
+static void banner(void)
 {
 	int len;					/* length of page */
 	int i;                      /* ACME integers, INC */
@@ -1556,7 +1532,7 @@ void banner(void)
 		strncpy( jobnumber, controlfile+3, 3 );
 		jobnumber[3] = 0;
 	}
-	if(jobnumber && *jobnumber ) seebig( &len, Font9x8.height, &bigjobnumber );
+	if( *jobnumber ) seebig( &len, Font9x8.height, &bigjobnumber );
 	if(bnrname && *bnrname) seebig( &len, Font9x8.height, &biglogname );
 	if(host && *host ) seebig( &len, Font9x8.height, &bigfromhost );
 	if(job && *job) seebig( &len, Font9x8.height, &bigjobname );
@@ -1625,7 +1601,7 @@ void banner(void)
 	}
 }
 
-void breakline( int c )
+static void breakline( int c )
 {
 	int i;
 
@@ -1652,7 +1628,7 @@ void breakline( int c )
  *
  ***************************************************************************/
 
-void bigprint( struct font *font, char *line )
+static void bigprint( const struct font *font, const char *line )
 {
 	int i, j, k, len;                   /* ACME Integers, Inc. */
 
@@ -1677,10 +1653,10 @@ void bigprint( struct font *font, char *line )
  * don't do if fail is invalid.
  ***************************************************************************/
 
-void Out_line( void )
+static void Out_line( void )
 {
 	int i, l;
-	char *str;
+	const char *str;
 	bline[sizeof(bline)-1] = 0;
 	if( width < (int)sizeof(bline) ) bline[width] = 0;
 	for( str = bline, i = strlen(str);
@@ -1691,42 +1667,11 @@ void Out_line( void )
 		i -= l, str += l );
 }
 
-/*
- * Time_str: return "cleaned up" ctime() string...
- *
- * Thu Aug 4 12:34:17 BST 1994 -> Aug  4 12:34:17
- * Thu Aug 4 12:34:17 BST 1994 -> 12:34:17
- */
-
-char *Time_str(int shortform, time_t tm)
-{
-    time_t tvec;
-    static char s[99];
-	char *t;
-
-	if( tm ){
-		tvec = tm;
-	} else {
-		(void) time (&tvec);
-	}
-    (void)strcpy( s, ctime(&tvec) );
-	t = s;
-	s[29] = 0;
-	if( shortform > 0 ){
-		t = &s[11];
-		s[19] = 0;
-	} else if( shortform == 0 ){
-		t = &s[4];
-		s[19] = 0;
-	}
-	return(t);
-}
-
-void do_char( struct font *font, struct glyph *glyph,
+static void do_char( const struct font *font, const struct glyph *glyph,
 	char *str, int line, int wid )
 {
 	int chars, i, j, k;
-	char *s;
+	const char *s;
 
 	/* if(debug)FPRINTF(STDERR,"do_char: '%c', wid %d\n", glyph->ch, wid ); */
 	chars = (font->width+7)/8;	/* calculate the row */
@@ -1741,16 +1686,9 @@ void do_char( struct font *font, struct glyph *glyph,
 	}
 }
 
-int Write_fd_str( int fd, const char *buf )
-{
-	int n;
-	n = strlen(buf);
-	return write(fd,buf,n);
-}
-
 /* VARARGS2 */
 #ifdef HAVE_STDARGS
- void safefprintf (int fd, char *format,...)
+ static void safefprintf (int fd, const char *format,...)
 #else
  void safefprintf (va_alist) va_dcl
 #endif
@@ -1767,7 +1705,7 @@ int Write_fd_str( int fd, const char *buf )
     VA_SHIFT (format, char *);
 
 	buf[0] = 0;
-	(void) VSNPRINTF (buf, sizeof(buf)) format, ap);
-	Write_fd_str(fd,buf);
+	(void) plp_vsnprintf(buf, sizeof(buf), format, ap);
+	write(fd, buf, strlen(buf));
 }
 

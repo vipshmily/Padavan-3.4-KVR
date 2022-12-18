@@ -1,0 +1,53 @@
+#
+# -- START --
+# init.solaris.sh
+#
+# for Solaris
+#  copy this script to /etc/init.d/lprng
+#  Then make links as required in /etc/rc2.d to the script
+#  cp init.solaris /etc/init.d/lprng
+#  (cd /etc/rc2.d; ln -s ../init.d/lprng S80lprng)
+#  (cd /etc/rc1.d; ln -s ../init.d/lprng K39lprng)
+#  (cd /etc/rc0.d; ln -s ../init.d/lprng K39lprng)
+#  (cd /etc/rcS.d; ln -s ../init.d/lprng K39lprng)
+
+# some tips from the old postinstall.solaris script
+# to disable Solaris' print spool before:
+# - remove or rename /usr/bin/lp /usr/bin/lpstat /usr/sbin/lpadmin /usr/sbin/lpfilter
+#	/usr/sbin/lpforms /usr/sbin/lpmove /usr/sbin/lpshut /usr/sbin/lpsystem
+#	/usr/sbin/lpusers /usr/ucb/lpc /usr/ucb/lpq /usr/ucb/lpr /usr/ucb/lprm
+#	/usr/ucb/lptest /usr/lib/lp/lpsched /usr/lib/lp/lpNet
+# - remove printer line from /etc/inetd.conf
+#   and restart inetd
+# - call lpshut if it exists
+# - remove the nlsadmin entires:
+#	nlsadmin -r lpd tcp
+#	nlsadmin -r lp tcp
+# - remove /var/spool/cron/crontabs/lp
+# - remove all /etc/*.d/*lp
+
+# replace with the path you installed LPRng's lpd into:
+LPD_PATH=/usr/local/sbin/lpd
+
+# ignore INT signal
+trap '' 2
+
+case "$1" in
+  start)
+        # Start daemons.
+        /bin/echo "Starting lpd: \c"
+        $LPD_PATH
+        /bin/echo ""
+        ;;
+  stop)
+        # Stop daemons.
+        /bin/echo "Shutting down lpd: \c"
+		pkill -INT lpd
+	# or: kill -INT `ps -e | awk '/lpd/{ print $1;}'` >/dev/null 2>&1
+		/bin/echo " server stopped";
+        ;;
+  *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+        ;;
+esac

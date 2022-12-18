@@ -15,8 +15,8 @@
 # You must use ANSI C and GNU Make!
 #***************************************
 
-PACKAGE=LPRng
-VERSION=3.8.22
+PACKAGE=lprng
+VERSION=3.8.C
 SRC=.
 
 INSTALL=/usr/bin/install -c

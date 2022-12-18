@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -24,7 +8,7 @@
  ***************************************************************************/
 
  static char *const _id =
-"$Id: proctitle.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+"$Id: proctitle.c,v 1.74 2004/09/24 20:19:58 papowell Exp $";
 
 #include "lp.h"
 #include "proctitle.h"
@@ -296,7 +280,7 @@
 		else
 			continue;
 	}
-	DEBUG1("initsetproctitle: Argv 0x%lx, LastArgv 0x%lx", Argv, LastArgv);
+	DEBUG1("initsetproctitle: Argv 0x%p, LastArgv 0x%p", Argv, LastArgv);
 #else
 	DEBUG1("initsetproctitle: using builtin");
 #endif
@@ -329,7 +313,7 @@
     /* print the argument string */
     VA_START (fmt);
     VA_SHIFT (fmt, char *);
-    (void) VSNPRINTF(buf, sizeof(buf)) fmt, ap);
+    (void) plp_vsnprintf(buf, sizeof(buf), fmt, ap);
     VA_END;
 
 	i = safestrlen(buf);

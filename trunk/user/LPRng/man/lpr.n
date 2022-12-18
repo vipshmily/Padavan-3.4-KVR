@@ -1,8 +1,4 @@
-.ds VE LPRng-3.9.0
-.TH LPR 1 \*(VE "LPRng"
-.ig
-Thu Jul 20 07:19:29 PDT 1995 Patrick Powell
-..
+.TH LPR 1 2006-12-09 "LPRng" "lpr command"
 .SH NAME
 lpr \- off line print
 .SH SYNOPSIS
@@ -111,7 +107,7 @@ send the single file to the lpd print spooler.
 .B "\-b, \-l"
 either of these flags specifies a
 binary or literal file,
-and no (or minimial) processing is to be done by the print spooling system.
+and no (or minimal) processing is to be done by the print spooling system.
 Printed using the
 .I f
 format filter (:if=... or :filter=...).
@@ -144,7 +140,7 @@ By default,
 input is assumed to a standard text file and the
 .I f
 format is used;
-the output device is assmed to be a simple line printer.
+the output device is assumed to be a simple line printer.
 Other formats available are listed below.
 Not all formats may be available on all printers;
 see
@@ -274,9 +270,11 @@ Use debug flags for extreme verbosity.
 .TP 5
 .BI \-w " width"
 Specify the page width for printing the job.
+.TP 5
 .BI \-X " path"
 User specified filter for job files.  Processing is done on
 the client host.
+.TP 5
 .B \-Y
 Make a direct connection to the printer device and do not spool.
 .TP 5
@@ -354,7 +352,7 @@ and support.
 .PP
 The LPRng version of
 .B lpr
-attempts to be functionaly compatible with common implementations of
+attempts to be functionally compatible with common implementations of
 .BR lpr .
 However,
 there are some commands and functionality that are deliberately missing.
@@ -506,20 +504,26 @@ _LOCKFILE_	lock file for queue control
 .BR printcap (5),
 .BR lpd.perms (5),
 .BR pr (1).
+.SH "AUTHOR"
+Patrick Powell <papowell@lprng.com>.
 .SH DIAGNOSTICS
-.nf
 Most of the diagnostics are self explanatory.
 If you are puzzled over the exact cause of failure,
 set the debugging level on (-D5) and run again.
 The debugging information will 
 help you to pinpoint the exact cause of failure.
-.fi
 .SH "HISTORY"
 LPRng is a enhanced printer spooler system
 with functionality similar to the Berkeley LPR software.
-The LPRng mailing list is lprng@lprng.com;
-subscribe by sending mail to lprng-request@lprng.com with
-the word subscribe in the body.
-The software is available from ftp://ftp.lprng.com/pub/LPRng.
-.SH "AUTHOR"
-Patrick Powell <papowell@lprng.com>.
+The LPRng developer mailing list is lprng-devel@lists.sourceforge.net;
+subscribe by visiting 
+.B https://lists.sourceforge.net/lists/listinfo/lprng-devel
+or sending mail to 
+.B lprng-request@lists.sourceforge.net
+with
+the word 
+.I subscribe 
+in the body.
+.br
+The software is available via 
+.B http://lprng.sourceforge.net

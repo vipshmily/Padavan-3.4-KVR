@@ -1,19 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -24,7 +8,7 @@
  ***************************************************************************/
 
  static char *const _id =
-"$Id: sserver.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+"$Id: sserver.c,v 1.74 2004/09/24 20:19:57 papowell Exp $";
 
 /*
  * 
@@ -120,13 +104,6 @@ main(int argc, char *argv[])
 		FPRINTF(STDOUT, "socket: %s\n", Errormsg(errno));
 		exit(3);
 	}
-#ifdef WINDOW_1
-int windowsize=1024;
-setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&windowsize, sizeof(windowsize));
-aaaaaa=fopen("/tmp/qqqqq", "a");
-fprintf(aaaaaa, "sserver: main\n");
-fclose(aaaaaa);
-#endif
 	Max_open(sock);
 	/* Let the socket be reused right away */
 	(void) setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on,
@@ -159,13 +136,13 @@ fclose(aaaaaa);
 			FPRINTF( STDOUT, "server_krb5_auth error '%s'\n", err );
 			goto done;
 		}
-		SNPRINTF(buffer,sizeof(buffer))"client '%s'", client );
+		plp_snprintf(buffer,sizeof(buffer), "client '%s'", client );
 		FPRINTF(STDOUT,"%s\n",buffer);
 		fd = Checkread( file, &statb );
 		DEBUG1( "main: opened for write '%s', fd %d, size %ld",
 			file, fd, (long)(statb.st_size) );
 		if( fd < 0 ){
-			SNPRINTF( err, sizeof(err))
+			plp_snprintf( err, sizeof(err),
 				"file open failed: %s", Errormsg(errno));
 			goto done;      
 		}
@@ -176,12 +153,12 @@ fclose(aaaaaa);
 		close(fd);
 		fd = Checkwrite( file, &statb, O_WRONLY|O_TRUNC, 1, 0 );
 		if( fd < 0 ){
-			SNPRINTF( err, sizeof(err))
+			plp_snprintf( err, sizeof(err),
 				"main: could not open for writing '%s' - '%s'", file,
 					Errormsg(errno) );
 			goto done;
 		}
-		SNPRINTF(buffer,sizeof(buffer))"credentials '%s'\n", client );
+		plp_snprintf(buffer,sizeof(buffer), "credentials '%s'\n", client );
 		Write_fd_str(fd,buffer);
 		close(fd);
 		if( server_krb5_status( acc, err, sizeof(err), file ) ){
@@ -214,7 +191,7 @@ void setstatus (va_alist) va_dcl
 
 	msg[0] = 0;
 	if( Verbose ){
-		(void) VSNPRINTF( msg, sizeof(msg)-2) fmt, ap);
+		(void) plp_vsnprintf( msg, sizeof(msg)-2, fmt, ap);
 		strcat( msg,"\n" );
 		if( Write_fd_str( 2, msg ) < 0 ) cleanup(0);
 	}
@@ -244,7 +221,7 @@ void setmessage (va_alist) va_dcl
 
 	msg[0] = 0;
 	if( Verbose ){
-		(void) VSNPRINTF( msg, sizeof(msg)-2) fmt, ap);
+		(void) plp_vsnprintf( msg, sizeof(msg)-2, fmt, ap);
 		strcat( msg,"\n" );
 		if( Write_fd_str( 2, msg ) < 0 ) cleanup(0);
 	}

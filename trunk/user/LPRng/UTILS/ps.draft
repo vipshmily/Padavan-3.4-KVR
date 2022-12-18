@@ -1,0 +1,109 @@
+From thomas%spline.UUCP@utah-gr.UUCP Mon Apr 20 20:42:02 1987
+Path: seismo!ut-sally!utah-cs!utah-gr!spline!thomas
+From: thomas%spline.uucp@utah-gr.UUCP (Spencer W. Thomas)
+Newsgroups: comp.laser-printers,comp.text
+Subject: Re: Troff/PostScript Question
+Message-ID: <1993@utah-gr.UUCP>
+Date: 21 Apr 87 00:42:02 GMT
+References: <148@dana.UUCP>
+Sender: news@utah-gr.UUCP
+Reply-To: thomas%spline.UUCP@utah-gr.UUCP (Spencer W. Thomas)
+Organization: Univ of Utah CS Dept
+Lines: 94
+
+In article <148@dana.UUCP> paul@dana.UUCP (Paul Ausick) writes:
+>I want to print the word "DRAFT" on every page of a document
+>in outline letters right across the middle of the page, slanting
+>upwards.  
+
+I've got just the thing for you.  This shell script is run as a filter
+and redefines the "showpage" and "copypage" operators to print the
+word "DRAFT" (by default) or whatever word you want as outlined
+characters diagonally across the page.  Thus, you might say
+
+	psdraft file.ps | lpr
+
+To get it to read stdin, use - as the file name:
+	dvi2ps file.dvi | psdraft - | lpr
+
+I have tested it with output from Scribe, TeX and ditroff.  
+
+=Spencer   ({ihnp4,decvax}!utah-cs!thomas, thomas@cs.utah.edu)
+
+-------------------------------- Cut Here --------------------------------
+#! /bin/sh
+sed 's/^X//' <<'EOF'
+X#! /bin/sh
+X#
+X# Put the word "DRAFT" (or a specified word) on each page of a postscript
+X# document.
+X#
+X# Usage:
+X# 	psdraft -s draftstring file ...
+X#
+X#
+X# Author: Spencer W. Thomas
+X#	  Computer Science Dept.
+X#	  University of Utah
+X#	  thomas@cs.utah.edu
+X
+X#
+X# Insert header after first line that does not begin %% or %!
+X#
+X
+Xtrap "rm -f /tmp/psd$$.*" 0 1 2 15
+X
+Xif [ "x$1" = "x-s" ] ; then
+X	draftstring=$2
+X	shift
+X	shift
+Xelse
+X	draftstring=DRAFT
+Xfi
+X
+Xif [ "x$*" = "x" ] ; then
+X	echo "Usage: psdraft [-s draftstring] files ..."
+Xfi
+X
+X# Create sed script file
+X
+Xsed "s/(DRAFT)/($draftstring)/" <<'EOF' >/tmp/psd$$.sed
+X1,/^[^%]/{ 
+Xs/^%/%/
+Xs/^$//
+Xt skip
+Xi\
+X% Prelude to show a draft string on every page.\
+X(DRAFT)\
+X/DRAFTDICT 10 dict def\
+XDRAFTDICT begin\
+X/DRAFTSTRING exch def\
+X/bd /Helvetica-Bold findfont def\
+X/od bd maxlength 1 add dict def\
+Xbd {exch dup /FID ne {exch od 3 1 roll put} {pop pop} ifelse} forall\
+Xod /FontName /Outline0 put od /PaintType 2 put od /StrokeWidth 0 put\
+X/Outline0 od definefont pop\
+X/DRAFT { gsave\
+X	 initmatrix\
+X	/Outline0 findfont setfont\
+X	DRAFTSTRING dup stringwidth pop 8.875 exch div dup 72 mul dup scale\
+X	52.3 rotate 2.5 exch div -.35 translate\
+X	0 0 moveto show\
+X	grestore } def\
+X/oldshow /showpage load def\
+X/oldcopy /copypage load def\
+Xend\
+X/showpage { DRAFTDICT begin DRAFT oldshow end } def\
+X/copypage { DRAFTDICT begin DRAFT oldcopy end } def\
+X% End of draft prelude
+X: skip
+X}
+XEOF
+X
+Xcat $* | sed -f /tmp/psd$$.sed 
+EOF
+
+exit 0
+=Spencer   ({ihnp4,decvax}!utah-cs!thomas, thomas@cs.utah.edu)
+
+

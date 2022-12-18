@@ -29,6 +29,8 @@ wifi密码
  - admin
  - admin
 
-**最近的更新代码都来自于hanwckf和MelsReallyBa大佬的4.4内核代码**
+**最近的更新代码都来自于以下大佬们的4.4内核代码**
 - https://github.com/hanwckf/padavan-4.4
 - https://github.com/MeIsReallyBa/padavan-4.4
+- https://github.com/tsl0922/padavan
+- https://github.com/TurBoTse/padavan

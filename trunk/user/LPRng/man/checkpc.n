@@ -1,25 +1,13 @@
-.ds VE LPRng-3.9.0
-.TH CHECKPC 8 \*(VE "LPRng"
-.ig
-checkpc.8,v 3.33 1998/03/29 18:37:49 papowell Exp
-LPRng
-Mon Jul 17 20:13:09 PDT 1995 Patrick Powell
-..
+.TH CHECKPC 8 2007-02-22 "LPRng" "checkpc command"
 .SH NAME
 checkpc \- check out the printcap database
 .SH SYNOPSIS
 .B checkpc
-[
-.B \-aflprsCV
-] [
-.B \-A age[DHMS]
-] [
-.B \-D debugflags
-] [
-.B \-P printer
-] [
-.B \-t size[kM]
-]
+.RB [ " \-aflprsV " ]
+.RB [ " \-A" \fIage\fP[ DHMS "] ]"
+.RB [ " \-D\fIdebugflags\fP " ]
+.RB [ " \-P\fIprinter\fP " ]
+.RB [ " \-t " \fIsize\fP[ kM "] ]"
 .SH DESCRIPTION
 .B Checkpc
 is used to check for the existence and correct permissions of entries
@@ -28,26 +16,33 @@ in the
 database.
 It is useful when installing a new printcap database and cleaning up
 existing printer spoolers.
-.IP "\fB\-a\fI" 5
-Do not create accounting files (:lf).
-.IP "\fB\-f\fI" 5
+.TP
+.B \-a
+Do not create accounting files (:af).
+.TP
+.B \-f
 The fix flag will cause the checkpc program create and fix
 various files and permissions.
 It does this in a simple minded manner,
 and the program may have to be run several times until all permissions
 are correct.
 It also reports in extremely verbose details its actions.
-.IP "\fB\-l\fI" 5
+.TP
+.B \-l
 Do not create log files (:lf).
-.IP "\fB\-p\fI" 5
+.TP
+.B \-p
 Print verbose printcap information.
 Useful if interested in the printcap values.
-.IP "\fB\-r\fI" 5
+.TP
+.B \-r
 remove junk or job files older than the age set by -A.
 You must set the age to a non-zero value otherwise no files are removed.
-.IP "\fB\-s\fI" 5
+.TP
+.B \-s
 Do not create filter status files (:ps).
-.IP "\fB\-A\fI Age[DHMS]" 5
+.TP
+.B "\-A \fIAge\fR[\fBDHMS\fR]"
 Report junk or job files older than age.
 The age time can have a suffix
 days (D)
@@ -56,27 +51,32 @@ minutes (M),
 or
 seconds (S);
 default is days.
-.IP "\fB\-D\fI debugflags" 5
+.TP
+.BI "\-D " debugflags
 Run the program with debugging flags.
 See the LPRng HOWTO for details of the flags actions.
-.IP "\fB\-V\fI" 5
+.TP
+.B \-V
 Verbose mode.
-.IP "\fB\-P\fI printer" 5
+.TP
+.BI "\-P " printer
 Process only the specified print queue.
-.IP "\fB\-t\fI size[kM]" 5
+.TP
+.B "\-t \fIsize\fR[\fBkM\fR]"
 Truncate log files (:lf) to the specified size in Kbytes
 or Mbytes (default is Mbytes).
+.TP
+.BI "\-T " serial-line
+set process name and start feature test
 .SH "ANNOYING FEATURES"
 If the
-.B \-f
-(fix)
+.BR \-f (fix)
 option is specified and you do not run this as root,
 it will complain,
 but attempt to carry out the operations.
 This will lead to a large number of failures reports
 if the ownership and/or permissions are incorrect.
 .SH FILES
-.PP
 The files used by LPRng are set by values in the
 printer configuration file and by configuration options.
 The following are a commonly used set of default values.
@@ -94,29 +94,38 @@ _LOCKFILE_	lock file for queue control
 /var/spool/lpd/QUEUE/status	status file
 .fi
 .SH "SEE ALSO"
-lpd.conf(5),
-lpc(8),
-lpd(8),
-lpr(1),
-lpq(1),
-lprm(1),
-printcap(5),
-lpd.perms(5),
-pr(1), lprng_certs(1), lprng_index_certs(1).
+.BR lpd.conf (5),
+.BR lpc (8),
+.BR lpd (8),
+.BR lpr (1),
+.BR lpq (1),
+.BR lprm (1),
+.BR printcap (5),
+.BR lpd.perms (5),
+.BR pr (1),
+.BR lprng_certs (1),
+.BR lprng_index_certs (1).
+.SH "AUTHOR"
+Patrick Powell <papowell@lprng.com>.
 .SH DIAGNOSTICS
-.nf
 Most of the diagnostics are self explanatory.
 If you are puzzled over the exact cause of failure,
 set the debugging level on (-D5) and run again.
-The debugging information will 
+
+The debugging information will
 help you to pinpoint the exact cause of failure.
-.fi
 .SH "HISTORY"
 LPRng is a enhanced printer spooler system
 with functionality similar to the Berkeley LPR software.
-The LPRng mailing list is lprng@lprng.com;
-subscribe by sending mail to lprng-request@lprng.com with
-the word subscribe in the body.
-The software is available from ftp://ftp.lprng.com/pub/LPRng.
-.SH "AUTHOR"
-Patrick Powell <papowell@lprng.com>.
+The LPRng developer mailing list is lprng-devel@lists.sourceforge.net;
+subscribe by visiting
+.B https://lists.sourceforge.net/lists/listinfo/lprng-devel
+or sending mail to
+.B lprng-request@lists.sourceforge.net
+with
+the word
+.I subscribe
+in the body.
+.br
+The software is available via
+.B http://lprng.sourceforge.net

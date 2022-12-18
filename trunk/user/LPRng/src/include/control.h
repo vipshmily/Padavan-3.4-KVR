@@ -1,26 +1,10 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
- * $Id: control.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
+ * $Id: control.h,v 1.74 2004/09/24 20:19:59 papowell Exp $
  ***************************************************************************/
 
 
@@ -59,10 +43,11 @@
 #define  OP_DEFAULTS	31
 #define  OP_FLUSH		32
 #define  OP_LANG		33
+#define  OP_PPD			34
 
 /* PROTOTYPES */
 
 int Get_controlword( char *s );
-char *Get_controlstr( int c );
+const char *Get_controlstr( int c );
 
 #endif
