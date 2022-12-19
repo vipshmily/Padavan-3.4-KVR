@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: fileopen.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+
 
 #include "lp.h"
 #include "fileopen.h"
@@ -42,13 +62,15 @@ int Checkread( const char *file, struct stat *statb )
 		Max_open(fd);
 		status = -1;
 		err = errno;
+#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUG3( "Checkread: cannot open '%s', %s", file, Errormsg(err) );
+#endif
 		memset( statb, 0, sizeof(struct stat) );
 	}
 
     if( status >= 0 && fstat( fd, statb ) < 0 ) {
 		err = errno;
-        logerr(LOG_ERR,
+        LOGERR(LOG_ERR)
 		"Checkread: fstat of '%s' failed, possible security problem", file);
         status = -1;
     }
@@ -57,7 +79,7 @@ int Checkread( const char *file, struct stat *statb )
 	if( status >= 0 && !(S_ISREG(statb->st_mode))){
 		/* AHA!  not a regular file! */
 		DEBUG3( "Checkread: '%s' not regular file, mode = 0%o",
-			file, (unsigned int)statb->st_mode );
+			file, statb->st_mode );
 		status = -1;
 	}
 
@@ -115,12 +137,14 @@ int Checkwrite( const char *file, struct stat *statb, int rw, int create,
 	umask( oldumask );
 	if( fd < 0 ){
 		status = -1;
+#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUG3( "Checkwrite: cannot open '%s', %s", file, Errormsg(err) );
+#endif
 	} else if( nodelay ){
 		/* turn off nonblocking */
 		mask = fcntl( fd, F_GETFL, 0 );
 		if( mask == -1 ){
-			logerr(LOG_ERR, "Checkwrite: fcntl F_GETFL of '%s' failed", file);
+			LOGERR(LOG_ERR) "Checkwrite: fcntl F_GETFL of '%s' failed", file);
 			status = -1;
 		} else if( mask & NONBLOCK ){
 			DEBUG3( "Checkwrite: F_GETFL value '0x%x', BLOCK 0x%x",
@@ -130,9 +154,9 @@ int Checkwrite( const char *file, struct stat *statb, int rw, int create,
 			err = errno;
 			DEBUG3( "Checkwrite: after F_SETFL value now '0x%x'",
 				fcntl( fd, F_GETFL, 0 ) );
-			if( mask == -1 && err != ENODEV && err != ENOTTY ){
+			if( mask == -1 && err != ENODEV ){
 				errno = err;
-				logerr(LOG_ERR, "Checkwrite: fcntl F_SETFL of '%s' failed",
+				LOGERR(LOG_ERR) "Checkwrite: fcntl F_SETFL of '%s' failed",
 					file );
 				status = -1;
 			}
@@ -141,7 +165,7 @@ int Checkwrite( const char *file, struct stat *statb, int rw, int create,
 
     if( status >= 0 && fstat( fd, statb ) < 0 ) {
 		err = errno;
-        logerr_die(LOG_ERR, "Checkwrite: fstat of '%s' failed, possible security problem", file);
+        LOGERR_DIE(LOG_ERR) "Checkwrite: fstat of '%s' failed, possible security problem", file);
         status = -1;
     }
 
@@ -149,7 +173,7 @@ int Checkwrite( const char *file, struct stat *statb, int rw, int create,
 	if( status >= 0 && (S_ISDIR(statb->st_mode))){
 		/* AHA!  Directory! */
 		DEBUG3( "Checkwrite: '%s' directory, mode 0%o",
-			file, (unsigned int)statb->st_mode );
+			file, statb->st_mode );
 		status = -1;
 	}
 	if( fd == 0 ){
@@ -158,7 +182,7 @@ int Checkwrite( const char *file, struct stat *statb, int rw, int create,
 		Max_open(tfd);
 		err = errno;
 		if( tfd < 0 ){
-			logerr(LOG_ERR, "Checkwrite: dup of '%s' failed", file);
+			LOGERR(LOG_ERR) "Checkwrite: dup of '%s' failed", file);
 			status = -1;
 		} else {
 			close(fd);

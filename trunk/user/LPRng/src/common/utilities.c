@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,9 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: utilities.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
 
 #include "lp.h"
 
@@ -32,18 +51,18 @@ char *Time_str(int shortform, time_t t)
 	if( t == 0 ){
 		if( gettimeofday( &tv, 0 ) == -1 ){
 			Errorcode = JFAIL;
-			logerr_die(LOG_ERR, "Time_str: gettimeofday failed");
+			LOGERR_DIE(LOG_ERR)"Time_str: gettimeofday failed");
 		}
 		t = tv.tv_sec;
 	}
 	tmptr = localtime( &t );
 	if( shortform && Full_time_DYN == 0 ){
-		plp_snprintf( buffer, sizeof(buffer),
+		SNPRINTF( buffer, sizeof(buffer))
 			"%02d:%02d:%02d.%03d",
 			tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec,
 			(int)(tv.tv_usec/1000) );
 	} else {
-		plp_snprintf( buffer, sizeof(buffer),
+		SNPRINTF( buffer, sizeof(buffer))
 			"%d-%02d-%02d-%02d:%02d:%02d.%03d",
 			tmptr->tm_year+1900, tmptr->tm_mon+1, tmptr->tm_mday,
 			tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec,
@@ -77,12 +96,12 @@ char *Pretty_time( time_t t )
 	if( t == 0 ){
 		if( gettimeofday( &tv, 0 ) == -1 ){
 			Errorcode = JFAIL;
-			logerr_die(LOG_ERR, "Time_str: gettimeofday failed");
+			LOGERR_DIE(LOG_ERR)"Time_str: gettimeofday failed");
 		}
 		t = tv.tv_sec;
 	}
 	tmptr = localtime( &t );
-	strftime( buffer, sizeof(buffer), "%b %d %H:%M:%S %Y", tmptr );
+	strftime( buffer, sizeof(buffer), "%b %d %R %Y", tmptr );
 
 	return( buffer );
 }
@@ -96,15 +115,23 @@ time_t Convert_to_time_t( char *str )
 }
 
 /***************************************************************************
- *  Use for copyright printing
+ * Print the usage message list or any list of strings
+ *  Use for copyright printing as well
  ***************************************************************************/
 
-void Printlist( const char **m, int fd )
+void Printlist( char **m, int fd )
 {
+	char msg[SMALLBUFFER];
 	if( m ){
-		for( ; *m; ++m ){
-			Write_fd_str(fd, *m);
+		if( *m ){
+			SNPRINTF( msg,sizeof(msg)) _(*m), Name );
+			Write_fd_str(fd, msg);
 			Write_fd_str(fd,"\n");
+			++m;
+		}
+		for( ; *m; ++m ){
+			SNPRINTF( msg,sizeof(msg)) "%s\n", _(*m) );
+			Write_fd_str(fd, msg);
 		}
 	}
 }
@@ -133,10 +160,22 @@ void Printlist( const char **m, int fd )
 int Write_fd_len( int fd, const char *msg, int len )
 {
 	int i;
+	int busy_index = 0;//JY1110: add sock
 
 	i = len;
 	while( len > 0 && (i = write( fd, msg, len ) ) >= 0 ){
 		len -= i, msg += i;
+		if(i == 0)
+			busy_index++;//JY1110: add sock
+		else
+			busy_index=0;
+			
+		if(busy_index > 3){//JY1110: add sock
+			check_prn_status("BUSY or ERROR", clientaddr);
+		}
+		else{
+			check_prn_status("Printing", clientaddr);
+		}
 	}
 	return( (i < 0) ? -1 : 0 );
 }
@@ -211,14 +250,13 @@ int Read_fd_len_timeout( int timeout, int fd, char *msg, int len )
 	if( timeout > 0 ){
 		if( Set_timeout() ){
 			Set_timeout_alarm( timeout  );
-			i = ok_read( fd, msg, len );
+			i = read( fd, msg, len );
 		} else {
 			i = -1;
-			errno = EINTR;
 		}
 		Clear_timeout();
 	} else {
-		i = ok_read( fd, msg, len );
+		i = read( fd, msg, len );
 	}
 	return( i );
 }
@@ -310,7 +348,7 @@ void plp_block_all_signals ( plp_block_mask *oblock )
 
 	(void) sigfillset (&block); /* block all signals */
 	if (sigprocmask (SIG_SETMASK, &block, oblock) < 0)
-		logerr_die(LOG_ERR, "plp_block_all_signals: sigprocmask failed");
+		LOGERR_DIE(LOG_ERR) "plp_block_all_signals: sigprocmask failed");
 #else
 	*oblock = sigblock( ~0 ); /* block all signals */
 #endif
@@ -324,7 +362,7 @@ void plp_unblock_all_signals ( plp_block_mask *oblock )
 
 	(void) sigemptyset (&block); /* block all signals */
 	if (sigprocmask (SIG_SETMASK, &block, oblock) < 0)
-		logerr_die(LOG_ERR, "plp_unblock_all_signals: sigprocmask failed");
+		LOGERR_DIE(LOG_ERR) "plp_unblock_all_signals: sigprocmask failed");
 #else
 	*oblock = sigblock( 0 ); /* unblock all signals */
 #endif
@@ -334,7 +372,7 @@ void plp_set_signal_mask ( plp_block_mask *in, plp_block_mask *out )
 {
 #ifdef HAVE_SIGPROCMASK
 	if (sigprocmask (SIG_SETMASK, in, out ) < 0)
-		logerr_die(LOG_ERR, "plp_set_signal_mask: sigprocmask failed");
+		LOGERR_DIE(LOG_ERR) "plp_set_signal_mask: sigprocmask failed");
 #else
 	sigset_t block;
 	if( in ) block = sigsetmask( *in );
@@ -351,7 +389,7 @@ void plp_unblock_one_signal ( int sig, plp_block_mask *oblock )
 	(void) sigemptyset (&block); /* clear out signals */
 	(void) sigaddset (&block, sig ); /* clear out signals */
 	if (sigprocmask (SIG_UNBLOCK, &block, oblock ) < 0)
-		logerr_die(LOG_ERR, "plp_unblock_one_signal: sigprocmask failed");
+		LOGERR_DIE(LOG_ERR) "plp_unblock_one_signal: sigprocmask failed");
 #else
 	*oblock = sigblock( 0 );
 	(void) sigsetmask (*oblock & ~ sigmask(sig) );
@@ -366,7 +404,7 @@ void plp_block_one_signal( int sig, plp_block_mask *oblock )
 	(void) sigemptyset (&block); /* clear out signals */
 	(void) sigaddset (&block, sig ); /* clear out signals */
 	if (sigprocmask (SIG_BLOCK, &block, oblock ) < 0)
-		logerr_die(LOG_ERR, "plp_block_one_signal: sigprocmask failed");
+		LOGERR_DIE(LOG_ERR) "plp_block_one_signal: sigprocmask failed");
 #else
 	*oblock = sigblock( sigmask( sig ) );
 #endif
@@ -472,6 +510,21 @@ char *safestrpbrk( const char *s1, const char *s2 )
 	return( 0 );
 }
 
+/* perform string concatentaton with malloc */
+char *safestrappend4( char *s1, const char *s2, const char *s3, const char *s4 )
+{
+	int m, len;
+	m = safestrlen(s1);
+	len = m + safestrlen(s2) + safestrlen(s3) + safestrlen(s4);
+	s1 = realloc(s1,len+1);
+	len = m;
+	if( s2 ) strcpy( s1+len, s2 ); len += strlen(s1+len);
+	if( s3 ) strcpy( s1+len, s3 ); len += strlen(s1+len);
+	if( s4 ) strcpy( s1+len, s4 ); len += strlen(s1+len);
+	s1[ len ] = 0;
+	return(s1);
+}
+
 /***************************************************************************
  * plp_usleep() with select - simple minded way to avoid problems
  ***************************************************************************/
@@ -483,7 +536,11 @@ int plp_usleep( int i )
 		memset( &t, 0, sizeof(t) );
 		t.tv_usec = i%1000000;
 		t.tv_sec =  i/1000000;
-		i = select( 0, NULL, NULL, NULL, &t );
+		i = select( 0,
+			FD_SET_FIX((fd_set *))(0),
+			FD_SET_FIX((fd_set *))(0),
+			FD_SET_FIX((fd_set *))(0),
+			&t );
 		DEBUG3("plp_usleep: select done, status %d", i );
 	}
 	return( i );
@@ -500,7 +557,11 @@ int plp_sleep( int i )
 	if( i > 0 ){
 		memset( &t, 0, sizeof(t) );
 		t.tv_sec = i;
-		i = select( 0, NULL, NULL, NULL, &t );
+		i = select( 0,
+			FD_SET_FIX((fd_set *))(0),
+			FD_SET_FIX((fd_set *))(0),
+			FD_SET_FIX((fd_set *))(0),
+			&t );
 		DEBUG3("plp_sleep: select done, status %d", i );
 	}
 	return( i );
@@ -519,7 +580,7 @@ int Get_max_servers( void )
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NPROC)
 	struct rlimit pcount;
 	if( getrlimit(RLIMIT_NPROC, &pcount) == -1 ){
-		fatal(LOG_ERR, "Get_max_servers: getrlimit failed" );
+		FATAL(LOG_ERR) "Get_max_servers: getrlimit failed" );
 	}
 	n = pcount.rlim_cur;
 #ifdef RLIMIT_INFINITY
@@ -533,7 +594,7 @@ int Get_max_servers( void )
 #else
 # if defined(HAVE_SYSCONF) && defined(_SC_CHILD_MAX)
 	if( n == 0 && (n = sysconf(_SC_CHILD_MAX)) < 0 ){
-		fatal(LOG_ERR, "Get_max_servers: sysconf failed" );
+		FATAL(LOG_ERR) "Get_max_servers: sysconf failed" );
 	}
 	DEBUG1("Get_max_servers: sysconf returns %d", n );
 # else
@@ -564,20 +625,25 @@ int Get_max_servers( void )
  ***************************************************************************/
 
 int Get_max_fd( void )
+#ifdef ORIGINAL_DEBUG//JY@1020
 {
+#else
+{}
+#endif
+#ifdef ORIGINAL_DEBUG//JY@1020
 	int n = 0;	/* We need some sort of limit here */
 
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
 	struct rlimit pcount;
 	if( getrlimit(RLIMIT_NOFILE, &pcount) == -1 ){
-		fatal(LOG_ERR, "Get_max_fd: getrlimit failed" );
+		FATAL(LOG_ERR) "Get_max_fd: getrlimit failed" );
 	}
 	n = pcount.rlim_cur;
 	DEBUG4("Get_max_fd: getrlimit returns %d", n );
 #else
 # if defined(HAVE_SYSCONF) && defined(_SC_OPEN_MAX)
 	if( n == 0 && (n = sysconf(_SC_OPEN_MAX)) < 0 ){
-		fatal(LOG_ERR, "Get_max_servers: sysconf failed" );
+		FATAL(LOG_ERR) "Get_max_servers: sysconf failed" );
 	}
 	DEBUG4("Get_max_fd: sysconf returns %d", n );
 # else
@@ -599,6 +665,7 @@ int Get_max_fd( void )
 	DEBUG1("Get_max_fd: returning %d", n );
 	return( n );
 }
+#endif
 
 
 char *Brk_check_size( void )
@@ -608,9 +675,9 @@ char *Brk_check_size( void )
 	char *s = sbrk(0);
 	int   v = s - Top_of_mem;
 	if( Top_of_mem == 0 ){
-		plp_snprintf(b, sizeof(b), "BRK: initial value 0x%lx", Cast_ptr_to_long(s) );
+		SNPRINTF(b, sizeof(b)) "BRK: initial value 0x%lx", Cast_ptr_to_long(s) );
 	} else {
-		plp_snprintf(b, sizeof(b), "BRK: new value 0x%lx, increment %d", Cast_ptr_to_long(s), v );
+		SNPRINTF(b, sizeof(b)) "BRK: new value 0x%lx, increment %d", Cast_ptr_to_long(s), v );
 	}
 	Top_of_mem = s;
 	return(b);
@@ -710,7 +777,12 @@ int Set_block_io( int fd )
 int Read_write_timeout(
 	int readfd, char *inbuffer, int maxinlen, int *readlen,
 	int writefd, char **outbuffer, int *outlen, int timeout )
+#ifdef ORIGINAL_DEBUG//JY@1020
 {
+#else
+{}
+#endif
+#ifdef ORIGINAL_DEBUG//JY@1020
 	time_t start_t, current_t;
 	int elapsed, m, err, done, retval;
 	struct timeval timeval, *tp;
@@ -731,23 +803,23 @@ int Read_write_timeout(
 	if( readfd  > 0 ){
 		if( fstat( readfd, &statb ) ){
 			Errorcode = JABORT;
-			fatal(LOG_ERR, "Read_write_timeout: readfd %d closed", readfd );
+			FATAL(LOG_ERR) "Read_write_timeout: readfd %d closed", readfd );
 		}
 		Set_nonblock_io( readfd );
 	} else {
 		Errorcode = JABORT;
-		fatal(LOG_ERR, "Read_write_timeout: no readfd %d", readfd );
+		FATAL(LOG_ERR) "Read_write_timeout: no readfd %d", readfd );
 	}
 	if( writefd  > 0 ){
 		if( fstat( writefd, &statb ) ){
 			Errorcode = JABORT;
-			fatal(LOG_ERR, "Read_write_timeout: writefd %d closed",
+			FATAL(LOG_ERR) "Read_write_timeout: writefd %d closed",
 				writefd );
 		}
 		Set_nonblock_io( writefd );
 	} else {
 		Errorcode = JABORT;
-		fatal(LOG_ERR, "Read_write_timeout: no write %d", writefd );
+		FATAL(LOG_ERR) "Read_write_timeout: no write %d", writefd );
 	}
 
 	while(!done){
@@ -776,14 +848,21 @@ int Read_write_timeout(
 		if( m <= readfd ) m = readfd+1;
 		errno = 0;
 		DEBUG4("Read_write_timeout: starting select" );
-        m = select( m, &readfds, &writefds, NULL, tp );
+        m = select( m,
+            FD_SET_FIX((fd_set *))&readfds,
+            FD_SET_FIX((fd_set *))&writefds,
+            FD_SET_FIX((fd_set *))0, tp );
 		err = errno;
+#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUG4("Read_write_timeout: select returned %d, errno '%s'",
 			m, Errormsg(err) );
+#endif
 		if( m < 0 ){
 			if( err != EINTR ){
-				logerr(LOG_INFO, "Read_write_timeout: select returned %d, errno '%s'",
+#ifdef ORIGINAL_DEBUG//JY@1020
+				LOGERR(LOG_INFO)"Read_write_timeout: select returned %d, errno '%s'",
 				m, Errormsg(err) );
+#endif
 				retval = JTIMEOUT;
 				done = 1;
 			}
@@ -794,7 +873,7 @@ int Read_write_timeout(
 		} else {
 			if( FD_ISSET( readfd, &readfds ) ){
 				DEBUG4("Read_write_timeout: read possible on fd %d", readfd );
-				m = ok_read( readfd, inbuffer, maxinlen );
+				m = read( readfd, inbuffer, maxinlen );
 				DEBUG4("Read_write_timeout: read() returned %d", m );
 				if( readlen ) *readlen = m;
 				/* caller leaves space for this */
@@ -828,6 +907,7 @@ int Read_write_timeout(
 	errno = err;
 	return( retval );
 }
+#endif
 
 /***************************************************************************
  * Set up alarms so LPRng doesn't hang forever during transfers.
@@ -849,11 +929,18 @@ int Read_write_timeout(
  *  #define Set_timeout(t,s) (setjmp(Timeout_env)==0 && Set_timeout_alarm(t,s))
  */
 
- static plp_signal_t timeout_alarm (int sig UNUSED)
+ static plp_signal_t timeout_alarm (int sig)
 {
 	Alarm_timed_out = 1;
 	signal( SIGALRM, SIG_IGN );
 	errno = EINTR;
+#if 1//JY1110: timeout while writing
+/*JY1111*/
+	check_prn_status("BUSY or ERROR", clientaddr);
+	send_ack_packet(currten_sock, ACK_FAIL);//JY1120
+/**/
+exit(0);
+#endif
 #if defined(HAVE_SIGLONGJMP)
 	siglongjmp(Timeout_env,1);
 #else
@@ -862,7 +949,7 @@ int Read_write_timeout(
 }
 
 
- static plp_signal_t timeout_break (int sig UNUSED)
+ static plp_signal_t timeout_break (int sig)
 {
 	Alarm_timed_out = 1;
 	signal( SIGALRM, SIG_IGN );
@@ -1044,10 +1131,10 @@ void Setup_uid(void)
 		OriginalRUID = getuid();	
 		OriginalEGID = getegid();	
 		OriginalRGID = getgid();	
-		DEBUG1("Setup_uid: OriginalEUID %ld, OriginalRUID %ld",
-			(long)OriginalEUID, (long)OriginalRUID );
-		DEBUG1("Setup_uid: OriginalEGID %ld, OriginalRGID %ld",
-			(long)OriginalEGID, (long)OriginalRGID );
+		DEBUG1("Setup_uid: OriginalEUID %d, OriginalRUID %d",
+			OriginalEUID, OriginalRUID );
+		DEBUG1("Setup_uid: OriginalEGID %d, OriginalRGID %d",
+			OriginalEGID, OriginalRGID );
 		/* we now make sure that we are able to use setuid() */
 		/* notice that setuid() will work if EUID or RUID is 0 */
 		if( OriginalEUID == ROOTUID || OriginalRUID == ROOTUID ){
@@ -1059,21 +1146,21 @@ void Setup_uid(void)
 					setuid( (uid_t)ROOTUID ) || setreuid( ROOTUID, OriginalRUID )
 #				endif
 				){
-				fatal(LOG_ERR,
-					"Setup_uid: RUID/EUID Start %ld/%ld seteuid failed",
-					(long)OriginalRUID, (long)OriginalEUID);
+				FATAL(LOG_ERR)
+					"Setup_uid: RUID/EUID Start %d/%d seteuid failed",
+					OriginalRUID, OriginalEUID);
 			}
 			if( getuid() != ROOTUID ){
-				fatal(LOG_ERR,
-				"Setup_uid: IMPOSSIBLE! RUID/EUID Start %ld/%ld, now %ld/%ld",
-					(long)OriginalRUID, (long)OriginalEUID,
-					(long)getuid(), (long)geteuid() );
+				FATAL(LOG_ERR)
+				"Setup_uid: IMPOSSIBLE! RUID/EUID Start %d/%d, now %d/%d",
+					OriginalRUID, OriginalEUID, 
+					getuid(), geteuid() );
 			}
 			UID_root = 1;
 		}
-		DEBUG1( "Setup_uid: Original RUID/EUID %ld/%ld, RUID/EUID %ld/%ld",
-					(long)OriginalRUID, (long)OriginalEUID,
-					(long)getuid(), (long)geteuid() );
+		DEBUG1( "Setup_uid: Original RUID/EUID %d/%d, RUID/EUID %d/%d",
+					OriginalRUID, OriginalEUID, 
+					getuid(), geteuid() );
 		SetRootUID = 1;
 	}
 	errno = err;
@@ -1092,28 +1179,28 @@ void Setup_uid(void)
 
 
 	DEBUG4(
-		"seteuid_wrapper: Before RUID/EUID %ld/%ld, DaemonUID %ld, UID_root %ld",
-		(long)OriginalRUID, (long)OriginalEUID, (long)DaemonUID, (long)UID_root );
+		"seteuid_wrapper: Before RUID/EUID %d/%d, DaemonUID %d, UID_root %d",
+		OriginalRUID, OriginalEUID, DaemonUID, UID_root );
 	if( UID_root ){
 		/* be brutal: set both to root */
 		if( setuid( ROOTUID ) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"seteuid_wrapper: setuid() failed!!");
 		}
 #if defined(HAVE_SETEUID)
 		if( seteuid( to ) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"seteuid_wrapper: seteuid() failed!!");
 		}
 #else
 		if( setreuid( ROOTUID, to) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"seteuid_wrapper: setreuid() failed!!");
 		}
 #endif
 	}
 	euid = geteuid();
-	DEBUG4( "seteuid_wrapper: After uid/euid %ld/%ld", (long)getuid(), (long)euid );
+	DEBUG4( "seteuid_wrapper: After uid/euid %d/%d", getuid(), euid );
 	errno = err;
 	return( to != euid );
 }
@@ -1132,27 +1219,27 @@ void Setup_uid(void)
 
 
 	DEBUG4(
-		"setruid_wrapper: Before RUID/EUID %ld/%ld, DaemonUID %ld, UID_root %ld",
-		(long)OriginalRUID, (long)OriginalEUID, (long)DaemonUID, (long)UID_root );
+		"setruid_wrapper: Before RUID/EUID %d/%d, DaemonUID %d, UID_root %d",
+		OriginalRUID, OriginalEUID, DaemonUID, UID_root );
 	if( UID_root ){
 		/* be brutal: set both to root */
 		if( setuid( ROOTUID ) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"setruid_wrapper: setuid() failed!!");
 		}
 #if defined(HAVE_SETRUID)
 		if( setruid( to ) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"setruid_wrapper: setruid() failed!!");
 		}
 #elif defined(HAVE_SETREUID)
 		if( setreuid( to, ROOTUID) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"setruid_wrapper: setreuid() failed!!");
 		}
 #elif defined(__CYGWIN__)
 		if( seteuid( to ) ){
-			logerr_die(LOG_ERR,
+			LOGERR_DIE(LOG_ERR)
 			"setruid_wrapper: seteuid() failed!!");
 		}
 #else
@@ -1160,7 +1247,7 @@ void Setup_uid(void)
 #endif
 	}
 	ruid = getuid();
-	DEBUG4( "setruid_wrapper: After uid/euid %ld/%ld", (long)getuid(), (long)geteuid() );
+	DEBUG4( "setruid_wrapper: After uid/euid %d/%d", getuid(), geteuid() );
 	errno = err;
 	return( to != ruid );
 }
@@ -1192,7 +1279,7 @@ int To_user(void)
 {
 	if( To_daemon_called ){
 		Errorcode = JABORT;
-		logmsg(LOG_ERR, "To_user: LOGIC ERROR! To_daemon has been called");
+		LOGMSG(LOG_ERR) "To_user: LOGIC ERROR! To_daemon has been called");
 		abort();
 	}
 	/* Set_full_group( OriginalRUID, OriginalRGID ); */
@@ -1218,14 +1305,14 @@ int setuid_wrapper(uid_t to)
 	if( UID_root ){
 		/* Note: you MUST use setuid() to force saved_setuid correctly */
 		if( setuid( (uid_t)ROOTUID ) ){
-			logerr_die(LOG_ERR, "setuid_wrapper: setuid(ROOTUID) failed!!");
+			LOGERR_DIE(LOG_ERR) "setuid_wrapper: setuid(ROOTUID) failed!!");
 		}
-		if( setuid( to ) ){
-			logerr_die(LOG_ERR, "setuid_wrapper: setuid(%ld) failed!!", (long)to);
+		if( setuid( (uid_t)to ) ){
+			LOGERR_DIE(LOG_ERR) "setuid_wrapper: setuid(%d) failed!!", to);
 		}
 		if( to ) UID_root = 0;
 	}
-    DEBUG4("after setuid: (%ld, %ld)", (long)getuid(),(long)geteuid());
+    DEBUG4("after setuid: (%d, %d)", getuid(),geteuid());
 	errno = err;
 	return( to != getuid() || to != geteuid() );
 }
@@ -1260,7 +1347,7 @@ int Full_user_perms(void)
 
 int Getdaemon(void)
 {
-	const char *str = 0;
+	char *str = 0;
 	char *t;
 	struct passwd *pw;
 	int uid;
@@ -1268,7 +1355,7 @@ int Getdaemon(void)
 	str = Daemon_user_DYN;
 	DEBUG4( "Getdaemon: using '%s'", str );
 	if(!str) str = "daemon";
-	t = (char*)str;
+	t = str;
 	uid = strtol( str, &t, 10 );
 	if( str == t || *t ){
 		/* try getpasswd */
@@ -1291,7 +1378,7 @@ int Getdaemon(void)
 
 int Getdaemon_group(void)
 {
-	const char *str = 0;
+	char *str = 0;
 	char *t;
 	struct group *gr;
 	gid_t gid;
@@ -1300,7 +1387,7 @@ int Getdaemon_group(void)
 	DEBUG4( "Getdaemon_group: Daemon_group_DYN '%s'", str );
 	if( !str ) str = "daemon";
 	DEBUG4( "Getdaemon_group: name '%s'", str );
-	t = (char*)str;
+	t = str;
 	gid = strtol( str, &t, 10 );
 	if( str == t ){
 		/* try getpasswd */
@@ -1309,9 +1396,9 @@ int Getdaemon_group(void)
 			gid = gr->gr_gid;
 		}
 	}
-	DEBUG4( "Getdaemon_group: gid '%ld'", (long)gid );
+	DEBUG4( "Getdaemon_group: gid '%d'", gid );
 	if( gid == 0 ) gid = getgid();
-	DEBUG4( "Getdaemon_group: final gid '%ld'", (long)gid );
+	DEBUG4( "Getdaemon_group: final gid '%d'", gid );
 	return( gid );
 }
 
@@ -1342,28 +1429,34 @@ int Set_full_group( int euid, int gid )
 			char user[256];
 			safestrncpy(user,pw->pw_name);
 			if( safestrlen(user) != safestrlen(pw->pw_name) ){
-				fatal(LOG_ERR, "Set_full_group: CONFIGURATION BOTCH! safestrlen of user name '%s' = %d larger than buffer size %d",
-					pw->pw_name, (int)safestrlen(pw->pw_name), (int)sizeof(user) );
+				FATAL(LOG_ERR) "Set_full_group: CONFIGURATION BOTCH! safestrlen of user name '%s' = %d larger than buffer size %d",
+					pw->pw_name, safestrlen(pw->pw_name), sizeof(user) );
 			}
 			if( initgroups(user, pw->pw_gid ) == -1 ){
 				err = errno;
-				logerr_die(LOG_ERR, "Set_full_group: initgroups failed '%s'",
+#ifdef ORIGINAL_DEBUG//JY@1020
+				LOGERR_DIE(LOG_ERR) "Set_full_group: initgroups failed '%s'",
 					Errormsg( err ) );
+#endif
 			}
 		} else
 #endif
 #if defined(HAVE_SETGROUPS)
 			if( setgroups(0,0) == -1 ){
 				err = errno;
-				logerr_die(LOG_ERR, "Set_full_group: setgroups failed '%s'",
+#ifdef ORIGINAL_DEBUG//JY@1020
+				LOGERR_DIE(LOG_ERR) "Set_full_group: setgroups failed '%s'",
 					Errormsg( err ) );
+#endif
 			}
 #endif
 		status = setgid( gid );
 		if( status < 0 ){
 			err = errno;
-			logerr_die(LOG_ERR, "Set_full_group: setgid '%d' failed '%s'",
+#ifdef ORIGINAL_DEBUG//JY@1020
+			LOGERR_DIE(LOG_ERR) "Set_full_group: setgid '%d' failed '%s'",
 				gid, Errormsg( err ) );
+#endif
 		}
 	}
 	return( 0 );
@@ -1400,7 +1493,7 @@ void Reset_daemonuid(void)
             DaemonUID = uid;
         }
     }
-    DEBUG4( "DaemonUID %ld", (long)DaemonUID );
+    DEBUG4( "DaemonUID %d", DaemonUID );
 }
 
 
@@ -1415,6 +1508,10 @@ void Reset_daemonuid(void)
 #endif
 #if defined(HAVE_SYS_VFS_H) && !defined(SOLARIS)
 # include <sys/vfs.h>
+#endif
+
+#ifdef SUNOS
+ extern int statfs(const char *, struct statfs *);
 #endif
 
 # if USE_STATFS_TYPE == STATVFS
@@ -1450,12 +1547,15 @@ void Reset_daemonuid(void)
 #  define BLOCKS(f)    (double)f.f_bavail
 # endif
 
+#ifdef JYDEBUG1//JYWeng
+FILE *aaaaaa;
+#endif
 
 /***************************************************************************
  * Check_space() - check to see if there is enough space
  ***************************************************************************/
 
-double Space_avail( const char *pathname )
+double Space_avail( char *pathname )
 {
 	double space = 0;
 	plp_struct_statfs fsb;
@@ -1465,27 +1565,47 @@ double Space_avail( const char *pathname )
 	} else {
 		space = BLOCKS(fsb) * (BLOCKSIZE(fsb)/1024.0);
 	}
+#ifdef JYDEBUG//JYWeng
+aaaaaa=fopen("/tmp/qqqqq", "a");
+fprintf(aaaaaa, "TYPE=%d\n", USE_STATFS_TYPE);
+fprintf(aaaaaa, "Space_avail: fsb_bsize=%d\n", fsb.f_bsize);
+fprintf(aaaaaa, "Space_avail: fsb_frsize=%d\n", fsb.f_frsize);
+fprintf(aaaaaa, "Space_avail: fsb_block=%d\n", fsb.f_blocks);
+fprintf(aaaaaa, "Space_avail: fsb_bfree=%d\n", fsb.f_bfree);
+fprintf(aaaaaa, "Space_avail: fsb_bavail=%d\n", fsb.f_bavail);
+fprintf(aaaaaa, "Space_avail: fsb_files=%d\n", fsb.f_files);
+fprintf(aaaaaa, "Space_avail: fsb_ffree=%d\n", fsb.f_ffree);
+fprintf(aaaaaa, "Space_avail: fsb_favail=%d\n", fsb.f_favail);
+fprintf(aaaaaa, "Space_avail: fsb_f_flag=%d\n", fsb.f_flag);
+fprintf(aaaaaa, "BLOCKS(fsb)=%f\n", BLOCKS(fsb));
+fprintf(aaaaaa, "BLOCKSIZE(fsb)=%f\n", BLOCKSIZE(fsb));
+fprintf(aaaaaa, "space=%f\n", space);
+fclose(aaaaaa);
+#endif
+#ifdef JYDEBUG//JYWeng
+space=3000.0;
+#endif
 	return(space);
 }
 
 /* VARARGS2 */
 #ifdef HAVE_STDARGS
- int safefprintf (int fd, const char *format,...)
+ void safefprintf (int fd, char *format,...)
 #else
- int safefprintf (va_alist) va_dcl
+ void safefprintf (va_alist) va_dcl
 #endif
 {
 #ifndef HAVE_STDARGS
 	int fd;
     char *format;
 #endif
-	char buf[10240];
+	char buf[1024];
     VA_LOCAL_DECL
 
     VA_START (format);
     VA_SHIFT (fd, int);
     VA_SHIFT (format, char *);
 
-	(void) plp_vsnprintf(buf, sizeof(buf), format, ap);
-	return Write_fd_str( fd, buf );
+	(void) VSNPRINTF (buf, sizeof(buf)) format, ap);
+	Write_fd_str( fd, buf );
 }

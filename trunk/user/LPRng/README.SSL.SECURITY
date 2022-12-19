@@ -18,9 +18,8 @@ library.  The following changes have been made to LPRng:
       the hierarchy of 'issuer' values of CERT signers.
     ${HOME}/.lpr/client.crt, ${HOME}/.lpr/client.pwd - 
       user or client certificate locations 
-
-    /etc/lpd/ssl.ca, /etc/lpd/ssl.server 
-     - locations of certificates and server certificates 
+    /etc/lpd/ssl.ca, /etc/lpd/ssl.server - locations
+      of signer/root certificates and server certificates 
 
 Introduction
   Why add SSL security to LPRng?
@@ -180,11 +179,11 @@ Now lets deal with the problem of certificates.  There are
 FOUR types of certificates that we need:
 
                           CERTS/files
-  root                   (/etc/lpd/ssl.ca/ca.crt)
-   - signer1             (/etc/lpd/ssl.ca/signer1.crt - signed by ca)
+  root                   (/etc/lpd/ssl.crt/ca.crt)
+   - signer1             (/etc/lpd/ssl.crt/signer1.crt - signed by ca)
       - print spoolers   (/etc/lpd/ssl.server/h121.crt - signed by signer1 )
       - users            (${HOME}/.lpd/user1.crt - signed by signer1 )
-   - signer2             (/etc/lpd/ssl.ca/signer2.crt - signed by ca)
+   - signer2             (/etc/lpd/ssl.crt/signer2.crt - signed by ca)
       - print spoolers   (/etc/lpd/ssl.server/h121.crt - signed by signer2)
       - users            (${HOME}/.lpd/user2.crt - signed by signer2)
 
@@ -209,42 +208,33 @@ This is a little complicated,  and there are a zillion ways to do
 this.  I have opted to implement and use a very simple method based
 on the Apached mod_perl SSL setup.
 
-a) A directory (/etc/lpd/ssl.ca/) containing
+a) A directory (/etc/lpd/ssl.crt/) containing
    all of the signing certificates, including the root certificate
    (ca.crt).  These will be used by both servers and clients.
-   Note: due to the OpenSSL implementation,  it may be necessary
-   to copy files to this directory.
+   Note: due to the OpenSSL implementation,  it is necessary
+   to create a set of symbolic links to these files.
 
-   OpenSSL also supports putting all of the certificates in a single
-   file. The certificates should be put in root to leaf order, i.e.
-   - a breadth first walk of the certificate tree.
+   Just to totally confuse things,  OpenSSL also supports putting
+   all of the certificates in a single file. The certificates should
+   be put in root to leaf order, i.e. - a breadth first walk
+   of the certificate tree.
    
-  For individual signing/certificate files:
     printcap/configure option:  ssl_ca_path=DIR 
-       default=/etc/lpd/ssl.ca/ssl.ca
-  For single signing/certificate files:
-    printcap/configure option:  ssl_ca_file=FILE 
-       default= NONE
-
     configure:
       --with-ssl_ca_path=DIR
            default ${sysconfdir}/lpd/ssl.crt/
       --with-ssl_ca_file=FILE
            default - none
-
    Note: See the SSL_CTX_load_verify_locations(
       SSL_CTX *ctx, const char *CAfile, const char *CApath);
    documentation for the details.
 
-b) The LPRng lpd server certifcate file and the password
-   for using the certificate:
-
-   A file (/etc/lpd/server.crt/server.crt) containing
-   the cert that is used by the server.  It should also contain
+b) A file (/etc/lpd/server.crt/server.crt) containing
+   the cert that is used by the server and is sent to the
+   client to identify the server.  It should also contain
    the private key for the server.
 
     printcap/configure option:  ssl_server_cert=FILE 
-        default ${sysconfdir}/lpd/server.crt/server.crt
     configure:
       --with-ssl_server_cert=PATH
         default ${sysconfdir}/lpd/server.crt/server.crt
@@ -264,64 +254,46 @@ b) The LPRng lpd server certifcate file and the password
 
      Note: the private key can be in any position.
 
-    The password file file contains the password for the private
-    key in the server cert file.  This file should to be 600, owned
-    by the LPD server user.
+c) A file (/etc/lpd/server.crt/server.pwd) containing the
+   password for the private key in the server cert file.
+   This file should to be 600, owned by the LPD server user.
+
+   Note: See the SSL_CTX_set_default_passwd_cb for details.
+   The password is read from the file.
 
     printcap/configure option:  ssl_server_passwd=FILE 
-        default ${sysconfdir}/lpd/server.crt/server.crt
-    configure:
       --with-ssl_server_passwd=PATH
-
-    Note: See the SSL_CTX_set_default_passwd_cb for details.
-    The password is read from the file.
+        default ${sysconfdir}/lpd/server.crt/server.crt
 
 d) For user authentication to the server,  users will need to
    specify a certificate and password.  This can be by using
    values in default files or
 
-   ${HOME}/.lpr/ssl.ca/    - signing/root certificates
-     (if not present, then ${sysconfdir}/lpd/ssl.ca/ is used)
+   ${HOME}/.lpr/ssl.crt/    - signing/root certificates
+     (if not present, then ${sysconfdir}/lpd/ssl.crt/ is used)
      Environment variable: LPR_CA_PATH
    ${HOME}/.lpr/client.crt  - client cert and key
      Environment variable: LPR_SSL_CERT 
    ${HOME}/.lpr/client.pwd  - file containing client password
      Environment variable: LPR_SSL_PASSWORD
 
-CERTIFICATE FIELDS:
-
-  There are several fields that need to be set in a certificate/
-  C    = country [US]
-  ST   = state   [California]
-  L    = city    [San Diego]
-  OU   = Organization Unit   [OU=Certificate Authority  for root cert]
-                             [OU=Server                 for server cert]
-                             [OU=User                   for user cert]
-  CN   = Common Name         [CN=Orgname                for root cert]
-                             [CN=ServerID (h110.astart) for server cert]
-                             [CN=papowell               for user cert]
-  Email = email address      [Email=hostmaster@astart.com  for root cert]
-                             [Email=hostmaster@h110.astart for server cert]
-                             [Email=papowell@astart.com    for user cert]
-
-  You can set default values for these fields.
 
 SETTING UP CERTIFICATE AUTHORITY
 
 There are several types of certificate files:
   - CA root (self signed)
   - signing certs (signed by CA or by signing cert)
+  - user certs (used only by client programs)
   - server certs (used by lpd server AND by lpd server when
       forwarding to a remote queue)
-  - user certs (used to identify users programs)
 
 The certificates are arranged as follows:
 
-1. signing certs are in a directory (or a single file)
-     default: /etc/lpd/ssl.ca/*
+1. signing certs are in a directory (or a file)
+     default: /etc/lpd/ssl.ca
 
-2. server certs are in a directory
-     default: /etc/lpd/ssl.server/*
+2. certificates are created in a working directory
+     default: /etc/lpd/ssl.certs
 
 3. user certificates are kept in a subdirectory of the
    user home directory, say:
@@ -329,27 +301,8 @@ The certificates are arranged as follows:
       ${HOME}/.lpr/client.pwd   - password to use cert
         private key for authentication
 
-4. certificates are created in a working directory and are
-   then copied (if necessary) to the correct directory.
-
-     default: /etc/lpd/ssl.certs
-
-PRINTCAP INFORMATION:
-  the following entries are added to the printcap or lpd.conf file:
-
- lp:
-   :auth=ssl                  # ssl authentication
-   :ssl_id=lp                 # id value
-   :ssl_ca_file=/etc/lpd/ssl.ca/ca.crt # certs for signing
-   :ssl_crl_file=/etc/lpd/ssl.crl/ssl.crl # revocation certs
-   :ssl_server_cert=/etc/lpd/ssl.server/server.crt # server cert
-   :ssl_server_password_file=/etc/lpd/ssl.server/server.pwd # password
-
-CREATING CERTS
-
 The lprng_certs script provides a way to create ROOT certs,
-signer certs, server (lpd) certs, and user certs. You may need
-to copy the certificate files to the appropriate locations.
+signer certs, server (lpd) certs, and user certs:
 
 usage: lprng_certs option
   init              - make directory structure
@@ -360,27 +313,33 @@ usage: lprng_certs option
   verify cert*      - verify certs
      certs can be path or user-XX.csr values
 
-STEP 1: CREATE DIRECTORY STRUCTURE
-
-  Use:  lprng_certs [--TEMP=/dir] init
+CREATE DIRECTORY STRUCTURE
+  Use:  lprng_certs init
   - creates directories for lpd server
-    TEMP=/dir sets the directory; byt default, TEMP=/etc/lpd
-     ${TEMP}/ssl.ca/  - ca root and/or signer certs
+      These are, by default:
+     /etc/lpd/ssl.ca/  - ca root and/or signer certs
             default location for creation
-     ${TEMP}/ssl.server/  - server cert
+     /etc/lpd/ssl.server/  - server cert
             (usually server.crt and server.pwd files)
-     ${TEMP}/ssl.certs/  - server and/or user certs
+     /etc/lpd/ssl.certs/  - server and/or user certs
             default location for creation
+
    You use this to set up the directories for certificates
    on a non-master system.
 
-STEP 2: CREATE CA ROOT CERT AND SET CERTIFICATE DEFAULTS
+CREATE CA ROOT CERT
+   Use: lprng newca
 
-   Use: lprng [--TEMP=/dir] newca
+    calls lprng_certs init
+    calls lprng_certs defaults to set up and/or modify
+      default values
+    creates the CA root certificate and key file in the
+      ssl.ca directory
 
-  You use this when you want to set up a totally  new CA on a master system.
+  You use this when you want to set up a totally  new
+  CA on a master system.
 
- Example of use:
+Example:
  
   #> lprng_certs newca
   
@@ -392,186 +351,23 @@ STEP 2: CREATE CA ROOT CERT AND SET CERTIFICATE DEFAULTS
   WARNING: /etc/lpd/ssl.ca/ca.crt already exists! Do you want to overwrite it? [N/y] Y
   
   INITIALIZATION - SET DEFAULTS
-
-	  There are several fields that need to be set in a certificate/
-	  C    = country [US]
-	  ST   = state   [California]
-	  L    = city    [San Diego]
-	  OU   = Organization Unit   [OU=Certificate Authority  for root cert]
-								 [OU=Server                 for server cert]
-								 [OU=User                   for user cert]
-	  CN   = Common Name         [CN=Orgname                for root cert]
-								 [CN=ServerID (h110.astart) for server cert]
-								 [CN=papowell               for user cert]
-	  Email = email address      [Email=hostmaster@astart.com  for root cert]
-								 [Email=hostmaster@h110.astart for server cert]
-								 [Email=papowell@astart.com    for user cert]
-
-	  You can set default values for these fields.
-
-	110: {90} % lprng_certs --TEMP=/tmp newca
-	lprng_certs -- LPRng SSL Certificate Management
-	Copyright (c) 2002 Patrick Powell
-	Based on CCA by Ralf S. Engelschall
-	(Copyright (c) 1998-2001 Ralf S. Engelschall, All Rights Reserved.)
-
-	INITIALIZATION - SET DEFAULTS in /tmp/ssl.ca/ca.defaults
-
-  *** you can change the defaults as shown ***
-
-	1. Country Name             (2 letter code, C)     [default 'XY'] US
-	2. State or Province Name   (full name, ST)        [default 'Snake Desert'] California
-	3. Locality Name            (eg, city, L)          [default 'Snake Town'] San Diego
-	4. Organization Name        (eg, company, O)       [default 'Snake Oil, Ltd'] Astart Technologies
-	5. Organizational Unit Name for CA     (eg, section, OU) [default 'CA']
-	6. Organizational Unit Name for Signer (eg, section, OU) [default 'Signer']
-	7. Organizational Unit Name for Server (eg, section, OU) [default 'Server']
-	8. Organizational Unit Name for User   (eg, section, OU) [default 'User']
-	9. Common Name for CA       (eg, CA name, CN)      [default 'Snake Oil CA'] Astart CA
-	10. Common Name for Signer   (eg, signer name, CN)  [default 'Signer Name']
-	11. Common Name for Server   (eg, server name, CN)  [default 'PrintServer Name']
-	12. Common Name for User     (eg, user name, CN)    [default 'John Q. User']
-	13. Email Address            (eg, name@FQDN, Email) [default 'name@snakeoil.dom'] name@astart.com
-	14. CA Certificate Validity in days                 [default '365']
-	15. Signer Certificate Validity in days             [default '365']
-	16. Server Certificate Validity in days             [default '365']
-	17. User Certificate Validity in days               [default '365']
-	18. Signer Certificate Path  (blank indicates CA signs) [default '']
-	19. Signer Private Key File (blank indicates key in cert file) [default '']
-	20. Created Certificates Directory (blank indicates default /tmp/ssl.certs)    [default '']
-	21. Revoked Certificates File (blank indicates default /tmp/certs.crl)    [default '']
-
-   **** this shows what the new default value will be *****
-	C_val US
-	ST_val California
-	L_val San Diego
-	O_val Astart Technologies
-	OU_ca_val CA
-	OU_signer_val Signer
-	OU_server_val Server
-	OU_user_val User
-	CN_ca_val Astart CA
-	CN_signer_val Signer Name
-	CN_server_val PrintServer Name
-	CN_user_val John Q. User
-	Email_val name@astart.com
-	Validity_ca_val 365
-	Validity_signer_val 365
-	Validity_server_val 365
-	Validity_user_val 365
-	Signer_cert_path
-	Signer_key_path
-	Cert_dir
-	Revoke_file
-
-	  ...  
-	______________________________________________________________________
-
-	STEP 1: Generating RSA private key for CA (1024 bit)
-	49279 semi-random bytes loaded
-	Generating RSA private key, 1024 bit long modulus
-	.........................................++++++
-	.................++++++
-	e is 65537 (0x10001)
-	______________________________________________________________________
-
-	STEP 2: Generating X.509 certificate signing request for CA
-	You are about to be asked to enter information that will be incorporated
-	into your certificate request.
-	What you are about to enter is what is called a Distinguished Name or a DN.
-	There are quite a few fields but you can leave some blank
-	For some fields there will be a default value,
-	If you enter '.', the field will be left blank.
-
-  *** change any of the field names ***
-	-----
-	1. Country Name            (2 letter code, C)  [US]:
-	2. State or Province Name     (full name, ST)  [California]:
-	3. Locality Name                (eg, city, L)  [San Diego]:
-	4. Organization Name         (eg, company, 0)  [Astart Technologies]:
-	5. Organizational Unit Name (eg, section, OU)  [CA]:
-	6. Common Name           (eg, ca name, CN)  [Astart CA]:
-	7. Email Address       (eg, name@FQDN, Email)  [name@astart.com]:root@astart.com
-	______________________________________________________________________
-
-	STEP 3: Generating X.509 certificate for CA signed by itself
-	Signature ok
-	subject=/C=US/ST=California/L=San Diego/O=Astart Technologies/OU=CA/CN=Astart CA/emailAddress=root@astart.com
-	Getting Private key
-	______________________________________________________________________
-
-	RESULT:
-	/tmp/ssl.ca/ca.crt: /C=US/ST=California/L=San Diego/O=Astart Technologies/OU=CA/CN=Astart CA/emailAddress=root@astart.com
-	error 18 at 0 depth lookup:self signed certificate
-	OK
-	______________________________________________________________________
-
-	STEP 4. Enrypting RSA private key /tmp/ssl.ca/ca.key with a pass phrase for security
-
-	The contents of the certificate key file (the generated private key)
-	should be echo kept secret, especially so if it is used to sign
-	Certificates or for User authentication.
-	  SSL experts strongly recommend you to encrypt the key file with
-	a Triple-DES cipher and a Pass Phrase.  When using LPRng, you provide
-	the password via a file specified by the LPR_SSL_PASSWORD
-	environent variable, or in the /home/papowell/.lpr/client.pwd file.
-	The LPD server uses the ssl_server_password_file option to specify
-	the location of a file containing the password.
-
-	Encrypt the private key now? [Y/n]:
-	writing RSA key
-	Enter PEM pass phrase:
-	Verifying - Enter PEM pass phrase:
-	Fine, you're using an encrypted private key to sign CERTS.
-	______________________________________________________________________
-
-	STEP 5: Combine CERT and KEY file
-	Generate single CERT and KEY file? [N/y]
-
-	Indexing  /tmp/ssl.ca
-	ca.crt          ... cbd552ae.0
-
-	Use the following commands to examine the CERT and KEY files:
-	   openssl x509 -text -in /tmp/ssl.ca/ca.crt
-	   openssl rsa -text -in /tmp/ssl.ca/ca.key
-
-STEP 3: CREATE SERVER CERTS AND INSTALL ON SERVERS
-
-  Creates a certificate with the appropriate entries for use
-  as a server (lpd) certificate.
-
-Example:
- 
-  #> lprng_certs gen
-  lprng_certs -- LPRng SSL Certificate Management
-  Copyright (c) 2002 Patrick Powell
-  Based on CCA by Ralf S. Engelschall
-  (Copyright (c) 1998-2001 Ralf S. Engelschall, All Rights Reserved.)
-  
-  CERTIFICATE GENERATION
-  What type of certificate? User/Server/Signing Authority/Help? [u/s/a/H] s
-  Create in '/etc/lpd/ssl.certs' [return for yes, or specify directory] y
-  CERT name 'server-01'? [return for yes, or specify name] h110
-  CERT name 'h110'? [return for yes, or specify name]
-  Creating h110 in /etc/lpd/ssl.certs
-  Sign with Certificate '/etc/lpd/ssl.ca/ca.crt' [return for yes, or specify cert file]
-  Private key in /etc/lpd/ssl.ca/ca.crt
-  
-  Generating user Certificate [h110] 
+  ...  
   ______________________________________________________________________
   
-  STEP 1: Generating RSA private key for user (1024 bit)
+  STEP 1: Generating RSA private key for CA (1024 bit)
   ______________________________________________________________________
   
-  STEP 2: Generating X.509 certificate signing request for user
-  User Certificate Validity in days  [default 365]
+  STEP 2: Generating X.509 certificate signing request for CA
   ______________________________________________________________________
   
-  STEP 3: Generating X.509 certificate signed by own CA
+  STEP 3: Generating X.509 certificate for CA signed by itself
   ______________________________________________________________________
   
   RESULT:
-  /etc/lpd/ssl.certs/h110.crt: OK
+  /etc/lpd/ssl.ca/ca.crt:
+  /C=US/ST=California/L=San Diego/O=Astart/OU=Certificate Authority/CN=Astart CA/Email=id@astart.com
+  error 18 at 0 depth lookup:self signed certificate
+  OK
   ______________________________________________________________________
   
   STEP 4. Enrypting RSA private key with a pass phrase for security
@@ -587,7 +383,7 @@ Example:
   the location of a file containing the password.
     See the LPRng Refernce Manual for details, or the printcap(5) man page.
   
-  key file is /etc/lpd/ssl.certs/h110.key
+  key file is /etc/lpd/ssl.ca/ca.key
   Encrypt the private key now? [Y/n]: y
   Fine, you're using an encrypted private key to sign CERTS.
   ______________________________________________________________________
@@ -596,29 +392,17 @@ Example:
   Generate single CERT and KEY file? [Y/n] y
   
   Use the following commands to examine the CERT and KEY files:
-     openssl x509 -text -in /etc/lpd/ssl.certs/h110.crt
-     openssl rsa -text -in /etc/lpd/ssl.certs/h110.crt
+     openssl x509 -text -in /etc/lpd/ssl.ca/ca.crt
+     openssl rsa -text -in /etc/lpd/ssl.ca/ca.crt
+  
+CREATE A USER/SERVER CERT
 
-
-  ----------
-
-  You must now copy the h110.crt certificate to the lpd server certificate
-  file location:
-   cp /etc/lpd/ssl.certs/h110.crt /etc/lpd/server.cert/server.crt
-   echo 'password' >/etc/lpd/server.crt/server.pwd
-   chown lpd /etc/lpd/server.crt/server.pwd
-   chmod 700 /etc/lpd/server.crt/server.pwd
-   (Note: lpd is the user that the LPD server will run as. This value is set
-    by the configuration in the lpd.conf file.)
-
-STEP 5:  CREATE AND INSTALL USER CERTS
-
-  Creates a certificate with the appropriate entries for use
-  as a server (lpd) certificate.
+- creates a certificate with the appropriate entries for use
+  as a signing, server (lpd), or client (user) certificate.
 
 Example:
  
-  #> lprng_certs gen
+  #> lprng_certs newca
   lprng_certs -- LPRng SSL Certificate Management
   Copyright (c) 2002 Patrick Powell
   Based on CCA by Ralf S. Engelschall
@@ -629,26 +413,51 @@ Example:
   Create in '/etc/lpd/ssl.certs' [return for yes, or specify directory] y
   CERT name 'user-01'? [return for yes, or specify name] papowell
   CERT name 'papowell'? [return for yes, or specify name]
-  Creating h110 in /etc/lpd/ssl.certs
+  Creating papowell in /etc/lpd/ssl.certs
   Sign with Certificate '/etc/lpd/ssl.ca/ca.crt' [return for yes, or specify cert file]
   Private key in /etc/lpd/ssl.ca/ca.crt
   
-  ...
+  Generating user Certificate [papowell] 
+  ______________________________________________________________________
+  
+  STEP 1: Generating RSA private key for user (1024 bit)
+  ______________________________________________________________________
+  
+  STEP 2: Generating X.509 certificate signing request for user
+  User Certificate Validity in days  [default 365]
+  ______________________________________________________________________
+  
+  STEP 3: Generating X.509 certificate signed by own CA
+  ______________________________________________________________________
+  
+  RESULT:
+  /etc/lpd/ssl.certs/papowell.crt: OK
+  ______________________________________________________________________
+  
+  STEP 4. Enrypting RSA private key with a pass phrase for security
+  The contents of the certificate key file (the generated private key)
+  should be echo kept secret, especially so if it is used to sign
+  Certificates or for User authentication.
+    SSL experts strongly recommend you to encrypt the key file with
+  a Triple-DES cipher and a Pass Phrase.  When using LPRng, you provide
+  the password via a file or file descriptor specified by an environent
+  variable, i.e. - SSL_PASSWORD_FILE or SSL_PASSWORD_FD, or in the
+  ${HOME}/.ssl_password file.
+    The LPD server uses the ssl_server_password_file option to specify
+  the location of a file containing the password.
+    See the LPRng Refernce Manual for details, or the printcap(5) man page.
+  
+  key file is /etc/lpd/ssl.certs/papowell.key
+  Encrypt the private key now? [Y/n]: y
+  Fine, you're using an encrypted private key to sign CERTS.
+  ______________________________________________________________________
+  
+  STEP 5: Combine CERT and KEY file
+  Generate single CERT and KEY file? [Y/n] y
+  
   Use the following commands to examine the CERT and KEY files:
      openssl x509 -text -in /etc/lpd/ssl.certs/papowell.crt
      openssl rsa -text -in /etc/lpd/ssl.certs/papowell.crt
-
-
-  ----------
-
-  You must now copy the papowell.crt certificate to the user .lpd directory
-  and then set the password.
-
-   cp /etc/lpd/ssl.certs/papowell.crt ~papowell/.lpd/client.crt
-   echo 'password' >~papowell/.lpd/client.pwd
-   chown papowell ~papowell/.lpd/client.pwd
-   chmod 700 ~papowell/.lpd/client.pwd
-
 
 CREATE A SIGNING CERT
 
@@ -720,37 +529,18 @@ CREATE A SIGNING CERT
   - creates a certificate with the appropriate entries for use
     as a signing, server (lpd), or client (user) certificate.
   
+CREATING CERT AND SIGNING IT WITH SIGNING CERT
 
-TESTING SSL AUTHENTICATION
+  This is done in the same manner as creating a CERT, but
+  you simply select the signing cert to be used.  When requested
+  for the password,  you should supply the password of the signing
+  cert, not the root cert.
 
-Set up a printcap entry:
- ssl:
-   :auth=ssl
-   :ssl_id=lp
-   :ssl_ca_file=/etc/lpd/ssl.ca/ca.crt
-   :ssl_crl_file=/etc/lpd/ssl.crl/ssl.crl
-   :ssl_server_cert=/etc/lpd/ssl.server/server.crt
-   :ssl_server_password_file=/etc/lpd/ssl.server/server.pwd
-   :sd=/var/spool/lpd/%P
-   :lp=/dev/null
-   # for debugging only!
-   :db=2   
+SETTING UP LPD SERVERS WITH SSL CERTS
 
-Create the spool queue by using:
-  checkpc -f
-
-Use the lprng_ssl script described above to create the ssl certs and install
-them as required.
-
-Now restart LPD in debug mode, so you can kill it:
-  lpd -F -D1
-
-Use the 'lpq' command to connect to the server:
-  lpq -Pssl -D1 |&tee /tmp/log
-
-If this fails, examine the /var/spool/lpd/ssl/log file for
-reasons that the server failed.  Examine the /tmp/log
-file for reasons that the client failed.
+  First, you will need to create a root CA as described above,
+and then create a certificate and key for the server. I recommend
+you put the key and cert into the same file.
 
 CERTIFICATE REVOCATION AND PERMSSIONS CHECKING
 
@@ -786,3 +576,9 @@ and, say /etc/lpd/reject.users
 Now you can use:
 REJECT NOT AUTHCA=</etc/lpd/signers.auth
 REJECT AUTHFROM=</etc/lpd/reject.users
+
+Now you might want to try to automate this process by putting the CERTS of
+bad users or bad signers into a directory and then extracting the subject
+keys::
+
+#> lprng_certs verify

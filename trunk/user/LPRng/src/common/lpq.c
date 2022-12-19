@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: lpq.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+
 
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
@@ -96,8 +116,8 @@
 #include "getqueue.h"
 #include "initialize.h"
 #include "linksupport.h"
+#include "patchlevel.h"
 #include "sendreq.h"
-#include "user_auth.h"
 
 /**** ENDINCLUDE ****/
 
@@ -109,34 +129,10 @@
 #include "lpq.h"
 /**** ENDINCLUDE ****/
 
- static const char *Printer_to_show;
- /* TODO: why is that not used?: */
+ struct line_list Lpq_options;
  static char *Username_JOB;
 
-static void usage(void)
-{
-	char buffer[128];
-	FPRINTF( STDERR, _("usage: %s [-aAclV] [-Ddebuglevel] [-Pprinter] [-tsleeptime]\n"
-"  -A           - use authentication specified by AUTH environment variable\n"
-"  -a           - all printers\n"
-"  -c           - clear screen before update\n"
-"  -l           - increase (lengthen) detailed status information\n"
-"                 additional l flags add more detail.\n"
-"  -L           - maximum detailed status information\n"
-"  -n linecount - linecount lines of detailed status information\n"
-"  -Ddebuglevel - debug level\n"
-"  -Pprinter    - specify printer\n"
-"  -s           - short (summary) format\n"
-"  -tsleeptime  - sleeptime between updates\n"
-"  -V           - print version information\n"
-"  -v           - print in key: value format\n"), Name );
-
-	FPRINTF( STDERR, "Security Supported: %s\n", ShowSecuritySupported(buffer,sizeof(buffer)) );
-	Parse_debug("=",-1);
-	FPRINTF( STDOUT, "%s\n", Version );
-	exit(1);
-}
-
+#define MAX_SHORT_STATUS 6
 
 /***************************************************************************
  * main()
@@ -171,14 +167,13 @@ int main(int argc, char *argv[], char *envp[])
 
 	Longformat = 1;
 	Status_line_count = 0;
-	Printer_to_show = NULL;
 	Displayformat = REQ_DLONG;
 
 	Initialize(argc, argv, envp, 'D' );
 	Setup_configuration();
 	Get_parms(argc, argv );      /* scan input args */
 	if( Auth && !getenv("AUTH") ){
-		FPRINTF(STDERR,_("authentication requested (-A option) and AUTH environment variable not set"));
+		FPRINTF(STDERR,_("authentication requested (-A) and no AUTH environment variable"));
 		usage();
 	}
 
@@ -204,7 +199,6 @@ int main(int argc, char *argv[], char *envp[])
 			}
 		} else {
 			/* set up configuration */
-			Set_DYN(&Printer_DYN, Printer_to_show);
 			Get_printer();
 			Show_status(argv);
 		}
@@ -221,9 +215,10 @@ int main(int argc, char *argv[], char *envp[])
 	Errorcode = 0;
 	DEBUG1("lpq: cleaning up");
 	cleanup(0);
+	return(0);
 }
 
-static void Show_status(char **argv)
+void Show_status(char **argv)
 {
 	int fd;
 	char msg[LINEBUFFER];
@@ -233,7 +228,7 @@ static void Show_status(char **argv)
 	Fix_Rm_Rp_info(0,0);
 
 	if( ISNULL(RemotePrinter_DYN) ){
-		plp_snprintf( msg, sizeof(msg),
+		SNPRINTF( msg, sizeof(msg))
 			_("Printer: %s - cannot get status from device '%s'\n"),
 			Printer_DYN, Lp_device_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
@@ -242,20 +237,20 @@ static void Show_status(char **argv)
 
 	if( Displayformat != REQ_DSHORT
 		&& safestrcasecmp(Printer_DYN, RemotePrinter_DYN) ){
-		plp_snprintf( msg, sizeof(msg), _("Printer: %s is %s@%s\n"),
+		SNPRINTF( msg, sizeof(msg)) _("Printer: %s is %s@%s\n"),
 			Printer_DYN, RemotePrinter_DYN, RemoteHost_DYN );
 		DEBUG1("Show_status: '%s'",msg);
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
 	}
 	if( Check_for_rg_group( Logname_DYN ) ){
-		plp_snprintf( msg, sizeof(msg),
+		SNPRINTF( msg, sizeof(msg))
 			_("Printer: %s - cannot use printer, not in privileged group\n"),
 			Printer_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
 		return;
 	}
 	if( Direct_DYN && Lp_device_DYN ){
-		plp_snprintf( msg, sizeof(msg),
+		SNPRINTF( msg, sizeof(msg))
 			_("Printer: %s - direct connection to device '%s'\n"),
 			Printer_DYN, Lp_device_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
@@ -293,7 +288,7 @@ static void Show_status(char **argv)
  *   string attacks by users putting codes in job names, etc.
  ***************************************************************************/
 
-int Read_status_info( char *host UNUSED, int sock,
+int Read_status_info( char *host, int sock,
 	int output, int timeout, int displayformat,
 	int status_line_count )
 {
@@ -319,9 +314,7 @@ int Read_status_info( char *host UNUSED, int sock,
 	 */
 	if( displayformat == REQ_VERBOSE || displayformat == REQ_LPSTAT || Show_all ){
 		do{ 
-		      n = Read_fd_len_timeout( Send_query_rw_timeout_DYN,
-					       sock, buffer, sizeof(buffer)-1);
-			if( n ){
+			if( (n = read( sock, buffer, sizeof(buffer)-1)) ){
 				buffer[n] = 0;
 				if( Write_fd_str( output, buffer ) < 0 ) return(1);
 			}
@@ -463,7 +456,7 @@ int Read_status_info( char *host UNUSED, int sock,
 	return(0);
 }
 
-static void Term_clear(void)
+void Term_clear()
 {
 #if defined(CLEAR) 
 	int pid, n;
@@ -471,17 +464,17 @@ static void Term_clear(void)
 	if( (pid = dofork(0)) == 0 ){
 		setuid( OriginalRUID );
 		close_on_exec(3);
-		execl(CLEAR,CLEAR,(char*)NULL);
+		execl(CLEAR,0);
 		exit(1);
 	} else if( pid < 0 ){
-		logerr_die(LOG_ERR, _("fork() failed") );
+		LOGERR_DIE(LOG_ERR) _("fork() failed") );
 	}
 	while( (n = plp_waitpid(pid,&procstatus,0)) != pid ){
 		int err = errno;
 		DEBUG1("Filterprintcap: waitpid(%d) returned %d, err '%s'",
 			pid, n, Errormsg(err) );
 		if( err == EINTR ) continue; 
-		logerr(LOG_ERR, _("Term_clear: waitpid(%d) failed"), pid);
+		LOGERR(LOG_ERR) _("Term_clear: waitpid(%d) failed"), pid);
 		exit(1);
 	}
 #else
@@ -495,7 +488,12 @@ static void Term_clear(void)
  * 2. Check for duplicate information
  ***************************************************************************/
 
-static void Get_parms(int argc, char *argv[] )
+ extern char *next_opt;
+
+ char LPQ_optstr[]    /* LPQ options */
+ = "AD:P:VacLn:lst:vU:" ;
+
+void Get_parms(int argc, char *argv[] )
 {
 	int option;
 	char *name, *s, *t;
@@ -511,14 +509,14 @@ static void Get_parms(int argc, char *argv[] )
 		exit(1);
 	} else {
 		/* scan the input arguments, setting up values */
-		while ((option = Getopt (argc, argv, "AD:P:VacLn:lst:vU:" )) != EOF) {
+		while ((option = Getopt (argc, argv, LPQ_optstr )) != EOF) {
 			switch (option) {
 			case 'A': Auth = 1; break;
 			case 'D':
 				Parse_debug(Optarg,1);
 				break;
 			case 'P': if( Optarg == 0 ) usage();
-				Printer_to_show = Optarg;
+				Set_DYN(&Printer_DYN,Optarg);
 				break;
 			case 'V': ++Verbose; break;
 			case 'a': Set_DYN(&Printer_DYN,ALL); All_printers = 1; break;
@@ -557,3 +555,69 @@ static void Get_parms(int argc, char *argv[] )
 		}
 	}
 }
+
+ char *lpq_msg[] = {
+ N_("usage: %s [-aAclV] [-Ddebuglevel] [-Pprinter] [-tsleeptime]\n"),
+ N_("  -A           - use authentication specified by AUTH environment variable\n"),
+ N_("  -a           - all printers\n"),
+ N_("  -c           - clear screen before update\n"),
+ N_("  -l           - increase (lengthen) detailed status information\n"),
+ N_("                 additional l flags add more detail.\n"),
+ N_("  -L           - maximum detailed status information\n"),
+ N_("  -n linecount - linecount lines of detailed status information\n"),
+ N_("  -Ddebuglevel - debug level\n"),
+ N_("  -Pprinter    - specify printer\n"),
+ N_("  -s           - short (summary) format\n"),
+ N_("  -tsleeptime  - sleeptime between updates\n"),
+ N_("  -V           - print version information\n"),
+ N_("  -v           - print in key: value format\n"),
+ 0 };
+ 
+void usage(void)
+{
+	char *s;
+	int i;
+	for( i = 0; (s = lpq_msg[i]); ++i ){
+		if( i == 0 ){
+			FPRINTF( STDERR, _(s), Name );
+		} else {
+			FPRINTF( STDERR, "%s", _(s) );
+		}
+	}
+	Parse_debug("=",-1);
+	FPRINTF( STDOUT, "%s\n", Version );
+	exit(1);
+}
+
+#if 0
+
+#include "permission.h"
+#include "lpd_status.h"
+/* int Send_request( */
+	int class,					/* 'Q'= LPQ, 'C'= LPC, M = lprm */
+	int format,					/* X for option */
+	char **options,				/* options to send */
+	int connect_timeout,		/* timeout on connection */
+	int transfer_timeout,		/* timeout on transfer */
+	int output					/* output on this FD */
+	)
+{
+	int i, n;
+	int socket = 1;
+	char cmd[SMALLBUFFER];
+
+	cmd[0] = format;
+	cmd[1] = 0;
+	SNPRINTF(cmd+1, sizeof(cmd)-1, "%s", RemotePrinter_DYN);
+	for( i = 0; options[i]; ++i ){
+		n = safestrlen(cmd);
+		SNPRINTF(cmd+n,sizeof(cmd)-n," %s",options[i] );
+	}
+	Perm_check.remoteuser = "papowell";
+	Perm_check.user = "papowell";
+	Is_server = 1;
+	Job_status(&socket,cmd);
+	return(-1);
+}
+*/
+#endif

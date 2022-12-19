@@ -31,9 +31,9 @@ CFLAGS += -D_GNU_SOURCE
 CPPFLAGS += -D_GNU_SOURCE
 CFLAGS += -Wall
 CFLAGS += -Wextra -Wstrict-prototypes -Wdeclaration-after-statement
-# CFLAGS += -Wno-missing-field-initializers
-# CFLAGS += -ansi	# iptables headers does use typeof which is a gcc extension
-# LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
+#CFLAGS += -Wno-missing-field-initializers
+#CFLAGS += -ansi	# iptables headers does use typeof which is a gcc extension
+#LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
 CC ?= gcc
 RM = rm -f
 INSTALL = install
@@ -137,7 +137,7 @@ testportinuse:	testportinuse.o portinuse.o getifaddr.o \
 
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o
-	
+
 CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
 LDFLAGS += -Wl,--gc-sections
 
@@ -181,4 +181,3 @@ print-%:
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
 endif
-

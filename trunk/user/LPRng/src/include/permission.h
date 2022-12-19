@@ -1,9 +1,26 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
+ * $Id: permission.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
  ***************************************************************************/
 
 
@@ -75,7 +92,7 @@ struct perm_check {
 							/* or HOST if no control file */
 	int	port;				/* port for remote connection */
 	const char *printer;			/* printer name */
-	/* struct sockaddr addr;	/ * IF address information */
+	// struct sockaddr addr;	/* IF address information */
 	int unix_socket;		/* connection via unix socket */
 	int service;			/* first character service */
 	const char *lpc;				/* lpc operation */
@@ -89,11 +106,19 @@ struct perm_check {
 EXTERN struct perm_check Perm_check;
 
 /* PROTOTYPES */
-const char *perm_str( int n );
+char *perm_str( int n );
+int perm_val( char *s );
 int Perms_check( struct line_list *perms, struct perm_check *check,
 	struct job *job, int job_check );
 int match( struct line_list *list, const char *str, int invert );
-void Dump_perm_check( const char *title,  struct perm_check *check );
+int match_host( struct line_list *list, struct host_information *host,
+	int invert );
+int portmatch( char *val, int port );
+int match_range( struct line_list *list, int port, int invert );
+int match_char( struct line_list *list, int value, int invert );
+int match_group( struct line_list *list, const char *str, int invert );
+int ingroup( char *group, const char *user );
+void Dump_perm_check( char *title,  struct perm_check *check );
 void Perm_check_to_list( struct line_list *list, struct perm_check *check );
 
 #endif

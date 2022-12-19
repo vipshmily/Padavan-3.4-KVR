@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -7,6 +23,10 @@
  *
  ***************************************************************************/
 
+ static char *const _id =
+"$Id: permission.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+
+
 #include "lp.h"
 #include "fileopen.h"
 #include "globmatch.h"
@@ -15,8 +35,9 @@
 #include "permission.h"
 #include "linksupport.h"
 
-/**** ENDINCLUDE ****/
+#undef HAVE_INNETGR
 
+/**** ENDINCLUDE ****/
  struct keywords permwords[] = {
 
 {"ACCEPT", 0, P_ACCEPT,0,0,0,0},
@@ -55,18 +76,11 @@
 {0,0,0,0,0,0,0}
 };
 
-static int match_host( struct line_list *list, struct host_information *host,
-	int invert );
-static int match_range( struct line_list *list, int port, int invert );
-static int match_char( struct line_list *list, int value, int invert );
-static int match_group( struct line_list *list, const char *str, int invert );
-static int ingroup( char *group, const char *user );
-
-const char *perm_str( int n )
+char *perm_str( int n )
 {
 	return(Get_keystr(n,permwords));
 }
-static int perm_val( char *s )
+int perm_val( char *s )
 {
 	if( !s )return(0);
 	if( safestrlen(s) == 1 && isupper(cval(s)) ){
@@ -74,6 +88,7 @@ static int perm_val( char *s )
 	}
 	return(Get_keyval(s,permwords));
 }
+
 
 /***************************************************************************
  * Perms_check( struct line_list *perms, struct perm_check );
@@ -96,8 +111,10 @@ int Perms_check( struct line_list *perms, struct perm_check *check,
 	int last_default_perm;
 	char buffer[4];
 
+#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGFC(DDB1)Dump_perm_check( "Perms_check - checking", check );
 	DEBUGFC(DDB1)Dump_line_list( "Perms_check - permissions", perms );
+#endif
 	Init_line_list(&values);
 	Init_line_list(&args);
 	last_default_perm = perm_val( Default_permission_DYN );
@@ -275,7 +292,7 @@ int Perms_check( struct line_list *perms, struct perm_check *check,
 					if( !(t = args.list[j]) ) continue;
 					c = cval(t);
 					buffer[1] = 0; buffer[0] = c;
-					if( isupper(c) && (s = Find_str_value(&job->info,buffer))){
+					if( isupper(c) && (s = Find_str_value(&job->info,buffer,0))){
 						/* we do a glob match against line */
 						m = Globmatch( t+1, s );
 					}
@@ -344,7 +361,7 @@ int Perms_check( struct line_list *perms, struct perm_check *check,
 				default: break;
 				case 'Q': case 'M': case 'C':
 					/* check succeeds if remoteuser == user */
-					t = Find_str_value(&job->info,AUTHUSER);
+					t = Find_str_value(&job->info,AUTHUSER,Value_sep);
 					m = (safestrcmp( check->authuser, t ) != 0);
 					if( invert ) m = !m;
 					DEBUGF(DDB3)(
@@ -360,7 +377,7 @@ int Perms_check( struct line_list *perms, struct perm_check *check,
 				default: break;
 				case 'Q': case 'M': case 'C':
 					/* check succeeds if authinfo present */
-					t = Find_str_value(&job->info,AUTHUSER);
+					t = Find_str_value(&job->info,AUTHUSER,Value_sep);
 					m = !t;
 					if( invert ) m = !m;
 					DEBUGF(DDB3)(
@@ -415,6 +432,7 @@ int Perms_check( struct line_list *perms, struct perm_check *check,
 				result, perm_str( result ) );
 	Free_line_list(&values);
 	Free_line_list(&args);
+
 	return( result );
 }
 
@@ -450,7 +468,9 @@ int match( struct line_list *list, const char *str, int invert )
 			Init_line_list(&users);
 			Get_file_image_and_split(s+1,0,0,&users,Whitespace,
 				0,0,0,0,0,0);
+#ifdef ORIGINAL_DEBUG//JY@1020
 			DEBUGFC(DDB3)Dump_line_list("match- file contents'", &users );
+#endif
 			result = match( &users,str,0);
 			Free_line_list(&users);
 		} else {
@@ -473,7 +493,7 @@ int match( struct line_list *list, const char *str, int invert )
  *    if both are null, then match succeeds
  ***************************************************************************/
 
-static int match_host( struct line_list *list, struct host_information *host,
+int match_host( struct line_list *list, struct host_information *host,
 	int invert )
 {
  	int result = Match_ipaddr_value(list,host);
@@ -488,7 +508,7 @@ static int match_host( struct line_list *list, struct host_information *host,
  * entry has the format:  number     number-number
  ***************************************************************************/
 
-static int portmatch( char *val, int port )
+int portmatch( char *val, int port )
 {
 	int low, high, err;
 	char *end;
@@ -512,7 +532,7 @@ static int portmatch( char *val, int port )
 		*s = '-';
 	}
 	if( err ){
-		logmsg( LOG_ERR, "portmatch: bad port range '%s'", val );
+		LOGMSG( LOG_ERR) "portmatch: bad port range '%s'", val );
 	}
 	if( high < low ){
 		err = high;
@@ -525,7 +545,7 @@ static int portmatch( char *val, int port )
 	return( result );
 }
 
-static int match_range( struct line_list *list, int port, int invert )
+int match_range( struct line_list *list, int port, int invert )
 {
 	int result = 1;
 	int i;
@@ -548,14 +568,16 @@ static int match_range( struct line_list *list, int port, int invert )
  * entry has the format:  string
  ***************************************************************************/
 
-static int match_char( struct line_list *list, int value, int invert )
+int match_char( struct line_list *list, int value, int invert )
 {
 	int result = 1;
 	int i;
 	char *s;
 
+#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGF(DDB3)("match_char: value '0x%x' '%c'", value, value );
 	DEBUGFC(DDB3)Dump_line_list("match_char - lines", list );
+#endif
 	for( i = 0; result && i < list->count; ++i ){
 		if( !(s = list->list[i]) ) continue;
 		result = (safestrchr( s, value ) == 0) && (safestrchr(s,'*') == 0) ;
@@ -576,7 +598,7 @@ static int match_char( struct line_list *list, int value, int invert )
  *    check to see if user is in group
  ***************************************************************************/
 
-static int match_group( struct line_list *list, const char *str, int invert )
+int match_group( struct line_list *list, const char *str, int invert )
 {
  	int result = 1;
  	int i;
@@ -601,7 +623,7 @@ static int match_group( struct line_list *list, const char *str, int invert )
  *  wildcard (*) in group name, and then scan only if we need to
  ***************************************************************************/
 
-static int ingroup( char *group, const char *user )
+int ingroup( char *group, const char *user )
 {
 	struct group *grent;
 	struct passwd *pwent;
@@ -630,13 +652,15 @@ static int ingroup( char *group, const char *user )
 		Init_line_list(&users);
 		Get_file_image_and_split(group+1,0,0,&users,Whitespace,
 			0,0,0,0,0,0);
+#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUGFC(DDB3)Dump_line_list("match- file contents'", &users );
+#endif
 		result = match_group( &users,user,0);
 		Free_line_list(&users);
 	} else if( (grent = getgrnam( group )) ){
-		DEBUGF(DDB3)("ingroup: group id: %ld\n", (long)grent->gr_gid);
-		if( pwent && ((long)pwent->pw_gid == (long)grent->gr_gid) ){
-			DEBUGF(DDB3)("ingroup: user default group id: %ld\n", (long)pwent->pw_gid);
+		DEBUGF(DDB3)("ingroup: group id: %d\n", grent->gr_gid);
+		if( pwent && ((int)pwent->pw_gid == (int)grent->gr_gid) ){
+			DEBUGF(DDB3)("ingroup: user default group id: %d\n", pwent->pw_gid);
 			result = 0;
 		} else for( members = grent->gr_mem; result && *members; ++members ){
 			DEBUGF(DDB3)("ingroup: member '%s'", *members);
@@ -649,9 +673,9 @@ static int ingroup( char *group, const char *user )
 			DEBUGF(DDB3)("ingroup: group name '%s'", grent->gr_name);
 			/* now do match against group */
 			if( Globmatch( group, grent->gr_name ) == 0 ){
-				if( pwent && ((long)pwent->pw_gid == (long)grent->gr_gid) ){
-					DEBUGF(DDB3)("ingroup: user default group id: %ld\n",
-					(long)pwent->pw_gid);
+				if( pwent && ((int)pwent->pw_gid == (int)grent->gr_gid) ){
+					DEBUGF(DDB3)("ingroup: user default group id: %d\n",
+					pwent->pw_gid);
 					result = 0;
 				} else {
 					DEBUGF(DDB3)("ingroup: found '%s'", grent->gr_name);
@@ -668,12 +692,13 @@ static int ingroup( char *group, const char *user )
 	return( result );
 }
 
+#ifdef ORIGINAL_DEBUG//JY@1020
 /***************************************************************************
  * Dump_perm_check( char *title, struct perm_check *check )
  * Dump perm_check information
  ***************************************************************************/
 
-void Dump_perm_check( const char *title,  struct perm_check *check )
+void Dump_perm_check( char *title,  struct perm_check *check )
 {
 	char buffer[SMALLBUFFER];
 	if( title ) LOGDEBUG( "*** perm_check %s ***", title );
@@ -682,8 +707,10 @@ void Dump_perm_check( const char *title,  struct perm_check *check )
 		LOGDEBUG(
 		"  user '%s', rmtuser '%s', printer '%s', service '%c', lpc '%s'",
 		check->user, check->remoteuser, check->printer, check->service, check->lpc );
+#ifdef ORIGINAL_DEBUG//JY@1020
 		Dump_host_information( "  host", check->host );
 		Dump_host_information( "  remotehost", check->remotehost );
+#endif
 /*
 		LOGDEBUG( "  ip '%s' port %d, unix_socket %d",
 			inet_ntop_sockaddr( &check->addr, buffer, sizeof(buffer)),
@@ -695,6 +722,7 @@ void Dump_perm_check( const char *title,  struct perm_check *check )
 			check->authtype, check->authfrom, check->authuser, check->authca );
 	}
 }
+#endif
 
 /***************************************************************************
  * Perm_check_to_list( struct line_list *list, struct perm_check *check )
@@ -707,7 +735,7 @@ void Perm_check_to_list( struct line_list *list, struct perm_check *check )
 	Set_str_value( list, USER, check->user );
 	Set_str_value( list, REMOTEUSER, check->remoteuser );
 	Set_str_value( list, PRINTER, check->printer );
-	plp_snprintf(buffer,sizeof(buffer), "%c",check->service);
+	SNPRINTF(buffer,sizeof(buffer))"%c",check->service);
 	Set_str_value( list, SERVICE, buffer );
 	Set_str_value( list, LPC, check->lpc );
 	if( check->host ){

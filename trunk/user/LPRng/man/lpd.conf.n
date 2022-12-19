@@ -84,7 +84,7 @@ and :forward_server: (forward server) entries use these.
 .PP
 .SH "GENERAL CONFIGURATION PARAMETERS"
 .PP
-Some of the following parameters take lists of files or directories.
+Some of the following paramters take lists of files or directories.
 Unless otherwise explicitly stated,
 these lists can be separated by commas (,),
 semicolons (;), or colons, (punctuation)
@@ -112,7 +112,7 @@ and
 man pages for details.
 .TP
 \fBallow_getenv\fR (default: "LPD_CONF")
-This option specifies an environment variable
+This option specifies an enviorinment variable
 whose value is a configuration file.
 Use of this is restricted to test purposes,
 and SUID ROOT client and server will not run when the variable is enabled.
@@ -200,8 +200,8 @@ The time to wait for a device open or connection to complete.
 A zero value is infinite timeout.
 .TP
 \fBretry_nolink\fR (default: true)
-When TRUE and the LPD server is printing or transferring a job,
-then an indefinite number of attempts to connect to or open the IO device
+When TRUE and the LPD server is printing or transfering a job,
+then an indefinate number of attempts to connect to or open the IO device
 will be made.
 .TP
 \fBdefault_banner_printer\fR (default: "")
@@ -251,7 +251,7 @@ using other means, such as \fBgethostbyname(3n)\fR.
 Formfeed string.
 .TP
 \fBfilter_ld_path\fR
-(default: _FILTER_LD_PATH_)
+(default: /lib:/usr/lib:/usr/5lib:/usr/ucblib)
 The value for the environment variable LD_LIBRARY_PATH, 
 both used when executing, and passed on to filters.
 This variable is used to find shared libraries on
@@ -269,7 +269,7 @@ and job information.
 (see of_filter_options, filter_options, bk_filter_options, bk_of_filter_options)
 .TP
 \fBfilter_path\fR
-(default: _FILTER_PATH_)
+(default: /bin:/usr/bin:)
 The value for the environment variable PATH, both used to find filters
 and passed on to filters run by \fBlpd\fR and \fBlpr\fR.
 .TP
@@ -376,18 +376,11 @@ setting longnumber to yes allows 6 digit numbers.
 If the backwards_compatible flag is set,
 only 3 digit numbers will be used.
 .TP
-\fBlpd_listen_port\fR (default: _LPD_LISTEN_PORT_) [ipaddr%]port
-The port that \fBlpd\fR binds to.  If the parameter is set to off then
-\fBlpd\fR does not listen to any TCP port.  See \fBlpd_port\fR for
-details of the format of the argument.
-
-If this is not set at all, then \fBlpd\dP will listen on \fBlpd_port\fP.
-.TP
 \fBlpd_port\fR (default: \fIprinter\fR)  [ipaddr%]port
-The port that \fBlpr\fR and
+The port that \fBlpd\fR binds to, and that \fBlpr\fR and
 the other client programs send their requests to.
 The specification has the format ipaddr%port.
-If the IP address is specified then a bind to only this address and
+If the ipaddress is specified then a bind to only this address and
 port is done.
 If the port value is not a number
 a service lookup is performed and the corresponding
@@ -442,7 +435,7 @@ for a job to be accepted.
 If 0, there is no limit;
 if the parameter is the name of a file rather than a number,
 the file must contain a numerical minimum free value (in Kbytes).
-This value is overridden by the printcap
+This value is overriden by the printcap
 .I mi
 field value.
 .TP
@@ -466,7 +459,7 @@ of bk_of_filter_options value is appended instead
 .TP
 \fBoriginate_port\fR
 (default: "721 731")
-A range of port numbers to originate requests from.
+A range of port numbers to orginate requests from.
 When sending service requests,
 the software will try to open and bind to these ports to
 originate a request to a server.
@@ -481,10 +474,7 @@ Note that RFC1179 specifies that requests must
 originate from ports in the range 721-731.
 .TP
 \fBpass_env\fR
-.na
-(default: "LANG,LC_CTYPE,LC_NUMERIC,LC_TIME,LC_COLLATE,LC_MONETARY, LC_MESSAGES,LC_PAPER,LC_NAME,LC_ADDRESS,LC_TELEPHONE,LC_MEASUREMENT,LC_IDENTIFICATION,LC_ALL")
-.ad
-
+(default: "PGPPASS,PGPPATH")
 Client programs such as LPR, LPC, etc., will pass these
 environment variables to any filter programs they start.
 .TP
@@ -508,10 +498,7 @@ All valid entries in these files will be used.
 See PRINTCAP LOOKUP for details.
 .TP
 \fBperms_path\fR
-.na
-(default: /etc/lpd.perms:/usr/etc/lpd.perms: /var/spool/lpd/lpd.perms.%h)
-.ad
-
+(default: /etc/lpd.perms:/usr/etc/lpd.perms:/var/spool/lpd/lpd.perms.%h)
 The location of the printer permissions database.
 If a file or filter does not exist, it is skipped.
 The first file or filter that exists and is readable will be used.
@@ -585,11 +572,6 @@ Permissions of the spool files.
 .TP
 \fBsyslog_device\fR (default: /dev/console)
 Log to this device if all else fails.
-.TP
-.BR unix_socket_path " (default: /var/run/lprng/socket)"
-Location of the Unix socket that lpd listens on and LPRng clients
-attempt to communicate to when host is localhost. Set to \fIoff\fR
-to disable listening and connecting via a Unix socket.
 .TP
 \fBuse_date\fR (default: no)
 No information about this parameter available.

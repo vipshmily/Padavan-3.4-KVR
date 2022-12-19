@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: lpc.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+
 
 /***************************************************************************
  * SYNOPSIS
@@ -58,14 +78,15 @@
  */
 
 #include "lp.h"
+#include "defs.h"
 #include "initialize.h"
 #include "getprinter.h"
 #include "sendreq.h"
 #include "child.h"
 #include "control.h"
 #include "getopt.h"
+#include "patchlevel.h"
 #include "errorcodes.h"
-#include "user_auth.h"
 
 /**** ENDINCLUDE ****/
 
@@ -83,10 +104,10 @@
 #define DEFINE(X) X
 #include "lpc.h"
 
-static void usage(void);
-static void use_msg(void);
-static void doaction( struct line_list *args );
-static char *Username_JOB;
+ void usage(void);
+ void use_msg(void);
+ void doaction( struct line_list *args );
+ static char *Username_JOB;
 
 int main(int argc, char *argv[], char *envp[])
 {
@@ -98,8 +119,8 @@ int main(int argc, char *argv[], char *envp[])
 #if 0
 	DEBUG1("%s",5);
 	LOGDEBUG("%s",5);
-	fatal(LOGINFO, "%s",5);
-	logerr(LOGINFO, "%s",5);
+	FATAL(LOGINFO)"%s",5);
+	LOGERR(LOGINFO)"%s",5);
 #endif
 	/* set signal handlers */
 	(void) plp_signal (SIGHUP, cleanup_HUP);
@@ -162,7 +183,7 @@ int main(int argc, char *argv[], char *envp[])
 					uid = pw->pw_uid;
 				}
 			}
-			DEBUG2( "lpc: uid '%ld'", (long)uid );
+			DEBUG2( "lpc: uid '%d'", uid );
 			found = ( uid == OriginalRUID );
 			DEBUG2( "lpc: found '%d'", found );
 		}
@@ -205,6 +226,7 @@ int main(int argc, char *argv[], char *envp[])
 	Errorcode = 0;
 	Is_server = 0;
 	cleanup(0);
+	return(0);
 }
 
 void doaction( struct line_list *args )
@@ -238,14 +260,14 @@ void doaction( struct line_list *args )
 		Fix_Rm_Rp_info(0,0);
 	}
 	if( ISNULL(RemotePrinter_DYN) ){
-		plp_snprintf( msg, sizeof(msg),
+		SNPRINTF( msg, sizeof(msg))
 			_("Printer: %s - cannot get status from device '%s'\n"),
 			Printer_DYN, Lp_device_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
 		return;
 	}
 	if( Direct_DYN && Lp_device_DYN ){
-		plp_snprintf( msg, sizeof(msg),
+		SNPRINTF( msg, sizeof(msg))
 			_("Printer: %s - direct connection to device '%s'\n"),
 			Printer_DYN, Lp_device_DYN );
 		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
@@ -308,7 +330,7 @@ void doaction( struct line_list *args )
 					Show_all_printcap_entries();
 				} else {
 					Set_DYN(&Printer_DYN,args->list[argspos]);
-					if( Write_fd_str( 1,"\n") < 0 ) cleanup(0);
+					if( Write_fd_str( 1,_("\n")) < 0 ) cleanup(0);
 					if( Write_fd_str( 1,_("# Printcap Information\n")) < 0 ) cleanup(0);
 					Show_formatted_info();
 				}
@@ -317,7 +339,7 @@ void doaction( struct line_list *args )
 			|| !safestrcasecmp( Printer_DYN, _("all") ) ){
 			Show_all_printcap_entries();
 		} else {
-			if( Write_fd_str( 1,"\n") < 0 ) cleanup(0);
+			if( Write_fd_str( 1,_("\n")) < 0 ) cleanup(0);
 			if( Write_fd_str( 1,_("# Printcap Information\n")) < 0 ) cleanup(0);
 			Show_formatted_info();
 		}
@@ -325,7 +347,7 @@ void doaction( struct line_list *args )
 		pid_t pid, result;
 		plp_status_t status;
 		if( args->count == 1 && Printer_DYN ){
-			plp_snprintf(msg,sizeof(msg), "-P%s", Printer_DYN );
+			SNPRINTF(msg,sizeof(msg)) "-P%s", Printer_DYN );
 			Add_line_list(args,msg,0,0,0);
 			Check_max(args,1);
 			args->list[args->count] = 0;
@@ -333,7 +355,7 @@ void doaction( struct line_list *args )
 			s = args->list[1];
 			if( safestrcasecmp(s,"all")
 			  || safestrcasecmp(s,_("all")) ){
-				plp_snprintf(msg,sizeof(msg), "-P%s", s );
+				SNPRINTF(msg,sizeof(msg)) "-P%s", s );
 			} else {
 				strcpy(msg, "-a" );
 			}
@@ -354,24 +376,20 @@ void doaction( struct line_list *args )
 		}
 		while( (result = plp_waitpid(pid,&status,0)) != pid ){
 			int err = errno;
-			DEBUG1("lpc: waitpid(%ld) returned %ld, err '%s'",
-				(long)pid, (long)result, Errormsg(err) );
+			DEBUG1("lpc: waitpid(%d) returned %d, err '%s'",
+				pid, result, Errormsg(err) );
 			if( err == EINTR ) continue; 
 			Errorcode = JABORT;
-			logerr_die(LOG_ERR, _("doaction: waitpid(%ld) failed"), (long)pid);
+			LOGERR_DIE(LOG_ERR) _("doaction: waitpid(%d) failed"), pid);
 		} 
-		DEBUG1("lpc: system pid %ld, exit status %s",
-			(long)result, Decode_status( &status ) );
+		DEBUG1("lpc: system pid %d, exit status %s",
+			result, Decode_status( &status ) );
 	} else {
-		/*
-		 * rearrange the options so that you have
-		 * the user name and other elements first
-		 */
-		Add_line_list(&l, Logname_DYN, 0, 0, 0 );
-		Add_line_list(&l, args->list[0], 0, 0, 0);
+		Add_line_list(&l, Logname_DYN, Value_sep, 0, 0 );
+		Add_line_list(&l, args->list[0], Value_sep, 0, 0);
 		Remove_line_list(args, 0);
 		if( args->count > 0 ) {
-			Add_line_list(&l, RemotePrinter_DYN, 0, 0, 0 );
+			Add_line_list(&l, RemotePrinter_DYN, Value_sep, 0, 0 );
 			Remove_line_list(args, 0);
 		}
 		Merge_line_list(&l, args, 0, 0, 0 );
@@ -381,7 +399,7 @@ void doaction( struct line_list *args )
 			Send_query_rw_timeout_DYN, 1 );
 		if( fd > 0 ){
 			shutdown( fd, 1 );
-			while( (n = Read_fd_len_timeout(Send_query_rw_timeout_DYN,fd, msg, sizeof(msg))) > 0 ){
+			while( (n = read(fd, msg, sizeof(msg))) > 0 ){
 				if( (write(1,msg,n)) < 0 ) cleanup(0);
 			}
 		}
@@ -446,63 +464,69 @@ void Get_parms(int argc, char *argv[] )
 	}
 }
 
-static void use_msg(void)
-{
-	FPRINTF( STDERR,
-_("usage: %s [-a][-Ddebuglevel][-Pprinter][-Shost][-Uusername][-V] [command]\n"
-" with no command, reads from STDIN\n"
-"  -a           - alias for -Pall\n"
-"  -Ddebuglevel - debug level\n"
-"  -Pprinter    - printer\n"
-"  -Pprinter@host - printer on lpd server on host\n"
-"  -Shost       - connect to lpd server on host\n"
-"  -Uuser       - identify command as coming from user\n"
-"  -V           - increase information verbosity\n"
-" commands:\n"
-" active    (printer[@host])        - check for active server\n"
-" abort     (printer[@host] | all)  - stop server\n"
-" class     printer[@host] (class | off)      - show/set class printing\n"
-" disable   (printer[@host] | all)  - disable queueing\n"
-" debug     (printer[@host] | all) debugparms - set debug level for printer\n"
-" down      (printer[@host] | all)  - disable printing and queueing\n"
-" enable    (printer[@host] | all)  - enable queueing\n"
-" flush     (printer[@host] | all)  - flush cached status\n"
-" hold      (printer[@host] | all) (name[@host] | job | all)*   - hold job\n"
-" holdall   (printer[@host] | all)  - hold all jobs on\n"
-" kill      (printer[@host] | all)  - stop and restart server\n"
-" lpd       (printer[@host])        - get LPD PID \n"
-" lpq       (printer[@host] | all) (name[@host] | job | all)*   - invoke LPQ\n"
-" lprm      (printer[@host] | all) (name[@host]|host|job| all)* - invoke LPRM\n"
-" msg       printer message text  - set status message\n"
-" move      printer (user|jobid)* target - move jobs to new queue\n"
-" noholdall (printer[@host] | all)  - hold all jobs off\n"
-" printcap  (printer[@host] | all)  - report printcap values\n"
-" quit                              - exit LPC\n"
-" redirect  (printer[@host] | all) (printer@host | off )*       - redirect jobs\n"
-" redo      (printer[@host] | all) (name[@host] | job | all)*   - reprint jobs\n"
-" release   (printer[@host] | all) (name[@host] | job | all)*   - release jobs\n"
-" reread                            - LPD reread database information\n"
-" start     (printer[@host] | all)  - start printing\n"
-" status    (printer[@host] | all)  - status of printers\n"
-" stop      (printer[@host] | all)  - stop  printing\n"
-" topq      (printer[@host] | all) (name[@host] | job | all)*   - reorder jobs\n"
-" up        (printer[@host] | all) - enable printing and queueing\n"
-"   diagnostic:\n"
-"      defaultq               - show default queue for LPD server\n"
-"      defaults               - show default configuration values\n"
-"      lang                   - show current i18n (iNTERNATIONALIZATIONn) support\n"
-"      client (printer | all) - client config and printcap information\n"
-"      server (printer | all) - server config and printcap\n"), Name );
-}
+ char *msg[] ={
+ N_("usage: %s [-a][-Ddebuglevel][-Pprinter][-Shost][-Uusername][-V] [command]\n"),
+ N_(" with no command, reads from STDIN\n"),
+ N_("  -a           - alias for -Pall\n"),
+ N_("  -Ddebuglevel - debug level\n"),
+ N_("  -Pprinter    - printer\n"),
+ N_("  -Pprinter@host - printer on lpd server on host\n"),
+ N_("  -Shost       - connect to lpd server on host\n"),
+ N_("  -Uuser       - identify command as coming from user\n"),
+ N_("  -V           - increase information verbosity\n"),
+ N_(" commands:\n"),
+ N_(" active    (printer[@host])        - check for active server\n"),
+ N_(" abort     (printer[@host] | all)  - stop server\n"),
+ N_(" class     printer[@host] (class | off)      - show/set class printing\n"),
+ N_(" disable   (printer[@host] | all)  - disable queueing\n"),
+ N_(" debug     (printer[@host] | all) debugparms - set debug level for printer\n"),
+ N_(" down      (printer[@host] | all)  - disable printing and queueing\n"),
+ N_(" enable    (printer[@host] | all)  - enable queueing\n"),
+ N_(" flush     (printer[@host] | all)  - flush cached status\n"),
+ N_(" hold      (printer[@host] | all) (name[@host] | job | all)*   - hold job\n"),
+ N_(" holdall   (printer[@host] | all)  - hold all jobs on\n"),
+ N_(" kill      (printer[@host] | all)  - stop and restart server\n"),
+ N_(" lpd       (printer[@host])        - get LPD PID \n"),
+ N_(" lpq       (printer[@host] | all) (name[@host] | job | all)*   - invoke LPQ\n"),
+ N_(" lprm      (printer[@host] | all) (name[@host]|host|job| all)* - invoke LPRM\n"),
+ N_(" msg       printer message text  - set status message\n"),
+ N_(" move      printer (user|jobid)* target - move jobs to new queue\n"),
+ N_(" noholdall (printer[@host] | all)  - hold all jobs off\n"),
+ N_(" printcap  (printer[@host] | all)  - report printcap values\n"),
+ N_(" quit                              - exit LPC\n"),
+ N_(" redirect  (printer[@host] | all) (printer@host | off )*       - redirect jobs\n"),
+ N_(" redo      (printer[@host] | all) (name[@host] | job | all)*   - reprint jobs\n"),
+ N_(" release   (printer[@host] | all) (name[@host] | job | all)*   - release jobs\n"),
+ N_(" reread                            - LPD reread database information\n"),
+ N_(" start     (printer[@host] | all)  - start printing\n"),
+ N_(" status    (printer[@host] | all)  - status of printers\n"),
+ N_(" stop      (printer[@host] | all)  - stop  printing\n"),
+ N_(" topq      (printer[@host] | all) (name[@host] | job | all)*   - reorder jobs\n"),
+ N_(" up        (printer[@host] | all) - enable printing and queueing\n"),
+ N_("   diagnostic:\n"),
+ N_("      defaultq               - show default queue for LPD server\n"),
+ N_("      defaults               - show default configuration values\n"),
+ N_("      lang                   - show current i18n (iNTERNATIONALIZATIONn) support\n"),
+ N_("      client (printer | all) - client config and printcap information\n"),
+ N_("      server (printer | all) - server config and printcap\n"),
+	0} ;
 
+void use_msg(void)
+{
+	int i;
+	char *s;
+	for( i = 0; (s = msg[i]); ++i ){
+		if( i == 0 ){
+			FPRINTF( STDERR, _(s), Name );
+		} else {
+			FPRINTF( STDERR, "%s", _(s) );
+		}
+	}
+}
 void usage(void)
 {
 	use_msg();
 	Parse_debug("=",-1);
 	FPRINTF( STDOUT, "%s\n", Version );
-	{
-	char buffer[128];
-	FPRINTF( STDERR, "Security Supported: %s\n", ShowSecuritySupported(buffer,sizeof(buffer)) );
-	}
 	exit(1);
 }

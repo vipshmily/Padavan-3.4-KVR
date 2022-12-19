@@ -77,7 +77,7 @@ EOF
 # general purpose failure function
 usage() {
 	cat >&2 <<EOF
-${T_MD}usage: $0 [--TMPDIR=dir] [--TEMP=dir] option${T_ME}
+${T_MD}usage: $0 [--TEMP=dir] option${T_ME}
 ${T_MD}  init             - make directory structure${T_ME}
 ${T_MD}  newca            - make new root CA and default values for certs${T_ME}
 ${T_MD}  defaults         - set new default values for certs${T_ME}
@@ -86,7 +86,6 @@ ${T_MD}  gen              - generate user, server, or signing cert${T_ME}
 ${T_MD}  verify [cert]    - verify cert file${T_ME}
 ${T_MD}  index [dir]      - make certificate index files in directory dir${T_ME}
 ${T_MD}  --TEMP=dir       - specify directory for test operations${T_ME}
-${T_MD}  --TMPDIR=dir     - specify directory for intermediate files${T_ME}
 
 EOF
 	rm -f ${CFG}
@@ -143,10 +142,10 @@ defaults() {
 			eval v="\$$i"
 			echo $i $v
 		done
-		echo -n "save default values? [Yes/no/again (Yes default)] "
+		echo -n "save new values? [No/yes/again (No default)] "
 		read VAR
 		case "$VAR" in
-			[yY]* | "" )
+			[yY]* )
 				cp /dev/null ${CA_DEFAULTS}
 				for i in $names ; do
 					eval v="\$$i"
@@ -155,7 +154,7 @@ defaults() {
 				finished=1;
 				break;
 				;;
-			[nN]* )
+			[nN]* | "" )
 				finished=1;
 				break;
 				;;
@@ -320,23 +319,8 @@ if [ "$#" = 0 ] ; then usage; fi
 
 # set default values
 
-case "$1" in
-	--TMPDIR=* )
-		TMPDIR=`expr "X$1" : "X--TMP=\(.*\)"`
-		shift
-		;;
-	*)
-		TMPDIR=`mktemp -d -t lprng.XXXXXX` || {
-			echo "$0: Cannot create temporary directory!" >&2
-			echo "Perhaps your ${TMPDIR:-/tmp} is not writable or you are missing mktemp." >&2
-			echo "try giving --TMPDIR=/place/only-you-can-read-or-write as first argument." >&2
-			exit 1;
-		}
-		;;
-esac
 
-
-CFG=$TMPDIR/$$.sslcfg
+CFG=/tmp/$$.sslcfg
 
 OPENSSL=@OPENSSL@
 CA_KEY=@SSL_CA_KEY@
@@ -365,7 +349,7 @@ Email_val="name@snakeoil.dom"
 
 case "$1" in
 	--TEMP=* )
-		s=`expr "X$1" : "X--TEMP=\(.*\)"`
+		s=`expr "$1" : "--TEMP=\(.*\)"`
 		CA_DIR="$s/ssl.ca"
 		CA_CERT="$s/ssl.ca/ca.crt"
 		CA_KEY="$s/ssl.ca/ca.key"
@@ -524,14 +508,14 @@ encrypt )
 	shift
 	if [ "$1" = "" ] ; then usage; fi;
 	if [ ! -f "$1" ] ; then useage; fi;
-	sed -n -e '/BEGIN.*PRIVATE KEY/,/END.*PRIVATE KEY/p' $1 >"$TMPDIR"/$$.key
-	sed -e '/BEGIN.*PRIVATE KEY/,/END.*PRIVATE KEY/d' $1 >"$TMPDIR"/$$.crt
-	STEP="" encrypt "$TMPDIR"/$$.key
+	sed -n -e '/BEGIN.*PRIVATE KEY/,/END.*PRIVATE KEY/p' $1 >/tmp/$$.key
+	sed -e '/BEGIN.*PRIVATE KEY/,/END.*PRIVATE KEY/d' $1 >/tmp/$$.crt
+	STEP="" encrypt /tmp/$$.key
 	status=$?
 	echo STATUS $status
 	if [ $status = 0 ] ; then
 		mv $1 $1.orig
-		cat "$TMPDIR"/$$.crt "$TMPDIR"/$$.key >$1
+		cat /tmp/$$.crt /tmp/$$.key >$1
 	fi
     ;;
 

@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: lpr.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+
 
 #include "lp.h"
 #include "child.h"
@@ -17,10 +37,10 @@
 #include "gethostinfo.h"
 #include "initialize.h"
 #include "linksupport.h"
+#include "patchlevel.h"
 #include "printjob.h"
 #include "sendjob.h"
-#include "user_auth.h"
-#include "openprinter.h"
+#include "lpd_jobs.h"
 
 /**** ENDINCLUDE ****/
 
@@ -101,7 +121,7 @@ int main(int argc, char *argv[], char *envp[])
         LOGDEBUG("lpr: after init open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
@@ -143,7 +163,7 @@ int main(int argc, char *argv[], char *envp[])
         LOGDEBUG("lpr: after Make_job open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
@@ -154,18 +174,18 @@ int main(int argc, char *argv[], char *envp[])
 	if( job_size == 0 ){
 		Free_job(&prjob);
 		Errorcode = 1;
-		fatal(LOG_INFO, _("nothing to print"));
+		FATAL(LOG_INFO)_("nothing to print"));
 	}
 
 	if( Check_for_rg_group( Logname_DYN ) ){
 		Errorcode = 1;
-		fatal(LOG_INFO, _("cannot use printer - not in privileged group\n") );
+		FATAL(LOG_INFO)_("cannot use printer - not in privileged group\n") );
 	}
 
 	if( Remote_support_DYN ) uppercase( Remote_support_DYN );
 	if( safestrchr( Remote_support_DYN, 'R' ) == 0 ){
 		Errorcode = 1;
-		fatal(LOG_INFO, _("no remote support for %s@%s"),
+		FATAL(LOG_INFO) _("no remote support for %s@%s"),
 			RemotePrinter_DYN,RemoteHost_DYN );
 	}
 
@@ -173,10 +193,10 @@ int main(int argc, char *argv[], char *envp[])
 	/* we do not do any translation of formats */
 	s = 0;
 
-	n = Find_flag_value( &prjob.info,DATAFILE_COUNT);
+	n = Find_flag_value( &prjob.info,DATAFILE_COUNT,Value_sep);
 	if( Max_datafiles_DYN > 0 && n > Max_datafiles_DYN ){
 		Errorcode = 1;
-		fatal(LOG_INFO, _("%d data files and maximum allowed %d"),
+		FATAL(LOG_INFO) _("%d data files and maximum allowed %d"),
 					n, Max_datafiles_DYN );
 	}
 
@@ -206,7 +226,7 @@ int main(int argc, char *argv[], char *envp[])
 		if(DEBUGL2) Dump_job( "lpr - before filtering", &prjob );
 		tempfd = Make_temp_fd(&tempfile);
 
-		old_lp_value = safestrdup(Find_str_value( &PC_entry_line_list, "lp"),
+		old_lp_value = safestrdup(Find_str_value( &PC_entry_line_list, "lp", Value_sep ),
 			__FILE__,__LINE__);
 		Set_str_value( &PC_entry_line_list, LP, tempfile );
 		/* Print_job( output_device, status_device, job, timeout, poll_for_status ) */
@@ -218,7 +238,7 @@ int main(int argc, char *argv[], char *envp[])
 		tempfd = Checkread( tempfile, &statb );
 		if( tempfd < 0 ){
 			Errorcode = JABORT;
-			fatal(LOG_INFO, _("Cannot open file '%s', %s"), tempfile, Errormsg( errno ) );
+			FATAL(LOG_INFO) _("Cannot open file '%s', %s"), tempfile, Errormsg( errno ) );
 		}
 		close(tempfd);
 		DEBUG2("lpr: jobs size now %0.0f", (double)(statb.st_size));
@@ -237,7 +257,7 @@ int main(int argc, char *argv[], char *envp[])
 	}
 
 	if(DEBUGL1)Dump_job("lpr - before Fix_control",&prjob);
-	Fix_control( &prjob, Control_filter_DYN, 0, 1 );
+	Fix_control( &prjob, Control_filter_DYN, 0 );
 	if(DEBUGL1)Dump_job("lpr - after Fix_control",&prjob);
 
 	if( send_to_pr &&
@@ -246,7 +266,7 @@ int main(int argc, char *argv[], char *envp[])
 		int fd, pid, status_fd, poll_for_status;
 		char *id;
 
-		setstatus(&prjob, "destination '%s'", send_to_pr );
+		SETSTATUS(&prjob)"destination '%s'", send_to_pr );
 		Errorcode = 0;
 		fd = pid = status_fd = poll_for_status = 0;
 		fd = Printer_open(send_to_pr, &status_fd, &prjob,
@@ -259,8 +279,8 @@ int main(int argc, char *argv[], char *envp[])
 			Errorcode = JFAIL;
 			goto exit;
 		}
-		id = Find_str_value(&prjob.info,IDENTIFIER);
-		setstatus(&prjob, "transferring job '%s'", id );
+		id = Find_str_value(&prjob.info,IDENTIFIER,Value_sep);
+		SETSTATUS(&prjob)"transferring job '%s'", id );
 		/* Print_job( output_device, status_device, job, timeout, poll_for_status, filter ) */
 		Set_str_value( &PC_entry_line_list, LP, s );
 		Errorcode = Print_job( fd, status_fd, &prjob, Send_job_rw_timeout_DYN, poll_for_status, User_filter_JOB );
@@ -280,7 +300,7 @@ int main(int argc, char *argv[], char *envp[])
 		if( fd > 0 ) close( fd ); fd = -1;
 		if( status_fd > 0 ) close( status_fd ); status_fd = -1;
 		if( pid > 0 ){
-			setstatus(&prjob, "waiting for printer filter to exit");
+			SETSTATUS(&prjob)"waiting for printer filter to exit");
 			Errorcode = Wait_for_pid( pid, "LP", 0, Send_job_rw_timeout_DYN );
 		}
 		DEBUG1("lpr: status %s", Server_status(Errorcode) );
@@ -291,11 +311,11 @@ int main(int argc, char *argv[], char *envp[])
 			if( Errorcode ){
 				if(DEBUGL1)Dump_job("lpr - after error",&prjob);
 				buffer[0] = 0;
-				plp_snprintf(buffer,sizeof(buffer),
+				SNPRINTF(buffer,sizeof(buffer))
 					_("Status Information, attempt %d:\n"), attempt);
 				if( Lpr_send_try_DYN ){
 					n = strlen(buffer)-2;
-					plp_snprintf(buffer+n,sizeof(buffer)-n,
+					SNPRINTF(buffer+n,sizeof(buffer)-n)
 					_(" of %d:\n"), Lpr_send_try_DYN);
 				}
 				Write_fd_str(2,buffer);
@@ -308,7 +328,7 @@ int main(int argc, char *argv[], char *envp[])
 				n = Connect_interval_DYN + Connect_grace_DYN;
 				if( n > 0 ){
 					buffer[0] = 0;
-					plp_snprintf(buffer,sizeof(buffer),
+					SNPRINTF(buffer,sizeof(buffer))
 						_("Waiting %d seconds before retry\n"), n);
 					Write_fd_str(2,buffer);
 					plp_sleep( n );
@@ -328,11 +348,11 @@ int main(int argc, char *argv[], char *envp[])
 		Errorcode = 1;
 		if(DEBUGL1)Dump_job("lpr - after error",&prjob);
 		buffer[0] = 0;
-		plp_snprintf(buffer,sizeof(buffer),
+		SNPRINTF(buffer,sizeof(buffer))
 			_("Status Information, attempt %d:\n"), attempt);
 		if( Lpr_send_try_DYN ){
 			n = strlen(buffer)-2;
-			plp_snprintf(buffer+n,sizeof(buffer)-n,
+			SNPRINTF(buffer+n,sizeof(buffer)-n)
 			_(" of %d:\n"), Lpr_send_try_DYN);
 		}
 		s = Join_line_list(&Status_lines,"\n ");
@@ -346,12 +366,12 @@ int main(int argc, char *argv[], char *envp[])
 		char *id;
 		int n;
 		char msg[SMALLBUFFER];
-		id = Find_str_value(&prjob.info,IDENTIFIER);
+		id = Find_str_value(&prjob.info,IDENTIFIER,Value_sep);
 		if( id ){
-			plp_snprintf(msg,sizeof(msg)-1, _("request id is %s\n"), id );
+			SNPRINTF(msg,sizeof(msg)-1)_("request id is %s\n"), id );
 		} else {
-			n = Find_decimal_value(&prjob.info,NUMBER);
-			plp_snprintf(msg,sizeof(msg)-1, _("request id is %d\n"), n );
+			n = Find_decimal_value(&prjob.info,NUMBER,Value_sep);
+			SNPRINTF(msg,sizeof(msg)-1)_("request id is %d\n"), n );
 		}
 		Write_fd_str(1, msg );
 	}
@@ -371,7 +391,7 @@ int main(int argc, char *argv[], char *envp[])
 	}
 
 	if( Job_number ){
-		plp_snprintf(buffer,sizeof(buffer), _("Done %d\n"), Job_number);
+		SNPRINTF(buffer,sizeof(buffer))_("Done %d\n"), Job_number);
 		Write_fd_str(1,buffer);
 		++Job_number;
 		goto again;
@@ -381,6 +401,7 @@ int main(int argc, char *argv[], char *envp[])
 	Free_job(&prjob);
 	Free_line_list(&Files);
 	cleanup(0);
+	return(0);
 }
 
 
@@ -390,7 +411,7 @@ int main(int argc, char *argv[], char *envp[])
  * 2. Check for duplicate information
  ***************************************************************************/
 
-static void usage(void);
+ void usage(void);
 
 
  char LPR_optstr[]    /* LPR options */
@@ -491,10 +512,10 @@ void Get_parms(int argc, char *argv[] )
 					}
 					break;
 		case 't':
-				Check_str_dup( option, &Jobname_JOB, Optarg);
+				Check_str_dup( option, &Jobname_JOB, Optarg, M_JOBNAME);
 				break;
 		case 'X':
-				Check_str_dup( option, &User_filter_JOB, Optarg);
+				Check_str_dup( option, &User_filter_JOB, Optarg, M_JOBNAME);
 				break;
 		case 'Y': Direct_JOB = 1; break;
 		default:
@@ -509,19 +530,20 @@ void Get_parms(int argc, char *argv[] )
 		case 'A':   Auth_JOB = 1; break;
 		case 'B':   Lpr_bounce_JOB = 1; break;
 		case '1':
-		    Check_str_dup( option, &Font1_JOB, Optarg);
+		    Check_str_dup( option, &Font1_JOB, Optarg, M_FONT);
 			break;
 		case '2':
-		    Check_str_dup( option, &Font2_JOB, Optarg);
+		    Check_str_dup( option, &Font2_JOB, Optarg, M_FONT);
 			break;
 		case '3':
-		    Check_str_dup( option, &Font3_JOB, Optarg);
+		    Check_str_dup( option, &Font3_JOB, Optarg, M_FONT);
 			break;
 		case '4':
-		    Check_str_dup( option, &Font4_JOB, Optarg);
+		    Check_str_dup( option, &Font4_JOB, Optarg, M_FONT);
 			break;
 		case 'C':
-		    Check_str_dup( option, &Classname_JOB, Optarg);
+		    Check_str_dup( option, &Classname_JOB, Optarg,
+			   M_CLASSNAME);
 		    break;
 		case 'D': 	Parse_debug(Optarg,1);
 			break;
@@ -536,7 +558,7 @@ void Get_parms(int argc, char *argv[] )
 		    }
 		    break;
 		case 'J':
-		    Check_str_dup( option, &Jobname_JOB, Optarg);
+		    Check_str_dup( option, &Jobname_JOB, Optarg, M_JOBNAME);
 		    break;
 		case 'K':
 		case '#':
@@ -556,18 +578,18 @@ void Get_parms(int argc, char *argv[] )
 			Use_queuename_flag_DYN = 1;
 			break;
 		case 'R':
-		    Check_str_dup( option, &Accntname_JOB, Optarg );
+		    Check_str_dup( option, &Accntname_JOB, Optarg, M_ACCNTNAME );
 		    break;
 		case 'T':
-		    Check_str_dup( option, &Prtitle_JOB, Optarg);
+		    Check_str_dup( option, &Prtitle_JOB, Optarg, M_PRTITLE);
 		    break;
-		case 'U': Check_str_dup( option, &Username_JOB, Optarg);
+		case 'U': Check_str_dup( option, &Username_JOB, Optarg, M_BNRNAME );
 		    break;
 		case 'V':
 			++Verbose;
 		    break;
 		case 'X':
-				Check_str_dup( option, &User_filter_JOB, Optarg);
+				Check_str_dup( option, &User_filter_JOB, Optarg, M_JOBNAME);
 				break;
 		case 'Y': Direct_JOB = 1; break;
 		case 'o': /* same as Z */
@@ -588,7 +610,7 @@ void Get_parms(int argc, char *argv[] )
 		    Binary_JOB = 1;
 		    break;
 		case 'h':
-		    No_header_JOB = 1;
+		    Check_dup( option, &No_header_JOB);
 		    break;
 		case 'i':
 		    Check_int_dup( option, &Indent_JOB, Optarg, 0);
@@ -659,85 +681,102 @@ void Get_parms(int argc, char *argv[] )
 	}
 }
 
-static void usage(void)
+
+ char *LPR_msg [] =
+{
+ N_("Usage: %s [-Pprinter[@host]] [-A] [-B] [-Cclass] [-Fformat] [-G] [-Jinfo]\n"),
+ N_("   [-(K|#)copies] [-Q] [-Raccountname]  [-Ttitle]  [-Uuser[@host]] [-V]\n"),
+ N_("   [-Zoptions] [-b] [-m mailaddr] [-h] [-i indent] [-l] [-w width ] [-r]\n"),
+ N_("   [-Ddebugopt ] [--] [ filenames ...  ]\n"),
+ N_(" -A          - use authentication specified by AUTH environment variable\n"),
+ N_(" -B          - filter files and reduce job to single file before sending\n"),
+ N_(" -C class    - job class\n"),
+ N_(" -D debugopt - debugging flags\n"),
+ N_(" -F format   - job format\n"),
+ N_("   -b,-l        - binary or literal format\n"),
+ N_("    c,d,f,g,l,m,p,t,v are also format options\n"),
+ N_(" -G          - filter individual job files before sending\n"),
+ N_(" -J info     - banner and job information\n"),
+ N_(" -K copies, -# copies   - number of copies\n"),
+ N_(" -P printer[@host] - printer on host\n"),
+ N_(" -Q          - put 'queuename' in control file\n"),
+ N_(" -Raccntname - accounting information\n"),
+ N_(" -T title    - title for 'pr' (-p) formatting\n"),
+ N_(" -U username - override user name (restricted)\n"),
+ N_(" -V          - Verbose information during spooling\n"),
+ N_(" -X path     - user specified filter for job files\n"),
+ N_(" -Y          - connect and send to TCP/IP port (direct mode)\n"),
+ N_(" -Z options  - options to pass to filter\n"),
+ N_(" -h          - no header or banner page\n"),
+ N_(" -i indent   - indentation\n"),
+ N_(" -k          - do not use tempfile when sending to server\n"),
+ N_(" -m mailaddr - mail final status to mailaddr\n"),
+ N_(" -r          - remove files after spooling\n"),
+ N_(" -w width    - width to use\n"),
+ N_(" --          - end of options, files follow\n"),
+ N_(" filename '-'  reads from STDIN\n"),
+ N_(" PRINTER, LPDEST, NPRINTER, NGPRINTER environment variables set default printer.\n"),
+ 0 };
+
+ char *LP_msg [] = {
+ N_("Usage: %s [-A] [-B] [-c] [-G] [-m] [-p] [-s] [-w] [-d printer@[host]]\n"),
+ N_("  [-f form-name] [-H special-handling]\n"),
+ N_("  [-n number] [-o options] [-P page-list]\n"),
+ N_("  [-q priority-level] [-S character-set]\n"),
+ N_("  [-S print-wheel] [-t title]\n"),
+ N_("  [-T content-type [-r]] [-y mode-list]\n"),
+ N_("  [-Ddebugopt ] [ filenames ...  ]\n"),
+ N_(" lp simulator using LPRng,  functionality may differ slightly\n"),
+ N_(" -A          - use authentication specified by AUTH environment variable\n"),
+ N_(" -B          - filter files and reduce job to single file before sending\n"),
+ N_(" -c          - (make copy before printing - ignored)\n"),
+ N_(" -d printer[@host]  - printer on host\n"),
+ N_(" -D debugflags  - debugging flags\n"),
+ N_(" -f formname - first letter used as job format\n"),
+ N_(" -G          - filter individual job files before sending\n"),
+ N_(" -H handling - (passed as -Z handling)\n"),
+ N_(" -m          - mail sent to $USER on completion\n"),
+ N_(" -n copies   - number of copies\n"),
+ N_(" -o option     nobanner, width recognized\n"),
+ N_("               (others passed as -Z option)\n"),
+ N_(" -P pagelist - (print page list - ignored)\n"),
+ N_(" -p          - (notification on completion - ignored)\n"),
+ N_(" -q          - priority - 0 -> Z (highest), 25 -> A (lowest)\n"),
+ N_(" -s          - (suppress messages - ignored)\n"),
+ N_(" -S charset  - (passed as -Z charset)\n"),
+ N_(" -t title    - job title\n"),
+ N_(" -T content  - (passed as -Z content)\n"),
+ N_(" -w          - (write message on completion - ignored)\n"),
+ N_(" -X path     - user specified filter for job files\n"),
+ N_(" -Y          - connect and send to TCP/IP port (direct mode)\n"),
+ N_(" -y mode     - (passed as -Z mode)\n"),
+ N_(" --          - end of options, files follow\n"),
+ N_(" filename '-'  reads from STDIN\n"),
+ N_(" PRINTER, LPDEST, NGPRINTER, NPRINTER environment variables set default printer.\n"),
+	0 };
+
+void prmsg( char **msg )
+{
+	int i;
+	char *s;
+	for( i = 0; (s = msg[i]); ++i ){
+		if(i == 0 ){
+			FPRINTF( STDERR,_(s), Name );
+		} else {
+			FPRINTF( STDERR, "%s",_(s) );
+		}
+	}
+}
+
+void usage(void)
 {
 	if(LP_mode_JOB ){
-		FPRINTF( STDERR,
-_("Usage: %s [-A] [-B] [-c] [-G] [-m] [-p] [-s] [-w] [-d printer@[host]]\n"
-"  [-f form-name] [-H special-handling]\n"
-"  [-n number] [-o options] [-P page-list]\n"
-"  [-q priority-level] [-S character-set]\n"
-"  [-S print-wheel] [-t title]\n"
-"  [-T content-type [-r]] [-y mode-list]\n"
-"  [-Ddebugopt ] [ filenames ...  ]\n"
-" lp simulator using LPRng,  functionality may differ slightly\n"
-" -A          - use authentication specified by AUTH environment variable\n"
-" -B          - filter files and reduce job to single file before sending\n"
-" -c          - (make copy before printing - ignored)\n"
-" -d printer[@host]  - printer on host\n"
-" -D debugflags  - debugging flags\n"
-" -f formname - first letter used as job format\n"
-" -G          - filter individual job files before sending\n"
-" -H handling - (passed as -Z handling)\n"
-" -m          - mail sent to $USER on completion\n"
-" -n copies   - number of copies\n"
-" -o option     nobanner, width recognized\n"
-"               (others passed as -Z option)\n"
-" -P pagelist - (print page list - ignored)\n"
-" -p          - (notification on completion - ignored)\n"
-" -q          - priority - 0 -> Z (highest), 25 -> A (lowest)\n"
-" -s          - (suppress messages - ignored)\n"
-" -S charset  - (passed as -Z charset)\n"
-" -t title    - job title\n"
-" -T content  - (passed as -Z content)\n"
-" -w          - (write message on completion - ignored)\n"
-" -X path     - user specified filter for job files\n"
-" -Y          - connect and send to TCP/IP port (direct mode)\n"
-" -y mode     - (passed as -Z mode)\n"
-" --          - end of options, files follow\n"
-" filename '-'  reads from STDIN\n"
-" PRINTER, LPDEST, NGPRINTER, NPRINTER environment variables set default printer.\n"), Name );
+		prmsg( LP_msg );
 	} else {
-		FPRINTF( STDERR,
-_("Usage: %s [-Pprinter[@host]] [-A] [-B] [-Cclass] [-Fformat] [-G] [-Jinfo]\n"
-"   [-(K|#)copies] [-Q] [-Raccountname]  [-Ttitle]  [-Uuser[@host]] [-V]\n"
-"   [-Zoptions] [-b] [-m mailaddr] [-h] [-i indent] [-l] [-w width ] [-r]\n"
-"   [-Ddebugopt ] [--] [ filenames ...  ]\n"
-" -A          - use authentication specified by AUTH environment variable\n"
-" -B          - filter files and reduce job to single file before sending\n"
-" -C class    - job class\n"
-" -D debugopt - debugging flags\n"
-" -F format   - job format\n"
-"   -b,-l        - binary or literal format\n"
-"    c,d,f,g,l,m,p,t,v are also format options\n"
-" -G          - filter individual job files before sending\n"
-" -J info     - banner and job information\n"
-" -K copies, -# copies   - number of copies\n"
-" -P printer[@host] - printer on host\n"
-" -Q          - put 'queuename' in control file\n"
-" -Raccntname - accounting information\n"
-" -T title    - title for 'pr' (-p) formatting\n"
-" -U username - override user name (restricted)\n"
-" -V          - Verbose information during spooling\n"
-" -X path     - user specified filter for job files\n"
-" -Y          - connect and send to TCP/IP port (direct mode)\n"
-" -Z options  - options to pass to filter\n"
-" -h          - no header or banner page\n"
-" -i indent   - indentation\n"
-" -k          - do not use tempfile when sending to server\n"
-" -m mailaddr - mail final status to mailaddr\n"
-" -r          - remove files after spooling\n"
-" -w width    - width to use\n"
-" --          - end of options, files follow\n"
-" filename '-'  reads from STDIN\n"
-" PRINTER, LPDEST, NPRINTER, NGPRINTER environment variables set default printer.\n"), Name );
+		prmsg( LPR_msg );
 	}
 	Parse_debug("=",-1);
 	FPRINTF( STDERR, "%s\n", Version );
-	{
-	char buffer[128];
-	FPRINTF( STDERR, "Security Supported: %s\n", ShowSecuritySupported(buffer,sizeof(buffer)) );
-	}
 	exit(1);
 }
 
@@ -754,9 +793,9 @@ _("Usage: %s [-Pprinter[@host]] [-A] [-B] [-Cclass] [-Fformat] [-G] [-Jinfo]\n"
  ***************************************************************************/
 
 
-static void get_job_number( struct job *job );
-static double Copy_STDIN( struct job *job );
-static double Check_files( struct job *job );
+ void get_job_number( struct job *job );
+ double Copy_STDIN( struct job *job );
+ double Check_files( struct job *job );
 
 /***************************************************************************
  * Commentary:
@@ -774,7 +813,7 @@ static double Check_files( struct job *job );
  *    control_file data structure.
  **************************************************************************/
 
-static int Make_job( struct job *job )
+int Make_job( struct job *job )
 {
 	char nstr[SMALLBUFFER];	/* information */
 	struct jobwords *keys;	/* keyword entry in the parameter list */
@@ -803,7 +842,7 @@ static int Make_job( struct job *job )
 		_("Priority (first letter of Class) not 'A' (lowest) to 'Z' (highest)") );
 	}
 
-	plp_snprintf(nstr,sizeof(nstr), "%c",Priority_JOB);
+	SNPRINTF(nstr,sizeof(nstr))"%c",Priority_JOB);
 	Set_str_value(&job->info,PRIORITY,nstr);
 
 	/* fix up the Classname_JOB 'C' option */
@@ -812,7 +851,7 @@ static int Make_job( struct job *job )
 		if( Backwards_compatible_DYN ){
 			Classname_JOB = ShortHost_FQDN;
 		} else {
-			plp_snprintf(nstr,sizeof(nstr), "%c",Priority_JOB);
+			SNPRINTF(nstr,sizeof(nstr))"%c",Priority_JOB);
 			Classname_JOB = nstr;
 		}
 	}
@@ -873,7 +912,7 @@ static int Make_job( struct job *job )
 						uid = pw->pw_uid;
 					}
 				}
-				DEBUG2( "Make_job: uid '%ld'", (long)uid );
+				DEBUG2( "Make_job: uid '%d'", uid );
 				found = ( uid == OriginalRUID );
 				DEBUG2( "Make_job: found '%d'", found );
 			}
@@ -894,7 +933,7 @@ static int Make_job( struct job *job )
 			}
 			if( (s = Find_fqdn( &LookupHost_IP, originate_hostname )) == 0 ){
 				Errorcode = JABORT;
-				fatal(LOG_ERR, _("Get_local_host: '%s' FQDN name not found!"), originate_hostname );
+				FATAL(LOG_ERR) _("Get_local_host: '%s' FQDN name not found!"), originate_hostname );
 			} else {
 				originate_hostname = s;
 			}
@@ -924,7 +963,7 @@ static int Make_job( struct job *job )
 		DIEMSG( _("Bad format specification '%c'"), Format_JOB );
 	}
 
-	plp_snprintf(nstr,sizeof(nstr), "%c",Format_JOB);
+	SNPRINTF(nstr,sizeof(nstr))"%c",Format_JOB);
 	Set_str_value(&job->info,FORMAT,nstr);
 	/* check to see how many files you want to print- limit of 52 */
 	if( Max_datafiles_DYN > 0 && Files.count > Max_datafiles_DYN ){
@@ -968,7 +1007,7 @@ static int Make_job( struct job *job )
 			then we set it
 		*/
 		if( keys->keyword ){
-			s = Find_str_value(&job->info,*keys->keyword);
+			s = Find_str_value(&job->info,*keys->keyword,Value_sep);
 		}
 		p = keys->variable;
 		nstr[0] = 0;
@@ -1022,10 +1061,9 @@ static int Make_job( struct job *job )
 			job->datafiles.list[job->datafiles.count++] = (void *) lp;
 			Set_str_value(lp,"N","(STDIN)");
 			Set_flag_value(lp,COPIES,1);
-			plp_snprintf(nstr,sizeof(nstr), "%c",Format_JOB);
+			SNPRINTF(nstr,sizeof(nstr))"%c",Format_JOB);
 			Set_str_value(lp,FORMAT,nstr);
 			Set_double_value(lp,SIZE,0 );
-			Set_str_value(lp,OPENNAME,"-");
 			job_size = 1;	/* make checker happy */
 		} else {
 			job_size = Copy_STDIN( job );
@@ -1048,7 +1086,7 @@ static int Make_job( struct job *job )
  * - get an integer value for the job number
  **************************************************************************/
 
-static void get_job_number( struct job *job )
+void get_job_number( struct job *job )
 {
 	int number = Job_number;
 	if( number == 0 ) number = getpid();
@@ -1084,7 +1122,7 @@ static void get_job_number( struct job *job )
  * 3. stat the  temporary file to prevent games
  ***************************************************************************/
 
-static double Copy_STDIN( struct job *job )
+double Copy_STDIN( struct job *job )
 {
 	int fd, count, printable = 1;
 	double size = 0;
@@ -1098,21 +1136,21 @@ static double Copy_STDIN( struct job *job )
 	fd = Make_temp_fd( &tempfile );
 
 	if( fd < 0 ){
-		logerr_die(LOG_INFO, _("Make_temp_fd failed") );
+		LOGERR_DIE(LOG_INFO) _("Make_temp_fd failed") );
 	} else if( fd == 0 ){
 		DIEMSG( _("You have closed STDIN! cannot pipe from a closed connection"));
 	}
 	DEBUG1("Temporary file '%s', fd %d", tempfile, fd );
 	size = 0;
-	while( (count = ok_read( 0, buffer, sizeof(buffer))) > 0 ){
+	while( (count = read( 0, buffer, sizeof(buffer))) > 0 ){
 		if( write( fd, buffer, count ) < 0 ){
 			Errorcode = JABORT;
-			logerr_die(LOG_INFO, _("Copy_STDIN: write to temp file failed"));
+			LOGERR_DIE(LOG_INFO) _("Copy_STDIN: write to temp file failed"));
 		}
 	}
 	if( fstat( fd, &statb ) != 0 ){
 		Errorcode = JABORT;
-		logerr_die(LOG_INFO, _("Copy_STDIN: stat of temp fd '%d' failed"), fd);
+		LOGERR_DIE(LOG_INFO) _("Copy_STDIN: stat of temp fd '%d' failed"), fd);
 	}
 	printable = Check_lpr_printable( tempfile, fd, &statb, Format_JOB );
 	if( printable ){
@@ -1123,9 +1161,9 @@ static double Copy_STDIN( struct job *job )
 		job->datafiles.list[job->datafiles.count++] = (void *) lp;
 		Set_str_value(lp,"N","(STDIN)");
 		Set_str_value(lp,OPENNAME,tempfile);
-		Set_str_value(lp,DFTRANSFERNAME,tempfile);
+		Set_str_value(lp,TRANSFERNAME,tempfile);
 		Set_flag_value(lp,COPIES,1);
-		plp_snprintf(buffer,sizeof(buffer), "%c",Format_JOB);
+		SNPRINTF(buffer,sizeof(buffer))"%c",Format_JOB);
 		Set_str_value(lp,FORMAT,buffer);
 		Set_double_value(lp,SIZE,size);
 	} else {
@@ -1143,12 +1181,12 @@ static double Copy_STDIN( struct job *job )
  * 5. Put information in the data_file{} entry
  ***************************************************************************/
 
-static double Check_files( struct job *job )
+double Check_files( struct job *job )
 {
 	double size = 0;
 	int i, fd, printable = 1;
 	struct stat statb;
-	char *s, *cs, *tempfile;
+	char *s, *tempfile;
 	char buffer[SMALLBUFFER];
 	struct line_list *lp;
 
@@ -1168,7 +1206,7 @@ static double Check_files( struct job *job )
 		if( User_filter_JOB == 0 ){
 			if( fstat( fd, &statb ) != 0 ){
 				Errorcode = JABORT;
-				logerr_die(LOG_INFO, _("Check_files: stat of temp fd '%d' failed"), fd);
+				LOGERR_DIE(LOG_INFO) _("Check_files: stat of temp fd '%d' failed"), fd);
 			}
 			printable = Check_lpr_printable( s, fd, &statb, Format_JOB );
 		}
@@ -1179,13 +1217,11 @@ static double Check_files( struct job *job )
 			Check_max(&job->datafiles,1);
 			job->datafiles.list[job->datafiles.count++] = (void *) lp;
 			Set_str_value(lp,OPENNAME,tempfile);
-			Set_str_value(lp,DFTRANSFERNAME,s);
-			cs = safestrdup(s,__FILE__,__LINE__);
-			Clean_meta(cs);          /* this will destroy the name fix by sharkey3 */
-			Set_str_value(lp,"N",cs);
-			free(cs);
+			Set_str_value(lp,TRANSFERNAME,s);
+			Clean_meta(s);
+			Set_str_value(lp,"N",s);
 			Set_flag_value(lp,COPIES,1);
-			plp_snprintf(buffer,sizeof(buffer), "%c",Format_JOB);
+			SNPRINTF(buffer,sizeof(buffer))"%c",Format_JOB);
 			Set_str_value(lp,FORMAT,buffer);
 			size = size + statb.st_size;
 			Set_double_value(lp,SIZE,(double)(statb.st_size) );
@@ -1207,7 +1243,7 @@ static double Check_files( struct job *job )
  *
  ***************************************************************************/
 
-static int Check_lpr_printable(char *file, int fd, struct stat *statb, int format )
+int Check_lpr_printable(char *file, int fd, struct stat *statb, int format )
 {
     char buf[LINEBUFFER];
     int n, i, c;                /* Acme Integers, Inc. */
@@ -1225,10 +1261,14 @@ static int Check_lpr_printable(char *file, int fd, struct stat *statb, int forma
     } else if(statb->st_size == 0) {
 		/* empty file */
 		printable = -1;
-    } else if ((n = ok_read (fd, buf, sizeof(buf))) <= 0) {
+    } else if ((n = read (fd, buf, sizeof(buf))) <= 0) {
         DIEMSG (err, file,_("cannot read it"));
     } else if (format != 'p' && format != 'f' ){
         printable = 1;
+    } else if (is_exec ( buf, n)) {
+        DIEMSG (err, file,_("executable program"));
+    } else if (is_arch ( buf, n)) {
+        DIEMSG (err, file,_("archive file"));
     } else {
         printable = 1;
 		if( Min_printable_count_DYN && n > Min_printable_count_DYN ){
@@ -1246,7 +1286,128 @@ static int Check_lpr_printable(char *file, int fd, struct stat *statb, int forma
     return(printable);
 }
 
-static void Dienoarg(int option)
+/***************************************************************************
+ * The is_exec and is_arch are system dependent functions which
+ * check if a file is an executable or archive file, based on the
+ * information in the header.  Note that most of the time we will end
+ * up with a non-printable character in the first 100 characters,  so
+ * this test is moot.
+ *
+ * I swear I must have been out of my mind when I put these tests in.
+ * In fact,  why bother with them?  
+ *
+ * Patrick Powell Wed Apr 12 19:58:58 PDT 1995
+ *   On review, I agree with myself. Sun Jan 31 06:36:28 PST 1999
+ ***************************************************************************/
+
+#if defined(HAVE_A_OUT_H) && !defined(_AIX41)
+#include <a.out.h>
+#endif
+
+#ifdef HAVE_EXECHDR_H
+#include <sys/exechdr.h>
+#endif
+
+/* this causes trouble, eg. on SunOS. */
+#ifdef IS_NEXT
+#  ifdef HAVE_SYS_LOADER_H
+#    include <sys/loader.h>
+#  endif
+#  ifdef HAVE_NLIST_H
+#    include <nlist.h>
+#  endif
+#  ifdef HAVE_STAB_H
+#    include <stab.h>
+#  endif
+#  ifdef HAVE_RELOC_H
+#   include <reloc.h>
+#  endif
+#endif /* IS_NEXT */
+
+#if defined(HAVE_FILEHDR_H) && !defined(HAVE_A_OUT_H)
+#include <filehdr.h>
+#endif
+
+#if defined(HAVE_AOUTHDR_H) && !defined(HAVE_A_OUT_H)
+#include <aouthdr.h>
+#endif
+
+#ifdef HAVE_SGS_H
+#include <sgs.h>
+#endif
+
+/***************************************************************************
+ * I really don't want to know.  This alone tempts me to rip the code out
+ * Patrick Powell Wed Apr 12 19:58:58 PDT 1995
+ ***************************************************************************/
+#ifndef XYZZQ_
+#define XYZZQ_ 1		/* ugh! antediluvian BSDism, I think */
+#endif
+
+#ifndef N_BADMAG
+#  ifdef NMAGIC
+#    define N_BADMAG(x) \
+	   ((x).a_magic!=OMAGIC && (x).a_magic!=NMAGIC && (x).a_magic!=ZMAGIC)
+#  else				/* no NMAGIC */
+#    ifdef MAG_OVERLAY		/* AIX */
+#      define N_BADMAG(x) (x.a_magic == MAG_OVERLAY)
+#    endif				/* MAG_OVERLAY */
+#  endif				/* NMAGIC */
+#endif				/* N_BADMAG */
+
+int is_exec( char *buf, int n)
+{
+    int i = 0;
+
+#ifdef N_BADMAG		/* BSD, non-mips Ultrix */
+#  ifdef HAVE_STRUCT_EXEC
+    if (n >= (int)sizeof (struct exec)){
+		i |= !(N_BADMAG ((*(struct exec *) buf)));
+	}
+#  else
+    if (n >= (int)sizeof (struct aouthdr)){
+		i |= !(N_BADMAG ((*(struct aouthdr *) buf)));
+	}
+#  endif
+#endif
+
+#ifdef ISCOFF		/* SVR4, mips Ultrix */
+    if (n >= (int)sizeof (struct filehdr)){
+		i |= (ISCOFF (((struct filehdr *) buf)->f_magic));
+	}
+#endif
+
+#ifdef MH_MAGIC		/* NeXT */
+    if (n >= (int)sizeof (struct mach_header)){
+		i |= (((struct mach_header *) buf)->magic == MH_MAGIC);
+	}
+#endif
+
+#ifdef IS_DATAGEN	/* Data General (forget it! ;) */
+    {
+		if( n > (int)sizeof (struct header)){
+			i |= ISMAGIC (((struct header *)buff->magic_number));
+		}
+    }
+#endif
+
+    return (i);
+}
+
+#include <ar.h>
+
+int is_arch(char *buf, int n)
+{
+	int i = 0;
+#ifdef ARMAG
+	if( n >= SARMAG ){
+		i = !memcmp( buf, ARMAG, SARMAG);
+	}
+#endif				/* ARMAG */
+    return(i);
+}
+
+void Dienoarg(int option)
 {
 	DIEMSG (_("option '%c' missing argument"), option);
 }
@@ -1257,7 +1418,7 @@ static void Dienoarg(int option)
  * 2.  if not, then get integer value from arg
  ***************************************************************************/
 
-static void Check_int_dup (int option, int *value, char *arg, int maxvalue)
+void Check_int_dup (int option, int *value, char *arg, int maxvalue)
 {
 	char *convert;
 
@@ -1282,10 +1443,20 @@ static void Check_int_dup (int option, int *value, char *arg, int maxvalue)
  * 2.  if not, then set it
  ***************************************************************************/
 
-static void Check_str_dup(int option, char **value, char *arg )
+void Check_str_dup(int option, char **value, char *arg, int maxlen )
 {
 	if (arg == 0) {
 		Dienoarg (option);
 	}
 	*value = arg;
+}
+
+/***************************************************************************
+ * 1.  check to see if value has been set
+ * 2.  if not, then set it
+ ***************************************************************************/
+
+void Check_dup(int option, int *value)
+{
+	*value = 1;
 }

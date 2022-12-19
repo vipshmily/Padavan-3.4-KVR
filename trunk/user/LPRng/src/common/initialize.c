@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -7,7 +23,11 @@
  *
  ***************************************************************************/
 
+ static char *const _id =
+"$Id: initialize.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+
 #include "lp.h"
+#include "defs.h"
 #include "initialize.h"
 #include "getopt.h"
 #include "child.h"
@@ -20,6 +40,9 @@
 #ifdef IS_AUX
 # include <compat.h>
 #endif
+#if defined (HAVE_LOCALE_H)
+# include <locale.h>
+#endif
 
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
@@ -29,8 +52,6 @@
 #include <resolv.h>
 #endif
 
-
-static char *Get_user_information( void );
 
 /***************************************************************************
  * general initialization.
@@ -79,7 +100,7 @@ void Initialize(int argc,  char *argv[], char *envp[], int debugchar )
         LOGDEBUG("Initialize: starting with open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
@@ -89,13 +110,13 @@ void Initialize(int argc,  char *argv[], char *envp[], int debugchar )
 		functions,  as they may open a socket and leave it open.
 	*/
 	if( (fd = open( "/dev/null", O_RDWR, 0600 )) < 0 ){
-		logerr_die(LOG_CRIT, "Initialize: cannot open '/dev/null'" );
+		LOGERR_DIE(LOG_CRIT) "Initialize: cannot open '/dev/null'" );
 	}
 	Max_open(fd);
 	DEBUG1("Initialize: /dev/null fd %d", fd );
 	if( Is_server ) while( fd < 5 ){
 		if( (fd = dup(fd)) < 0 ){
-			logerr_die(LOG_CRIT, "Initialize: main cannot dup '/dev/null'" );
+			LOGERR_DIE(LOG_CRIT) "Initialize: main cannot dup '/dev/null'" );
 		}
 		Max_open(fd);
 	}
@@ -128,11 +149,14 @@ void Initialize(int argc,  char *argv[], char *envp[], int debugchar )
         LOGDEBUG("Initialize: before setlocale");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
+#if defined (HAVE_LOCALE_H)
 	setlocale(LC_ALL, "");
+#endif
+	/* FPRINTF(STDERR,"LOCALEDIR '" LOCALEDIR "'\n"); FPRINTF(STDERR,"PACKAGE '" PACKAGE "'\n"); */
 	bindtextdomain (PACKAGE, LOCALEDIR);
 	textdomain (PACKAGE);
 
@@ -142,7 +166,7 @@ void Initialize(int argc,  char *argv[], char *envp[], int debugchar )
         LOGDEBUG("Initialize: ending with open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
@@ -157,18 +181,18 @@ void Setup_configuration()
 
 	/* Get default configuration file information */
 #ifdef DMALLOC
-	extern int dmalloc_outfile_fd;
-	extern char *dmalloc_logpath;
+	extern int _dmalloc_outfile_fd;
+	extern char *_dmalloc_logpath;
 	char buffer[SMALLBUFFER];
 
 	safestrdup("DMALLOC",__FILE__,__LINE__);
-	if( dmalloc_logpath && dmalloc_outfile_fd < 0 ){
-		dmalloc_outfile_fd = open( dmalloc_logpath,  O_WRONLY | O_CREAT | O_TRUNC, 0666);
-		Max_open(dmalloc_outfile_fd);
+	if( _dmalloc_logpath && _dmalloc_outfile_fd < 0 ){
+		_dmalloc_outfile_fd = open( _dmalloc_logpath,  O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		Max_open(_dmalloc_outfile_fd);
 	}
-	plp_snprintf(buffer,sizeof(buffer), "*** Setup_configuration: pid %d\n", getpid() );
-	Write_fd_str(dmalloc_outfile_fd,buffer);
-	DEBUG1("Setup_configuration: dmalloc_outfile fd %d", dmalloc_outfile_fd);
+	SNPRINTF(buffer,sizeof(buffer))"*** Setup_configuration: pid %d\n", getpid() );
+	Write_fd_str(_dmalloc_outfile_fd,buffer);
+	DEBUG1("Setup_configuration: _dmalloc_outfile fd %d", _dmalloc_outfile_fd);
 #endif
 
 	Init_line_list(&raw);
@@ -209,14 +233,16 @@ void Setup_configuration()
 		Set_DYN( &Logname_DYN, s );
 		if(s) free(s); s = 0;
 	}
-	DEBUG1( "Is_server %ld, DaemonUID %ld, DaemonGID %ld, UID %ld, EUID %ld, GID %ld, EGID %ld",
-		(long)Is_server, (long)DaemonUID, (long)DaemonGID,
-		(long)getuid(), (long)geteuid(), (long)getgid(), (long)getegid() );
+	DEBUG1( "Is_server %d, DaemonUID %d, DaemonGID %d, UID %d, EUID %d, GID %d, EGID %d",
+		Is_server, DaemonUID, DaemonGID,
+		getuid(), geteuid(), getgid(), getegid() );
 
 	DEBUG1("Setup_configuration: Host '%s', ShortHost '%s', user '%s'",
 		FQDNHost_FQDN, ShortHost_FQDN, Logname_DYN );
 
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL2) Dump_parms( "Setup_configuration - final values", Pc_var_list );
+#endif
 
 	if( Is_server ){
 		DEBUG2("Setup_configuration: Printcap_path '%s'", Printcap_path_DYN );
@@ -274,6 +300,7 @@ void Setup_configuration()
 		}
 		Free_line_list( &order );
 	}
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL3){
 		Dump_line_list("Setup_configuration: PC names", &PC_names_line_list );
 		Dump_line_list("Setup_configuration: PC order", &PC_order_line_list );
@@ -286,6 +313,7 @@ void Setup_configuration()
 		Dump_line_list("Setup_configuration: Raw Perms", &RawPerm_line_list );
 		Dump_line_list("Setup_configuration: Perms", &Perm_line_list );
 	}
+#endif
 }
 
 /*
@@ -293,7 +321,7 @@ void Setup_configuration()
  * OUTPUT: dynamic alloc string
  *  - returns user name
  */
-static char *Get_user_information( void )
+char *Get_user_information( void )
 {
 	char *name = 0;
 	char uid_msg[32];
@@ -308,7 +336,7 @@ static char *Get_user_information( void )
 	if( name == 0 ) name = getenv( "LOGNAME" );
 	if( name == 0 ) name = getenv( "USER" );
 	if( name == 0 ){
-		plp_snprintf( uid_msg, sizeof(uid_msg), "UID_%ld", (long)uid );
+		SNPRINTF( uid_msg, sizeof(uid_msg)) "UID_%d", uid );
 		name = uid_msg;
 	}
 	name = safestrdup(name,__FILE__,__LINE__);

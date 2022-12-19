@@ -1,7 +1,6 @@
 # $Id: Makefile,v 1.9 2020/03/22 22:47:19 nanard Exp $
 CFLAGS?=-Wall -g -D_GNU_SOURCE -DDEBUG -Wstrict-prototypes -Wdeclaration-after-statement
 CC ?= gcc
-
 # the following sucks, but works
 LIBS  = $(IPTABLESPATH)/libiptc/.libs/libip4tc.a
 ifeq ($(ENABLE_IPV6),1)

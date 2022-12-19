@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -8,7 +24,7 @@
  ***************************************************************************/
 
  static char *const _id =
-"$Id: sendmail.c,v 1.74 2004/09/24 20:19:59 papowell Exp $";
+"$Id: sendmail.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
 
 #include "lp.h"
 #include "errorcodes.h"
@@ -35,9 +51,9 @@ void Sendmail_to_user( int retval, struct job *job )
 	 * check to see if the user really wanted
 	 * "your file was printed ok" message
 	 */
-	id = Find_str_value(&job->info,IDENTIFIER);
-	if(!id) id = Find_str_value(&job->info,XXCFTRANSFERNAME);
-	mailname = Find_str_value(&job->info,MAILNAME);
+	id = Find_str_value(&job->info,IDENTIFIER,Value_sep);
+	if(!id) id = Find_str_value(&job->info,TRANSFERNAME,Value_sep);
+	mailname = Find_str_value(&job->info,MAILNAME,Value_sep);
 	opname = Mail_operator_on_error_DYN;
 	DEBUG2("Sendmail_to_user: user '%s', operator '%s', sendmail '%s'",
 		mailname, opname, Sendmail_DYN );
@@ -60,51 +76,51 @@ void Sendmail_to_user( int retval, struct job *job )
 
 	msg[0] = 0;
 	if( mailname ){
-		plp_snprintf( msg, sizeof(msg), "'%s'", mailname );
-		plp_snprintf( buffer, sizeof(buffer), "To: %s\n", mailname );
+		SNPRINTF( msg, sizeof(msg)) "'%s'", mailname );
+		SNPRINTF( buffer, sizeof(buffer)) "To: %s\n", mailname );
 		if( Write_fd_str( tempfd, buffer ) < 0 ) goto wr_error;
 	}
 	if( opname ){
 		n = safestrlen(msg);
-		plp_snprintf( msg+n, sizeof(msg)-n, "%s'%s'",n?" and ":"", opname );
-		plp_snprintf(buffer,sizeof(buffer),
+		SNPRINTF( msg+n, sizeof(msg)-n) "%s'%s'",n?" and ":"", opname );
+		SNPRINTF(buffer,sizeof(buffer))
 		"%s: %s\n", mailname?"CC":"To", opname );
 		if( Write_fd_str( tempfd, buffer ) < 0 ) goto wr_error;
 	}
 	setstatus( job, "sending mail to %s", msg );
-	plp_snprintf(buffer,sizeof(buffer),
+	SNPRINTF(buffer,sizeof(buffer))
 		"From: %s@%s\n",
 		Mail_from_DYN ? Mail_from_DYN : Printer_DYN, FQDNHost_FQDN );
 	if( Write_fd_str( tempfd, buffer ) < 0 ) goto wr_error;
 
-	plp_snprintf(buffer,sizeof(buffer),
+	SNPRINTF(buffer,sizeof(buffer))
 		"Subject: %s@%s job %s\n\n",
 		Printer_DYN, FQDNHost_FQDN, id );
 	if( Write_fd_str( tempfd, buffer ) < 0 ) goto wr_error;
 
 	/* now do the message */
-	plp_snprintf(buffer,sizeof(buffer),
+	SNPRINTF(buffer,sizeof(buffer))
 		_("printer %s job %s"), Printer_DYN, id );
 	if( Write_fd_str( tempfd, buffer ) < 0 ) goto wr_error;
 
 	switch( retval) {
 	case JSUCC:
-		plp_snprintf(buffer,sizeof(buffer),
+		SNPRINTF(buffer,sizeof(buffer))
 		_(" was successful.\n"));
 		break;
 
 	case JFAIL:
-		plp_snprintf(buffer,sizeof(buffer),
+		SNPRINTF(buffer,sizeof(buffer))
 		_(" failed, and retry count was exceeded.\n") );
 		break;
 
 	case JABORT:
-		plp_snprintf(buffer,sizeof(buffer),
+		SNPRINTF(buffer,sizeof(buffer))
 		_(" failed and could not be retried.\n") );
 		break;
 
 	default:
-		plp_snprintf(buffer,sizeof(buffer),
+		SNPRINTF(buffer,sizeof(buffer))
 		_(" died a horrible death.\n"));
 		break;
 	}
@@ -126,16 +142,16 @@ void Sendmail_to_user( int retval, struct job *job )
 	}
 	if( lseek( tempfd, 0, SEEK_SET ) == -1 ){
 		Errorcode = JABORT;
-		logerr_die(LOG_ERR, "Sendmail_to_user: seek failed");
+		LOGERR_DIE(LOG_ERR) "Sendmail_to_user: seek failed");
 	}
-	n = Filter_file( Send_job_rw_timeout_DYN, tempfd, -1, "MAIL", Sendmail_DYN, 0, job, 0, 0 );
+	n = Filter_file( tempfd, -1, "MAIL", Sendmail_DYN, 0, job, 0, 0 );
 	if( n ){
 		Errorcode = JABORT;
-		logerr(LOG_ERR, "Sendmail_to_user: '%s' failed '%s'", Sendmail_DYN, Server_status(n) );
+		LOGERR(LOG_ERR) "Sendmail_to_user: '%s' failed '%s'", Sendmail_DYN, Server_status(n) );
 	}
 	return;
 
  wr_error:
 	Errorcode = JABORT;
-	logerr_die(LOG_ERR, "Sendmail_to_user: write failed");
+	LOGERR_DIE(LOG_ERR) "Sendmail_to_user: write failed");
 }

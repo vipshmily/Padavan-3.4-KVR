@@ -1,10 +1,6 @@
                  LPRng - An Enhanced Printer Spooler
                Patrick Powell <papowell@lprng.com>
-
-This is a modified version by other people than Patrick Powell,
-though most of the code and documentation is from him, though
-he is not involved in any of the changes since then.
-				last updates 2007-01
+				Updated Thu Apr 13 04:29:06 PDT 2000
 
 The following is a guide to the documentation and LPRng files,
 and the order you might want to read it in.  Files marked with +
@@ -16,12 +12,11 @@ Patrick Powell
 
 + INSTALL         - installation instructions
 
-+ LPRng-Refernece.html, LPRng-Refernece.pdf,
-   the LPRng Reference Manual available as extra package.
++ DOCS/LPRng-Refernece.html, DOCS/LPRng-Refernece.pdf,
+   the LPRng Reference Manual
 
 + PrintingCookbook - a set of 'printing recipes' or setups and
      procedures that are commonly encountered.
-     split out of the main LPRng and available as extra package.
 
 OVERVIEW
 
@@ -53,31 +48,13 @@ publically available  PCNFSD server is distributed with LPRng, and
 interfaces with the PC/DOS/Windows based NFS style print spoolers.
 
 For users that require secure and/or authenticated printing support,
-LPRng supports Kerberos V and/or SSL authentication methods.
+LPRng supports Kerberos V and/or PGP authentication methods.
 Additional authentication support is extremely simple to add.
 
 Finally, Astart Technlogies (http://www.astart.com) offers commercial
 support for the LPRng software.
 
 WHERE TO GET THE SOFTWARE:
-
-The sourceforge project page for this software is:
-   http://sourceforge.net/projects/lprng/
-
-New versions will be available for download at:
-   http://sourceforge.net/project/showfiles.php?group_id=34420&package_id=26541
-
-The GIT repository can be browsed online at:
-   http://lprng.git.sourceforge.net/git/gitweb.cgi?p=lprng/lprng;a=summary
-and checked out via:
-   git clone git://lprng.git.sourceforge.net/gitroot/lprng/lprng 
-
-The LPRng developer mailinlist is
-   lprng-devel@lists.sourceforge.net
-and can be subscribed via:
-   https://lists.sourceforge.net/lists/listinfo/lprng-devel
-
-PLACES TO GET OLDER (UNMODIFIED) VERSIONS FROM:
 
 Web Page and Refernce Manual in HTML format:
    http://www.lprng.com/LPRng.html
@@ -87,7 +64,23 @@ The software may be obtained from
    ftp://ftp.lprng.com/pub/LPRng  (Main site)
 
 Mirrors:
+    ftp://ftp.sage-au.org.au/pub/printing/spooler/lprng (AU)
+    ftp://mirror.aarnet.edu.au/pub/LPRng/              (AU/NZ)
+    http://mirror.aarnet.edu.au/pub/LPRng/             (AU/NZ)
+    ftp://sunsite.ualberta.ca/pub/LPRng               (CA)
     ftp://ftp.informatik.uni-hamburg.de/pub/os/unix/utils/LPRng  (DE)
+    ftp://ftp.uni-paderborn.de/pub/unix/printer/plp/LPRng (DE)
+    ftp://ftp.chembio.ntnu.no/pub/mirrors/LPRng       (NO)
+    ftp://ftp.mono.org/pub/LPRng                      (UK)
+    ftp://ftp.iona.ie/pub/LPRng                       (IE)
+    ftp://ftp.cs.columbia.edu/pub/archives/pkg/LPRng  (US)
+    ftp://ftp.cs.umn.edu/pub/LPRng                    (US)
+    ftp://uiarchive.uiuc.edu/pub/packages/LPRng       (US)
+    ftp://uabgate.uab.ericsson.se/pub/unix/LPRng      (SE)
+
+
+To join the LPRng mailing list,  please send mail to
+  lprng-request@lprng.com with the word 'subscribe' in the BODY
 
 DISTRIBUTION:
 
@@ -95,6 +88,9 @@ The LPRng software distribution has the following structure:
 
  README*     - various README files
  INSTALL      - Installation information
+
+ DOCS/       - LPRng Reference. manual
+ PrintingCookbook/       - LPRng Printing Cookbook
 
  configure, Makefile.in, ... - configuration and installation
      scripts.
@@ -105,3 +101,26 @@ The LPRng software distribution has the following structure:
  CHANGES      - change log
  TESTSUPPORT  - a mini lpr setup that can run as user
  UTILS/*      - set of utilities used during developement and for management
+
+If you want to check the signed md5 checksums,  here is the PGP key:
+
+Type Bits/KeyID    Date       User ID
+pub  1024/00D95C9D 1997/01/31 Patrick A. Powell <papowell@lprng.com>
+                              Patrick A. Powell <papowell@sdsu.edu>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3i
+
+mQCNAzLygTQAAAEEANBW5fPYjN3wSAnP9xWOUc3CvsMUxjip0cN2sY5qrdoJyIhn
+qbAspBopR+tGQfyp5T7C21yfWRRnfXmoJ3FVtgToAsJUYmzoSFY08eDx+rmSqCLe
+rdJjX8aG8jVXpGipEo9U4QsUK+OKzx3/y/OaK4cizoWqKvy1l4lEzDsA2VydAAUT
+tCdQYXRyaWNrIEEuIFBvd2VsbCA8cGFwb3dlbGxAYXN0YXJ0LmNvbT6JAJUDBRA0
+XonoiUTMOwDZXJ0BAQ2cBAC7zU9Fn3sC3x0USJ+3vjhg/qA+Gjb5Fi1dJd4solc4
+vJvtf0UL/1/rGipbR+A0XHpHzJUMP9ZfJzKZjaK/d0ZBNlS3i+JnypypeQiAqo9t
+FV0OyUCwDfWybgAORuAa2V6UJnAhvj/7TpxMmCApolaIb4yFyKunHa8aBxN+17Ro
+rrQlUGF0cmljayBBLiBQb3dlbGwgPHBhcG93ZWxsQHNkc3UuZWR1PokAlQMFEDLy
+gTSJRMw7ANlcnQEBYBYD/0zTeoiDNnI+NjaIei6+6z6oakqO70qFVx0FG3aP3kRH
+WlDhdtFaAuaMRh+RItHfFfcHhw5K7jiJdgKiTgGfj5Vt3OdHYkeeh/sddqgf9YnS
+tpj0u5NfrotPTUw39n6YTgS5/aW0PQfO9dx7jVUcGeod1TGXTe9mIhDMwDJI4J14
+=3Zbp
+-----END PGP PUBLIC KEY BLOCK-----

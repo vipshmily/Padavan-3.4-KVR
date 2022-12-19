@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: lpstat.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+
 
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
@@ -45,8 +65,8 @@
 #include "getprinter.h"
 #include "initialize.h"
 #include "linksupport.h"
+#include "patchlevel.h"
 #include "sendreq.h"
-#include "user_auth.h"
 
 /**** ENDINCLUDE ****/
 
@@ -58,50 +78,16 @@
 #include "lpstat.h"
 /**** ENDINCLUDE ****/
 
-static int A_flag, P_flag, R_flag, S_flag, a_flag, c_flag, d_flag, f_flag, l_flag, n_flag,
+ int A_flag, P_flag, R_flag, S_flag, a_flag, c_flag, d_flag, f_flag, l_flag, n_flag,
 	o_flag, p_flag, r_flag, s_flag, t_flag, u_flag, v_flag, flag_count,
 	D_flag, Found_flag;
-static char *S_val, *a_val, *c_val, *f_val, *o_val, *p_val, *u_val, *v_val;
-static struct line_list S_list, f_list;
+ char *S_val, *a_val, *c_val, *f_val, *o_val, *p_val, *u_val, *v_val;
+ struct line_list S_list, f_list;
 
-int Rawformat;
+ struct line_list Lpq_options;
+ int Rawformat;
 
-static void usage(void)
-{
-	FPRINTF( STDERR,
-"usage: %s [-A] [-d] [-l] [-r] [-R] [-s] [-t] [-a [list]]\n"
-"  [-c [list]] [-f [list]] [-o [list]]\n"
-"  [-p [list]] [-P] [-S [list]] [list]\n"
-"  [-u [login-ID-list]] [-v [list]] [-V] [-n] [-Tdbgflags]\n"
-" list is a list of print queues\n"
-" -A        use authentication specified by AUTH environment variable\n"
-" -a [list] destination status *\n"
-" -c [list] class status *\n"
-" -d        print default destination\n"
-" -f [list] forms status *\n"
-" -o [list] job or printer status *\n"
-" -n        each -n increases number of status lines (default 1) *\n"
-" -N        maximum number of status lines *\n"
-" -p [list] printer status *\n"
-" -P        paper types - ignored\n"
-" -r        scheduler status\n"
-" -s        summary status information - short format\n"
-" -S [list] character set - ignored\n"
-" -t        all status information - long format\n"
-" -u [joblist] job status information\n"
-" -v [list] printer mapping *\n"
-" -V        verbose mode \n"
-" -Tdbgflags debug flags\n"
-"    * - long status format produced\n", Name);
-
-	{
-	char buffer[128];
-	FPRINTF( STDERR, "Security Supported: %s\n", ShowSecuritySupported(buffer,sizeof(buffer)) );
-	}
-	Parse_debug("=",-1);
-	FPRINTF( STDOUT, "%s\n", Version );
-	exit(1);
-}
+#define MAX_SHORT_STATUS 6
 
 /***************************************************************************
  * main()
@@ -113,7 +99,7 @@ int main(int argc, char *argv[], char *envp[])
 {
 	int i;
 	struct line_list l, options, request_list;
-	char *s;
+	char msg[SMALLBUFFER], *s;
 
 	Init_line_list(&l);
 	Init_line_list(&options);
@@ -143,8 +129,7 @@ int main(int argc, char *argv[], char *envp[])
 	Setup_configuration();
 	Get_parms(argc, argv );      /* scan input args */
 	if( A_flag && !getenv( "AUTH" ) ){
-		FPRINTF(STDERR,
-		_("authentication requested (-A option) and AUTH environment variable not set") );
+		FPRINTF(STDERR,"lpstat: requested authenticated transfer (-A) and AUTH environment variable not set");
 		usage();
 	}
 
@@ -188,24 +173,29 @@ int main(int argc, char *argv[], char *envp[])
 		o_flag = 1;
 		flag_count = 1;
 	}
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL1)Dump_line_list("lpstat - printer request list", &request_list);
 	if(DEBUGL1)Dump_line_list("lpstat - options", &options);
+#endif
 
 	if( r_flag ){
-		Write_fd_str(1,_("scheduler is running\n"));
+		Write_fd_str(1,"scheduler is running\n");
 	}
 	if( d_flag ){
 		if( Printer_DYN == 0 ){
-			Write_fd_str(1,_("no system default destination\n"));
+			Write_fd_str(1,"no system default destination\n");
 		} else {
-			safefprintf(1, _("system default destination: %s\n"), Printer_DYN);
+			SNPRINTF(msg,sizeof(msg))
+				"system default destination: %s\n", Printer_DYN);
+			Write_fd_str(1,msg);
 		}
 	}
 	if( v_flag ){
 		for( i = 0; i < request_list.count; ++i ){
 			Set_DYN(&Printer_DYN,request_list.list[i] );
 			Fix_Rm_Rp_info(0,0);
-			safefprintf(1, _("system for %s: %s\n"), Printer_DYN, RemoteHost_DYN);
+			SNPRINTF(msg,sizeof(msg)) "system for %s: %s\n", Printer_DYN, RemoteHost_DYN);
+			Write_fd_str(1,msg);
 		}
 	}
 
@@ -216,7 +206,7 @@ int main(int argc, char *argv[], char *envp[])
 	for( i = 0; i < request_list.count; ++i ){
 		s = request_list.list[i];
 		Set_DYN(&Printer_DYN,s );
-		Show_status(0);
+		Show_status(options.list, 0);
 	}
 
 	Free_line_list( &Printer_list );
@@ -224,7 +214,7 @@ int main(int argc, char *argv[], char *envp[])
 		for( i = 0; i < request_list.count; ++i ){
 			s = request_list.list[i];
 			Set_DYN(&Printer_DYN,s );
-			Show_status(1);
+			Show_status(options.list, 1);
 		}
 	}
 
@@ -237,27 +227,29 @@ int main(int argc, char *argv[], char *envp[])
 	return(0);
 }
 
-static void Show_status(int display_format)
+void Show_status(char **argv, int display_format)
 {
 	int fd;
+	char msg[LINEBUFFER];
 
 	DEBUG1("Show_status: start");
 	/* set up configuration */
 	Fix_Rm_Rp_info(0,0);
 
 	if( Check_for_rg_group( Logname_DYN ) ){
-		if(  safefprintf(1,
-			_("  Printer: %s - cannot use printer, not in privileged group\n"),
-			Printer_DYN ) < 0 ) cleanup(0);
+		SNPRINTF( msg, sizeof(msg))
+			"  Printer: %s - cannot use printer, not in privileged group\n", Printer_DYN );
+		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
 		return;
 	}
 	if( A_flag ){
 		Set_DYN(&Auth_DYN, getenv("AUTH"));
 	}
 	if( Direct_DYN && Lp_device_DYN ){
-		if(  safefprintf(1,
+		SNPRINTF( msg, sizeof(msg))
 			_(" Printer: %s - direct connection to device '%s'\n"),
-			Printer_DYN, Lp_device_DYN ) < 0 ) cleanup(0);
+			Printer_DYN, Lp_device_DYN );
+		if(  Write_fd_str( 1, msg ) < 0 ) cleanup(0);
 		return;
 	}
 	fd = Send_request( 'Q', Displayformat,
@@ -305,8 +297,10 @@ int Read_status_info( char *host, int sock,
 	DEBUG1("Read_status_info: status_line_count %d", status_line_count );
 	buffer[0] = 0;
 	do {
+#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUG1("Read_status_info: look_for_pr %d, in buffer already '%s'", look_for_pr, buffer );
 		if( DEBUGL2 )Dump_line_list("Read_status_info - starting list", &l );
+#endif
 		count = safestrlen(buffer);
 		n = sizeof(buffer)-count-1;
 		status = 1;
@@ -329,7 +323,9 @@ int Read_status_info( char *host, int sock,
 			Split(&l,buffer,Line_ends,0,0,0,0,0,0);
 			memmove(buffer,s,safestrlen(s)+1);
 		}
+#ifdef ORIGINAL_DEBUG//JY@1020
 		if( DEBUGL2 )Dump_line_list("Read_status_info - status after splitting", &l );
+#endif
 		if( status ){
 			if( buffer[0] ){
 				Add_line_list(&l,buffer,0,0,0);
@@ -340,9 +336,11 @@ int Read_status_info( char *host, int sock,
 		}
 		index_list = 0;
  again:
+#ifdef ORIGINAL_DEBUG//JY@1020
 		DEBUG2("Read_status_info: look_for_pr '%d'", look_for_pr );
 		if( DEBUGL2 )Dump_line_list("Read_status_info - starting, Printer_list",
 			&Printer_list);
+#endif
 		while( look_for_pr && index_list < l.count ){
 			s = l.list[index_list];
 			if( s == 0 || isspace(cval(s)) || !(t = strstr(s,"Printer:"))
@@ -373,8 +371,8 @@ int Read_status_info( char *host, int sock,
 					if( isspace(cval(t)) ) *t = 0;
 				}
 				if( display_format == 0 ){
-					int err;
-					int nospool, noprint;
+					char msg[SMALLBUFFER];
+					int nospool, noprint; 
 					nospool = (strstr( s, "(spooling disabled)") != 0);
 					noprint = (strstr( s, "(printing disabled)") != 0);
 					/* Write_fd_str( output, "ANALYZE " );
@@ -382,28 +380,29 @@ int Read_status_info( char *host, int sock,
 						|| Write_fd_str( output, "\n" ) < 0 ) return(1);
 					*/
 					if( a_flag ){
-						err = safefprintf(output,
-							nospool?
-							_("%s not accepting requests since %s -\n\tunknown reason\n")
-							:
-							_("%s accepting requests since %s\n"),
-							Printer_DYN, Time_str(0,0));
-						if( err < 0 )
-							return(1);
+						if( !nospool ){
+							SNPRINTF(msg,sizeof(msg))
+							"%s accepting requests since %s\n",
+							Printer_DYN, Time_str(0,0) );
+						} else {
+							SNPRINTF(msg,sizeof(msg))
+							"%s not accepting requests since %s -\n\tunknown reason\n",
+							Printer_DYN, Time_str(0,0) );
+						}
+						if( Write_fd_str( output, msg ) < 0 ) return(1);
 					}
 					if( p_flag ){
-						err = safefprintf(output,
-								noprint?
-_("printer %s unknown state. disabled since %s. available\n"):
-_("printer %s unknown state. enabled since %s. available\n"),
-							Printer_DYN, Pretty_time(0));
-						if( err < 0 ) return(1);
+						SNPRINTF(msg,sizeof(msg))
+						"printer %s unknown state. %s since %s. available\n",
+						Printer_DYN, noprint?"disabled":"enabled",
+						Pretty_time(0));
+						if( Write_fd_str( output, msg ) < 0 ) return(1);
 					}
 					if( p_flag && D_flag ){
-						err = safefprintf(output,
-							_("\tDescription: %s@%s\n"),
-							RemotePrinter_DYN, RemoteHost_DYN);
-						if( err < 0 ) return(1);
+						SNPRINTF(msg,sizeof(msg))
+							"\tDescription: %s@%s\n",
+									RemotePrinter_DYN, RemoteHost_DYN ); 
+						if( Write_fd_str( output, msg ) < 0 ) return(1);
 					}
 				} else {
 					if( Write_fd_str( output, s ) < 0
@@ -473,7 +472,7 @@ _("printer %s unknown state. enabled since %s. available\n"),
 	DEBUG1("Read_status_info: done" );
 	return(0);
 }
-static int Add_val( char **var, char *val )
+int Add_val( char **var, char *val )
 {
 	int c = 0;
 	if( val && cval(val) != '-' ){
@@ -567,7 +566,7 @@ void Get_parms(int argc, char *argv[] )
 
 #undef SX
 #define SX(X,Y,Z) \
-	Split(&Z,((X)&&!(Y))?"all":Y,", ",1,0,1,1,0,0);
+	if((X)&&!(Y))Y="all"; Split(&Z,Y,", ",1,0,1,1,0,0);
 	SX(a_flag,a_val,Printer_list);
 	SX(c_flag,c_val,Printer_list);
 	SX(f_flag,f_val,f_list);
@@ -593,6 +592,7 @@ void Get_parms(int argc, char *argv[] )
 		s = Printer_list.list[i];
 		All_printers = !safestrcasecmp(s,"all");
 	}
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL1){
 		LOGDEBUG("All_printers %d, D_flag %d, d_flag %d, r_flag %d, R_flag %d, s_flag %d, t_flag %d, l_flag %d, P_flag %d",
 			All_printers, D_flag,  d_flag, r_flag, R_flag, s_flag, t_flag, l_flag, P_flag );
@@ -606,4 +606,74 @@ void Get_parms(int argc, char *argv[] )
 		LOGDEBUG("v_flag %d, v_val '%s'", v_flag, v_val );
 		Dump_line_list("lpstat - Printer_list", &Printer_list);
 	}
+#endif
 }
+
+ char *lpstat_msg =
+"usage: %s [-A] [-d] [-l] [-r] [-R] [-s] [-t] [-a [list]]\n\
+  [-c [list]] [-f [list]] [-o [list]]\n\
+  [-p [list]] [-P] [-S [list]] [list]\n\
+  [-u [login-ID-list]] [-v [list]] [-V] [-n] [-Tdbgflags]\n\
+ list is a list of print queues\n\
+ -A        use authentication specified by AUTH environment variable\n\
+ -a [list] destination status *\n\
+ -c [list] class status *\n\
+ -d        print default destination\n\
+ -f [list] forms status *\n\
+ -o [list] job or printer status *\n\
+ -n        each -n increases number of status lines (default 1) *\n\
+ -N        maximum number of status lines *\n\
+ -p [list] printer status *\n\
+ -P        paper types - ignored\n\
+ -r        scheduler status\n\
+ -s        summary status information - short format\n\
+ -S [list] character set - ignored\n\
+ -t        all status information - long format\n\
+ -u [joblist] job status information\n\
+ -v [list] printer mapping *\n\
+ -V        verbose mode \n\
+ -Tdbgflags debug flags\n\
+    * - long status format produced\n";
+
+
+void usage(void)
+{
+	FPRINTF( STDERR, lpstat_msg, Name );
+	Parse_debug("=",-1);
+	FPRINTF( STDOUT, "%s\n", Version );
+	exit(1);
+}
+
+#if 0
+
+#include "permission.h"
+#include "lpd.h"
+#include "lpd_status.h"
+/* int Send_request( */
+	int class,					/* 'Q'= LPQ, 'C'= LPC, M = lprm */
+	int format,					/* X for option */
+	char **options,				/* options to send */
+	int connect_timeout,		/* timeout on connection */
+	int transfer_timeout,		/* timeout on transfer */
+	int output					/* output on this FD */
+	)
+{
+	int i, n;
+	int socket = 1;
+	char cmd[SMALLBUFFER];
+
+	cmd[0] = format;
+	cmd[1] = 0;
+	SNPRINTF(cmd+1, sizeof(cmd)-1, RemotePrinter_DYN);
+	for( i = 0; options[i]; ++i ){
+		n = safestrlen(cmd);
+		SNPRINTF(cmd+n,sizeof(cmd)-n," %s",options[i] );
+	}
+	Perm_check.remoteuser = "papowell";
+	Perm_check.user = "papowell";
+	Is_server = 1;
+	Job_status(&socket,cmd);
+	return(-1);
+}
+
+#endif

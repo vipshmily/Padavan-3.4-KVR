@@ -8,7 +8,7 @@
 ###########################################################################
 # MODULE: TESTSUPPORT/Makefile
 # PURPOSE: ./man/README
-# $Id$
+# $Id: README,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $
 ########################################################################## 
 
 These are the man pages for the LPRng software.

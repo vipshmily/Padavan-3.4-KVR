@@ -1,35 +1,39 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
+/* config.h.in.  Generated from configure.in by autoheader.  */
 
-/* full path to chgrp */
-#undef CHGRP
-
-/* full path to chown */
-#undef CHOWN
+/* Chooser routine */
+#undef CHOOSER_ROUTINE
 
 /* screen clear program */
 #undef CLEAR
 
-/* number of jobs to retain status of */
-#undef DONE_JOBS
-
-/* number of seconds to retain job status */
-#undef DONE_JOBS_MAX_AGE
+/* DEC Alpha */
+#undef DECALPHA
 
 /* Define to 1 if translation of program messages to the user's native
    language is requested. */
 #undef ENABLE_NLS
 
-/* default LD_LIBRARY_PATH for filters */
-#undef FILTER_LD_PATH
-
-/* default PATH for filters */
-#undef FILTER_PATH
-
 /* Force Localhost (force_localhost) */
 #undef FORCE_LOCALHOST
 
-/* groupid to run LPRng as, default daemon */
-#undef GROUPID
+/* Define to 1 if you have the <aouthdr.h> header file. */
+#undef HAVE_AOUTHDR_H
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
@@ -37,8 +41,17 @@
 /* Define to 1 if you have the <arpa/nameser.h> header file. */
 #undef HAVE_ARPA_NAMESER_H
 
+/* Define to 1 if you have the <ar.h> header file. */
+#undef HAVE_AR_H
+
 /* Define to 1 if you have the <assert.h> header file. */
 #undef HAVE_ASSERT_H
+
+/* Define to 1 if you have the <a_out.h> header file. */
+#undef HAVE_A_OUT_H
+
+/* IRIX broken TIOCEXL */
+#undef HAVE_BROKEN_TIOCEXCL
 
 /* Define to 1 if you have the `cfsetispeed' function. */
 #undef HAVE_CFSETISPEED
@@ -55,17 +68,36 @@
 /* Define to 1 if you have the <ctype.h> header file. */
 #undef HAVE_CTYPE_H
 
+/* Define if the GNU dcgettext() function is already present or preinstalled.
+   */
+#undef HAVE_DCGETTEXT
+
+/* have errno declaration */
+#undef HAVE_DECL_ERRNO
+
+/* sys_errlist declared */
+#undef HAVE_DECL_SYS_ERRLIST
+
+/* have sys_nerr declaration */
+#undef HAVE_DECL_SYS_NERR
+
 /* Define to 1 if you have the <dirent.h> header file. */
 #undef HAVE_DIRENT_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
 
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 #undef HAVE_DOPRNT
 
-/* Define to 1 if you have the <endian.h> header file. */
-#undef HAVE_ENDIAN_H
+/* have errno */
+#undef HAVE_ERRNO
 
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
+
+/* Define to 1 if you have the <exechdr.h> header file. */
+#undef HAVE_EXECHDR_H
 
 /* Define to 1 if you have the `fcntl' function. */
 #undef HAVE_FCNTL
@@ -103,8 +135,14 @@
 /* Define to 1 if you have the `getrlimit' function. */
 #undef HAVE_GETRLIMIT
 
+/* Define if the GNU gettext() function is already present or preinstalled. */
+#undef HAVE_GETTEXT
+
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
+
+/* Define if you have the iconv() function. */
+#undef HAVE_ICONV
 
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
@@ -127,6 +165,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the <kerberosIV/krb.h> header file. */
+#undef HAVE_KERBEROSIV_KRB_H
+
 /* Define to 1 if you have the `killpg' function. */
 #undef HAVE_KILLPG
 
@@ -136,11 +177,14 @@
 /* Define to 1 if you have the <krb5.h> header file. */
 #undef HAVE_KRB5_H
 
-/* have krb5_read_message */
-#undef HAVE_KRB5_READ_MESSAGE
-
 /* have krb5_xfree */
 #undef HAVE_KRB5_XFREE
+
+/* have krb_sendauth defined */
+#undef HAVE_KRB_AUTH_DEF
+
+/* Define to 1 if you have the <krb.h> header file. */
+#undef HAVE_KRB_H
 
 /* have krb_xfree */
 #undef HAVE_KRB_XFREE
@@ -153,6 +197,12 @@
 
 /* Define to 1 if you have the `lockf' function. */
 #undef HAVE_LOCKF
+
+/* have long double */
+#undef HAVE_LONG_DOUBLE
+
+/* have long long */
+#undef HAVE_LONG_LONG
 
 /* have lseek definition */
 #undef HAVE_LSEEK_PROTO
@@ -181,6 +231,9 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
+/* Define to 1 if you have the <nlist.h> header file. */
+#undef HAVE_NLIST_H
+
 /* Define to 1 if you have the `openlog' function. */
 #undef HAVE_OPENLOG
 
@@ -193,11 +246,17 @@
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
 
+/* have quad_t */
+#undef HAVE_QUAD_T
+
 /* Define to 1 if you have the `rand' function. */
 #undef HAVE_RAND
 
 /* Define to 1 if you have the `random' function. */
 #undef HAVE_RANDOM
+
+/* Define to 1 if you have the <reloc.h> header file. */
+#undef HAVE_RELOC_H
 
 /* Define to 1 if you have the <resolv.h> header file. */
 #undef HAVE_RESOLV_H
@@ -240,6 +299,9 @@
 
 /* Define to 1 if you have the `setsid' function. */
 #undef HAVE_SETSID
+
+/* Define to 1 if you have the <sgs.h> header file. */
+#undef HAVE_SGS_H
 
 /* Define to 1 if you have the <sgtty.h> header file. */
 #undef HAVE_SGTTY_H
@@ -301,6 +363,9 @@
 /* Define to 1 if you have the `strncasecmp' function. */
 #undef HAVE_STRNCASECMP
 
+/* have struct exec */
+#undef HAVE_STRUCT_EXEC
+
 /* Define to 1 if you have the `sysconf' function. */
 #undef HAVE_SYSCONF
 
@@ -316,6 +381,12 @@
 /* Define to 1 if you have the <sys/dir.h> header file. */
 #undef HAVE_SYS_DIR_H
 
+/* have sys_errlist */
+#undef HAVE_SYS_ERRLIST
+
+/* Define to 1 if you have the <sys/exechdr.h> header file. */
+#undef HAVE_SYS_EXECHDR_H
+
 /* Define to 1 if you have the <sys/exec.h> header file. */
 #undef HAVE_SYS_EXEC_H
 
@@ -328,11 +399,17 @@
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #undef HAVE_SYS_IOCTL_H
 
+/* Define to 1 if you have the <sys/loader.h> header file. */
+#undef HAVE_SYS_LOADER_H
+
 /* Define to 1 if you have the <sys/mount.h> header file. */
 #undef HAVE_SYS_MOUNT_H
 
 /* Define to 1 if you have the <sys/ndir.h> header file. */
 #undef HAVE_SYS_NDIR_H
+
+/* have sys_nerr */
+#undef HAVE_SYS_NERR
 
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
@@ -478,26 +555,34 @@
 /* _sys_siglist defined */
 #undef HAVE__SYS_SIGLIST_DEF
 
+/* HPUX version */
+#undef HPUX
+
 /* in6_addr defined */
 #undef IN6_ADDR
 
 /* in_addr6 defined */
 #undef IN_ADDR6
 
-/* ipV6 */
-#undef IPV6
+/* IRIX version */
+#undef IRIX
 
-/* enable Kerberos support */
+/* kerberos */
 #undef KERBEROS
 
-/* default value for lpd_listen_port (0 means default port ("=515"), "=off"
-   means to not listen at all */
-#undef LPD_LISTEN_PORT
+/* kerberos 4 support */
+#undef MIT_KERBEROS4
 
-/* full path to openssl */
-#undef OPENSSL
+/* job order routine */
+#undef ORDER_ROUTINE
 
-/* Name of package */
+/* OS name */
+#undef OSNAME
+
+/* OS version */
+#undef OSVERSION
+
+/* package */
 #undef PACKAGE
 
 /* Define to the address where bug reports for this package should be sent. */
@@ -512,20 +597,20 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
-
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* full path to prutil */
-#undef PRUTIL
-
-/* require configfiles */
-#undef REQUIRE_CONFIGFILES
+/* pgp path */
+#undef PGP_PATH
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #undef RETSIGTYPE
+
+/* run setuid check */
+#undef SETUID_CHECK
+
+/* Solaris version */
+#undef SOLARIS
 
 /* ssl enabled */
 #undef SSL_ENABLE
@@ -539,14 +624,23 @@
 /* stat st_mtimespec.tv_nsec present */
 #undef ST_MTIMESPEC_TV_NSEC
 
+/* Sun OS */
+#undef SUNOS
+
+/* SVR4 */
+#undef SVR4
+
+/* target CPU */
+#undef TARGETARCHITECTURE
+
 /* tcpwrappers */
 #undef TCPWRAPPERS
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
 
-/* userid to run LPRng as, default daemon */
-#undef USERID
+/* user specified include files */
+#undef USER_INCLUDE
 
 /* use sgttyb */
 #undef USE_SGTTYB
@@ -566,22 +660,28 @@
 /* use termiox */
 #undef USE_TERMIOX
 
-/* Version number of package */
+/* version */
 #undef VERSION
 
-/* Build dynamic loadable plugins */
-#undef WITHPLUGINS
-
-/* Enable large inode numbers on Mac OS X 10.5.  */
-#ifndef _DARWIN_USE_64_BIT_INODE
-# define _DARWIN_USE_64_BIT_INODE 1
+/* Define to 1 if on AIX 3.
+   System headers sometimes define this.
+   We just want to avoid a redefinition error message.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
 #endif
 
-/* Number of bits in a file offset, on hosts where this is settable. */
-#undef _FILE_OFFSET_BITS
+/* _HPUX_SOURCE */
+#undef _HPUX_SOURCE
 
-/* Define for large files, on AIX-style hosts. */
-#undef _LARGE_FILES
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
@@ -589,22 +689,20 @@
 /* Define to `int' if <sys/types.h> doesn't define. */
 #undef gid_t
 
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-#ifndef __cplusplus
+/* Define as `__inline' if that's what the C compiler calls it, or to nothing
+   if it is not supported. */
 #undef inline
-#endif
 
 /* Define to `int' if <sys/types.h> does not define. */
 #undef mode_t
 
-/* Define to `long int' if <sys/types.h> does not define. */
+/* Define to `long' if <sys/types.h> does not define. */
 #undef off_t
 
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
 
-/* Define to `unsigned int' if <sys/types.h> does not define. */
+/* Define to `unsigned' if <sys/types.h> does not define. */
 #undef size_t
 
 /* Define to `int' if <sys/types.h> doesn't define. */

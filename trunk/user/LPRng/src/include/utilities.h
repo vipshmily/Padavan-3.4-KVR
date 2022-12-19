@@ -1,9 +1,26 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
+ * $Id: utilities.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
  ***************************************************************************/
 
 
@@ -24,11 +41,19 @@ EXTERN jmp_buf Timeout_env;
 #  define Set_timeout() (setjmp(Timeout_env)==0)
 #endif
 
+/* VARARGS2 */
+#ifdef HAVE_STDARGS
+ void safefprintf (int fd, char *format,...)
+#else
+ void safefprintf (va_alist) va_dcl
+#endif
+;
+
 /* PROTOTYPES */
 char *Time_str(int shortform, time_t t);
 char *Pretty_time( time_t t );
 time_t Convert_to_time_t( char *str );
-void Printlist( const char **m, int fd );
+void Printlist( char **m, int fd );
 int Write_fd_len( int fd, const char *msg, int len );
 int Write_fd_len_timeout( int timeout, int fd, const char *msg, int len );
 int Write_fd_str( int fd, const char *msg );
@@ -50,6 +75,7 @@ int safestrncmp( const char *s1, const char *s2, int len );
 char *safestrchr( const char *s1, int c );
 char *safestrrchr( const char *s1, int c );
 char *safestrpbrk( const char *s1, const char *s2 );
+char *safestrappend4( char *s1, const char *s2, const char *s3, const char *s4 );
 int plp_usleep( int i );
 int plp_sleep( int i );
 int Get_max_servers( void );
@@ -82,12 +108,13 @@ int Getdaemon_group(void);
 int Set_full_group( int euid, int gid );
 int Setdaemon_group(void);
 void Reset_daemonuid(void);
-double Space_avail( const char *pathname );
+double Space_avail( char *pathname );
 /* VARARGS2 */
 #ifdef HAVE_STDARGS
- int safefprintf (int fd, const char *format,...) PRINTFATTR(2,3)
+ void safefprintf (int fd, char *format,...)
 #else
- int safefprintf (va_alist) va_dcl
+ void safefprintf (va_alist) va_dcl
 #endif
 ;
+
 #endif

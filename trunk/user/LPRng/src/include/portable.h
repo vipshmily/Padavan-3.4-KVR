@@ -1,9 +1,26 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
  * Copyright 1988-2003, Patrick Powell, San Diego, CA
  *     papowell@lprng.com
  * See LICENSE for conditions of use.
+ * $Id: portable.h,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $
  ***************************************************************************/
 
 #ifndef _PLP_PORTABLE_H
@@ -39,7 +56,7 @@
 LPRng requires ANSI Standard C compiler
 #endif
 
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
@@ -98,7 +115,12 @@ LPRng requires ANSI Standard C compiler
 /*************************************************************************
  * SCO OpenServer 5.0.5
  *************************************************************************/
+/* normal include files do not define MAXPATHLEN - rather PATHSIZE in 
+   sys/param.h */
 #ifdef sco
+#ifndef MAXPATHLEN
+#define MAXPATHLEN	PATHSIZE
+#endif
 /* SCO doesn't define the S_ISSOCK POSIX macro to use in testing the 
    stat.st_mode structure member  - it appears as though a socket has
    st_mode = 0020000 (same as character special) */
@@ -113,6 +135,7 @@ LPRng requires ANSI Standard C compiler
  *************************************************************************/
 
 #if defined(cray)
+#define MAXPATHLEN	1023
 #define HAVE_SIGLONGJMP	1
 
 /* configure incorrectly chooses STATVFS */
@@ -256,9 +279,7 @@ LPRng requires ANSI Standard C compiler
   extern int dup2 ();
   extern int execve ();
   extern uid_t geteuid (), getegid ();
-#if !defined(_AIX51)
   extern int setgid (), getgid ();
-#endif
 #endif
 
 
@@ -301,10 +322,6 @@ LPRng requires ANSI Standard C compiler
 #ifndef HAVE_STRCHR
 # define strchr			index
 # define strrchr		rindex
-#endif
-
-#ifndef HAVE_SOCKLEN_T
-typedef int socklen_t;
 #endif
 
 /* case insensitive compare for OS without it */
@@ -361,6 +378,10 @@ typedef struct dirent plp_dir_t;
    void *malloc(size_t);
    void free(void *);
 # endif
+#endif
+
+#ifndef HAVE_ERRNO_DECL
+ extern int errno;
 #endif
 
 /*********************************************************************
@@ -508,21 +529,12 @@ typedef union wait		plp_status_t;
 # ifndef WTERMSIG
 #  define WTERMSIG(x)	((x) & 0x7f)
 # endif
-# if defined(_AIX52)
-#  undef  WTERMSIG
-#  define WTERMSIG(__x)    (WIFSIGNALED(__x) ? (int)((((unsigned int)__x) >> 16) & 0xff) : -1)
-# endif
 # ifndef WCOREDUMP
 #  define WCOREDUMP(x)	((x) & 0x80)
 # endif
-# if !defined(WEXITSTATUS) 
-#  define WEXITSTATUS(x)	(((x) >> 8) & 0xff)
+# ifndef WEXITSTATUS
+#  define WEXITSTATUS(x)	((((unsigned) x) >> 8) & 0xff)
 # endif
-# if defined(_AIX52)
-#  undef  WEXITSTATUS
-#  define WEXITSTATUS(__x) (WIFEXITED(__x) ? (int)((((unsigned int)__x) >> 8) & 0xff) : -1)
-# endif
-
 # ifndef WIFSIGNALED
 #  define WIFSIGNALED(x)	(WTERMSIG (x) != 0)
 # endif
@@ -641,15 +653,17 @@ XX ** NO VARARGS ** XX
  */
 
 #define NONBLOCK (O_NDELAY|O_NONBLOCK)
+#if defined(HPUX) && HPUX<110
+#  undef NONBLOCK
+#  define NONBLOCK (O_NONBLOCK)
+#endif
 
-/* we no longer set HPUX, so this cannot be done automatically,
- * unless knowing why it was here. is O_NDELAY not defined there?
- * something else? 
-Hif defined(HPUX) && HPUX<110
-H  undef NONBLOCK
-H  define NONBLOCK (O_NONBLOCK)
-Hendif
-*/
+/* fix for HPUX systems with no fd_set values */
+#undef FD_SET_FIX
+#if !defined(HAVE_FD_SET) && defined(HPUX)
+#  define FD_SET_FIX(X) (int *)
+#endif
+
 
 /*********************************************************************
  * AIX systems need this
@@ -676,6 +690,9 @@ Hendif
 #ifdef HAVE_SELECT_H
 #include <select.h>
 #endif
+#if !defined(FD_SET_FIX)
+# define FD_SET_FIX(X) X
+#endif
 
 /**********************************************************************
  * IPV6 and newer versions
@@ -694,8 +711,6 @@ const char *inet_ntop( int family, const void *addr, char *strptr, size_t len );
 
 #if HAVE_LOCALE_H
 # include <locale.h>
-#else
-# define setlocale(category, locale)
 #endif
 
 #if ENABLE_NLS
@@ -709,7 +724,6 @@ const char *inet_ntop( int family, const void *addr, char *strptr, size_t len );
 #else
 # define _(Text) Text
 # define N_(Text) Text
-# define ngettext(Singular, Plural, n) ((n==1)?(Singular):(Plural))
 # define textdomain(Domain)
 # define bindtextdomain(Package, Directory)
 #endif
@@ -728,6 +742,82 @@ const char *inet_ntop( int family, const void *addr, char *strptr, size_t len );
 extern int flock( int fd, int operation );
 #endif
 
+/**********************************************************************
+ *  SUNOS Definitions
+ **********************************************************************/
+#ifdef SUNOS
+extern int _flsbuf(int, FILE *);
+extern int _filbuf(FILE *);
+extern int accept(int s, struct sockaddr *name, int *namelen);
+extern int bind(int s, struct sockaddr *name, int namelen);
+extern int connect(int s, struct sockaddr *name, int namelen);
+extern void bzero(void *s, size_t n);
+extern void endgrent( void );
+extern int fflush( FILE *stream );
+extern int fclose( FILE *stream );
+extern int flock( int fd, int operation );
+extern int fprintf(FILE *, const char *, ...);
+extern int fputs( const char *, FILE *stream );
+extern int fstat(int fd, struct stat *buf );
+extern int fseek( FILE *stream, long offset, int ptrname );
+extern int ftruncate( int fd, off_t length );
+extern int fwrite( char *ptr, int size, int nitems, FILE *stream);
+extern int getdtablesize( void );
+extern int getpeername(int s, struct sockaddr *name, int *namelen);
+extern int getsockname(int s, struct sockaddr *name, int *namelen);
+extern int getsockopt(int s, int level, int optname, char *optval,int *optlen);
+extern int ioctl(int fd, int request, caddr_t arg );
+extern int killpg(int pgrp, int sig );
+extern int listen(int s, int backlog );
+extern int lockf(int fd, int cmd, long size );
+/*extern int lseek(int fd, off_t pos, int how ); */
+extern int lstat(const char *path, struct stat *buf );
+#define memmove(dest,src,len) bcopy(src,dest,len)
+extern void bcopy(const void *src,void *dest,size_t len);
+extern int mkstemp(char *s );
+extern int openlog( const char *ident, int logopt, int facility );
+extern int perror(const char *);
+extern int printf( const char *, ...);
+extern int rename(const char *, const char *);
+extern int select (int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+extern void setgrent(void);
+extern int seteuid( int euid );
+extern int setreuid( int ruid, int euid );
+extern int setsockopt(int s, int level, int optname, const char *optval,int optlen);
+extern int socket( int domain, int type, int protocol );
+extern int socketpair(int, int, int, int *);
+extern int sscanf( char *s, char *format, ... );
+extern int stat(const char *path, struct stat *buf );
+extern int strcasecmp( const char *, const char * );
+extern char *strerror( int );
+extern int strncasecmp( const char *, const char *, int n );
+extern long strtol( const char *str, char **ptr, int base );
+extern double strtod( const char *str, char **ptr );
+extern int shutdown( int sock, int how );
+extern int gettimeofday(struct timeval *tp, struct timezone *tzp);
+extern int getrlimit(int resource, struct rlimit *rlp);
+extern char * sbrk(int incr);
+extern int fchmod(int fd, int mode);
+extern int strftime(char *buf, int bufsize, const char *fmt, struct tm *tm);
+extern void syslog(int, const char *, ...);
+extern int system( const char *str );
+extern time_t time( time_t *t );
+extern int tolower( int );
+extern int toupper( int );
+extern int tputs( const char *cp, int affcnt, int (*outc)() );
+extern int vfprintf(FILE *, const char *, ...);
+extern int vprintf(FILE *, const char *, va_list ap);
+#endif
+
+
+#ifdef SOLARIS
+extern int setreuid( uid_t ruid, uid_t euid );
+extern int mkstemp(char *s );
+#ifdef HAVE_GETDTABLESIZE
+extern int getdtablesize(void);
+#endif
+#endif
+
 #if !defined(HAVE_SYSLOG_DEF)
 extern void syslog(int, const char *, ...);
 #endif
@@ -738,9 +828,7 @@ extern int openlog( const char *ident, int logopt, int facility );
 #ifdef IS_AIX32
 extern int seteuid(uid_t);
 extern int setruid(uid_t);
-#if !defined(_AIX51) && !defined(_AIX52)
 extern int setenv(char *, char *, int);
-#endif
 #endif
 
 
@@ -771,18 +859,28 @@ extern int innetgr(const char *netgroup,
 #define Cast_ptr_to_int(v) ((int)(long)(v))
 #define Cast_ptr_to_long(v) ((long)(v))
 
+/* for testing, set -Wall -Wformat and then make */
+
+#if defined(FORMAT_TEST)
+# define FPRINTF fprintf
+# define PRINTF printf
+# define STDOUT stdout
+# define STDERR stderr
+# define SNPRINTF(X,Y) printf(
+# define VSNPRINTF(X,Y) vprintf(
+# define SETSTATUS(X) printf(
+#else
 # define FPRINTF safefprintf
+# define PRINTF safeprintf
 # define STDOUT 1
 # define STDERR 2
-
-#ifdef __GNUC__
-# define PRINTFATTR(fmtofs,dotsofs) __attribute__ ((format (printf, fmtofs, dotsofs)))
-# define NORETURN __attribute__ ((noreturn))
-# define UNUSED __attribute__ ((unused))
-#else
-# define PRINTFATTR(fmtofs,dotsofs)
-# define NORETURN
-# define UNUSED
+# define SNPRINTF(X,Y) plp_snprintf(X,Y,
+# define VSNPRINTF(X,Y) plp_vsnprintf(X,Y,
+# define SETSTATUS(X) setstatus(X,
 #endif
 
+#endif
+
+#ifdef JYDEBUG//JYWeng
+FILE *aaaaaa;
 #endif

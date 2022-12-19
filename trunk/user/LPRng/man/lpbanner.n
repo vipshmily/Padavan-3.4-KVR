@@ -1,31 +1,36 @@
-.TH LPBANNER 1 2006-12-09 "LPRng" "lpbanner filter"
+.ds VE LPRng-3.9.0
+.TH LPBANNER 1 \*(VE "LPRng"
+.ig
+lpbanner.1,v 3.33 1998/03/29 18:37:49 papowell Exp
+..
 .SH NAME
 lpbanner, pclbanner, psbanner \- printer banners in text, PCL and PostScript
 .SH SYNOPSIS
 .B lpbanner
 [
-.BI "\-l " length
+.BI \-l length
 ] [
-.BI "\-w " width
+.BI \-w width
 ] [
-.BI "\-P " printer
+.BI \-P printer
 ] [
-.BI "\-L " bannername
+.BI \-L bannername
 ] [
-.BI "\-n " loginname
+.BI \-n loginname
 ] [
-.BI "\-h " host
+.BI \-h host
 ] [
-.BI "\-J " jobtitle
+.BI \-J jobtitle
 ] [
-.BI "\-C " class
+.BI \-C class
 ] [
-.BI "\-? " option
+.BI \-? option
 .BI args
 ] [
 all
 ]
 .SH DESCRIPTION
+.PP
 The
 .B lpbanner
 program is used to print a simple banner on a fixed size font printer,
@@ -34,36 +39,27 @@ the
 program generates a PCL banner and the
 .B psbanner
 program generates a PostScript banner.
-All information to be printed is passed using command line arguments.
+All information to be printed is passed using command line arguements.
 In order to be compatible with vintage line printer spoolers,
 reads a line form standard input, but ignores the information.
 .SH OPTIONS
-.TP 
-.BI \-w " width"
+.IP "\fB\-w \fIwidth\fR" 5
 Page width in characters (default 132).
-.TP 
-.BI \-l " length"
+.IP "\fB\-l \fIlength\fR" 5
 Page length in lines (default 60).
-.TP 
-.BI \-P " printer"
+.IP "\fB\-P \fIprinter\fR" 5
 printer queue for banner information.
-.TP 
-.BI \-L " bannername"
+.IP "\fB\-L \fIbannername\fR" 5
 Name used on banner as main name.
-.TP 
-.BI \-n " loginname"
+.IP "\fB\-n \fIloginname\fR" 5
 Name used on banner as login name.
-.TP 
-.BI \-h " host"
+.IP "\fB\-h \fIhost\fR" 5
 Name used on banner as host name.
-.TP 
-.BI \-J " jobtitle"
+.IP "\fB\-J \fIjobtitle\fR" 5
 String used on banner as main title.
-.TP 
-.BI \-C " class"
+.IP "\fB\-C \fIclass\fR" 5
 String used on banner as class.
-.TP 
-.BI \-? " value"
+.IP "\fB\-? \fIvalue\fR" 5
 All other options and arguments provided by LPRng are ignored.
 .SH "EXIT STATUS"
 .PP
@@ -86,20 +82,12 @@ lprm(1),
 printcap(5),
 lpd.conf(5),
 pr(1), lprng_certs(1), lprng_index_certs(1).
-.SH "AUTHOR"
-Patrick Powell <papowell@lprng.com>.
 .SH "HISTORY"
 LPRng is a enhanced printer spooler system
 with functionality similar to the Berkeley LPR software.
-The LPRng developer mailing list is lprng-devel@lists.sourceforge.net;
-subscribe by visiting 
-.B https://lists.sourceforge.net/lists/listinfo/lprng-devel
-or sending mail to 
-.B lprng-request@lists.sourceforge.net
-with
-the word 
-.I subscribe 
-in the body.
-.br
-The software is available via 
-.B http://lprng.sourceforge.net
+The LPRng mailing list is lprng@lprng.com;
+subscribe by sending mail to lprng-request@lprng.com with
+the word subscribe in the body.
+The software is available from ftp://ftp.lprng.com/pub/LPRng.
+.SH "AUTHOR"
+Patrick Powell <papowell@lprng.com>.

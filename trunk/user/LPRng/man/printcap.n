@@ -1,4 +1,5 @@
-.TH PRINTCAP 5 2006-12-09 "LPRng" "lpd configuration"
+.ds VE LPRng-3.9.0
+.TH PRINTCAP 5 \*(VE "LPRng"
 .SH NAME
 printcap \- printer capability data base
 .SH SYNOPSIS
@@ -88,7 +89,7 @@ will read the named file,
 which must have an absolute pathname,
 as the next set of printcap entries.
 .LP
-Keywords can be 1 to an indefinite number of characters long,
+Keywords can be 1 to an indefinate number of characters long,
 and are case sensitive.
 Values for keywords can be strings
 (:st=string:),
@@ -119,7 +120,7 @@ In addition,
 the
 .I server
 flag indicates that only the LPD server is to use this printcap entry.
-This allows client and server printcap information be to be segregated
+This allows client and server printcap information be to be segragated
 in a simple manner.
 .LP
 The following is a list of the keywords currently used by the LPRng software.
@@ -159,7 +160,7 @@ achk	D	bool false
 				If TRUE LPD and the :as specifies a remote host or
 				filter or the :af specifies a remote host or filter
 				then after writing the accounting information to the
-				destination a reply will be read.  The value of the
+				destination a resply will be read.  The value of the
 				reply determines how the job is to be handled. 
 ae	D	str		accounting format for end of job or a program to run
 				to record accounting information (see also af, la, ar
@@ -306,7 +307,7 @@ force_localhost	A	bool	TRUE
 				Forces the clients programs (lpr, lpc, etc.)
 				to send all print jobs and requests to the server running
 				on the localhost entry for action.  This flag effectively
-				forces BSD LPR behavior.
+				forces BSD LPR behaviour.
 force_lpq_status	D	str	NULL
 				Specifies a list of LPQ formats and hosts which get status
 				returned in this format.  For example
@@ -448,7 +449,7 @@ order_routine	D	bool	false
 				information.
 originate_port	A	str	512 1023
 				when originating a connection, use ports in this range.
-pass_env	A	str	LANG,LC_CTYPE,LC_NUMERIC,LC_TIME,LC_COLLATE,LC_MONETARY,LC_MESSAGES,LC_PAPER,LC_NAME,LC_ADDRESS,LC_TELEPHONE,LC_MEASUREMENT,LC_IDENTIFICATION,LC_ALL
+pass_env	A	str	PGPPASS,PGPPATH
 				if not the LPD server, sanitize and put these variables
 				in a filter environment variable list.
 perms_path	A	str	_LPD_PERMS_PATH_
@@ -500,11 +501,11 @@ retry_econnrefused	A	bool	true
 retry_nolink	D	bool	true
 				if LPD is sending a job or opening a device for
 				printing and the value is true, then the connection or
-				device open is repeated indefinitely.
+				device open is repeated indefinately.
 return_short_status	D	str	NULL
 				Some legacy (non-LPRng) LPQ programs expect 'short' status
 				to be returned.  This option allows you to specify which hosts
-				will get it.  The value is a list of hosts and/or IP addresses
+				will get it.  The value is a list of hosts and/or IPaddresses
 				and masks to which the LPD server will provide short status.
 				For example:  return_short_status=192.8.0.0/16 will make LPD
 				return short status to all requests from hosts in subnet
@@ -518,7 +519,7 @@ reverse_lpq_status	D	str	NULL
 				hosts or IP addresses,  then the LPQ status format is inverted.
 				For example, if  reverse_lpq_status=host*,127.0.0.0/8,
 				then when a LONG status request arrives from host1 or from
-				IP address 127.0.0.1,  the SHORT status will be returned.
+				ip address 127.0.0.1,  the SHORT status will be returned.
 reverse_priority_order	D	bool	false
 				Make highest priority A, lowest Z
 rf	D	str	NULL	filter for printing FORTRAN style text files
@@ -563,7 +564,7 @@ send_job_rw_timeout	A	num	6000
 				timeout on read/write operations when sending job to
 				printer or remote host (0 value is no timeout)
 send_query_rw_timeout	A	num	6000
-				timeout on read/write operations when performing a status
+				timeout on read/write operations when performin a status
 				operation (0 value is no timeout)
 send_try	A	num	3
 				number of times to try sending
@@ -582,7 +583,7 @@ server_user	D	str	daemon	server user name used in authentication operations
 sf	D	bool	true	suppress form feed separators between job files
 sh	D	bool	false	suppress headers and/or banner page
 shell	D	str	/bin/sh
-				SHELL environment variable value for filters
+				SHELL enviornment variable value for filters
 short_status_length	D	num	1
 				If the return_short_status value is used and has a match against
 				a requesting address, this amount of status is set by the
@@ -770,7 +771,7 @@ retry_econnrefused	A	bool	true
 retry_nolink	D	bool	true
 				if LPD is sending a job or opening a device for
 				printing and the value is true, then the connection or
-				device open is repeated indefinitely.
+				device open is repeated indefinately.
 rs	D	num	300	number of seconds between spool queue status scans
 rt	D	num	3	number of times to try printing (0=infinite).
 rw	D	bool	false	open the printer for reading and writing
@@ -802,7 +803,7 @@ destinations	D	str	NULL
 				a job that has been processed by a router script
 				(see README.routing)
 forward_auth	D	str	NULL
-				server to server authentication type, e.g. kerberos
+				server to server authentication type, e.g. pgp, kerberos
 force_localhost	A	bool	TRUE
 				Forces the clients programs (lpr, lpc, etc.)
 				to send all print jobs and requests to the server running
@@ -825,7 +826,7 @@ server_auth_command	D	str	NULL
 tc	A	str	NULL	reference to a printcap entry to include as part of
 				the current entry.
 use_auth	D	str	NULL
-				client to server authentication type, e.g. kerberos
+				client to server authentication type, e.g. pgp, kerberos
 user_auth_command	R	str	NULL
 				authentication command for user (client program)
 
@@ -927,13 +928,13 @@ is run, with the arguments
 This can be used to communicate with printers connected to
 network terminal servers, some TCP/IP-capable
 printers, and just about anything you can hack up a
-communication program for. Read the LPRng Manual for more
+communication program for. Read the PLP Manual for more
 details.
 .SH "STTY OPTIONS"
 .PP
 The
 .B stty
-printcap parameter recognizes a set of
+printcap parameter recognises a set of
 .IR stty (1)
 options 
 that can be used to set serial line characteristics for the printer.
@@ -1107,7 +1108,7 @@ program or remote host (i.e. - logging using program) then
 after accounting information has been written to the
 program or connection a response will be read from the program
 STDOUT or the connection.
-This response is expected to be an ASCII string.
+This reponse is expected to be an ASCII string.
 If the line is blank or starts with ACCEPT then the job will be printed,
 HOLD will hold the job,  REMOVE will remove the job,
 and ABORT or a non-recognizable response will cause printing to be aborted.
@@ -1137,7 +1138,7 @@ The
 .B bounce_queue_format
 (default 'f')
 specifies the output for the filtered files.
-If this is not desirable the
+If this is not desireable the
 .B translate_format
 option can be used to specify a format.
 The option has the form SdSdSdN,
@@ -1166,8 +1167,8 @@ The
 printcap flag can be used to cause LPR to do bounce queue filtering
 in exactly the same manner as the server.
 This should be used with caution
-as missing filters on the client system can cause unexpected behavior.
-.SH "KERBEROS, AND OTHER AUTHENTICATION METHODS"
+as missing filters on the client system can cause unexpected behaviour.
+.SH "KERBEROS, PGP, AND OTHER AUTHENTICATION METHODS"
 .PP
 LPRng supports built in kerberos authentication.
 To enable this, the
@@ -1207,26 +1208,20 @@ lpq(1),
 lprm(1),
 lpd.perms(5),
 pr(1), lprng_certs(1), lprng_index_certs(1).
-.SH "AUTHOR"
-Patrick Powell <papowell@lprng.com>.
 .SH DIAGNOSTICS
+.nf
 Most of the diagnostics are self explanatory.
 If you are puzzled over the exact cause of failure,
 set the debugging level on (-D5) and run again.
 The debugging information will 
 help you to pinpoint the exact cause of failure.
+.fi
 .SH "HISTORY"
 LPRng is a enhanced printer spooler system
 with functionality similar to the Berkeley LPR software.
-The LPRng developer mailing list is lprng-devel@lists.sourceforge.net;
-subscribe by visiting 
-.B https://lists.sourceforge.net/lists/listinfo/lprng-devel
-or sending mail to 
-.B lprng-request@lists.sourceforge.net
-with
-the word 
-.I subscribe 
-in the body.
-.br
-The software is available via 
-.B http://lprng.sourceforge.net
+The LPRng mailing list is lprng@lprng.com;
+subscribe by sending mail to lprng-request@lprng.com with
+the word subscribe in the body.
+The software is available from ftp://ftp.lprng.com/pub/LPRng.
+.SH "AUTHOR"
+Patrick Powell <papowell@lprng.com>.

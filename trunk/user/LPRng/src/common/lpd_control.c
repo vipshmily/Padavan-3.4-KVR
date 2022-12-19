@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: lpd_control.c,v 1.1.1.1 2008/10/15 03:28:27 james26_jang Exp $";
+
 
 #include "lp.h"
 #include "getopt.h"
@@ -31,37 +51,18 @@
    will happily put out the various control strings you need.
 	USED BY: start/stop, enable/disable, debug, forward, holdall
 
- 2. Individual jobs have a 'job ticket file' that is read/written by
-   the Get_ job_ticket and Set_ job_ticket routines.  These also
+ 2. Individual jobs have a 'hold file' that is read/written by
+   the Get_ job_control and Set_ job_control routines.  These also
    will read/write various control strings.
    USED by topq, hold, release
 
  ***************************************************************************/
-static void Do_printer_work( char *user, int action, int *sock,
-	struct line_list *tokens, char *error, int errorlen );
-static void Do_queue_control( char *user, int action, int *sock,
-	struct line_list *tokens, char *error, int errorlen );
-static int Do_job_ticket_file( int action, int *sock,
-	struct line_list *tokens, char *error, int errorlen, char *option );
-static int Do_control_lpq( char *user, int action,
-	struct line_list *tokens );
-static int Do_control_status( int *sock,
-	char *error, int errorlen );
-static int Do_control_redirect( int *sock,
-	struct line_list *tokens, char *error, int errorlen );
-static int Do_control_class( int *sock,
-	struct line_list *tokens, char *error, int errorlen );
-static int Do_control_debug( int *sock,
-	struct line_list *tokens, char *error, int errorlen );
-static int Do_control_printcap( int *sock );
-static int Do_control_ppd( int *sock );
-static int Do_control_defaultq( int *sock );
-
 
  static char status_header[] = "%-18s %8s %8s %4s %7s %7s %8s %s%s";
 
 int Job_control( int *sock, char *input )
 {
+#ifdef REMOVE
 	struct line_list tokens;
 	char error[LINEBUFFER];
 	int tokencount;
@@ -79,11 +80,13 @@ int Job_control( int *sock, char *input )
 
 	/* check printername for characters, underscore, digits */
 	Split(&tokens,input,Whitespace,0,0,0,0,0,0);
+#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGFC(DCTRL2)Dump_line_list("Job_control - input", &tokens);
+#endif
 
 	tokencount = tokens.count;
 	if( tokencount < 3 ){
-		plp_snprintf( error, sizeof(error),
+		SNPRINTF( error, sizeof(error))
 			_("bad control command '%s'"), input );
 		goto error;
 	}
@@ -98,7 +101,7 @@ int Job_control( int *sock, char *input )
 	}
 
 	if( (s = Is_clean_name( name )) ){
-		plp_snprintf( error, sizeof(error),
+		SNPRINTF( error, sizeof(error))
 			_("printer '%s' has illegal char at '%s' in name"), name, s );
 		goto error;
 	}
@@ -110,7 +113,7 @@ int Job_control( int *sock, char *input )
 	lpc_command = tokens.list[2];
 	action = Get_controlword( lpc_command );
 	if( action == 0 ){
-		plp_snprintf( error, sizeof(error),
+		SNPRINTF( error, sizeof(error))
 			_("%s: unknown control request '%s'"), Printer_DYN, lpc_command );
 		goto error;
 	}
@@ -137,7 +140,7 @@ int Job_control( int *sock, char *input )
 		case OP_REREAD:
 			if( permission == P_REJECT ){ goto noperm; }
 			DEBUGF(DCTRL1)( "Job_control: sending pid %d SIGHUP", Server_pid );
-			plp_snprintf( error, sizeof(error), "lpd server pid %d on %s, sending SIGHUP\n",
+			SNPRINTF( error, sizeof(error)) "lpd server pid %d on %s, sending SIGHUP\n",
 				Server_pid, FQDNHost_FQDN );
 			(void)kill(Server_pid,SIGHUP);
 			if( Write_fd_str( *sock, error ) < 0 ) cleanup(0);
@@ -146,7 +149,7 @@ int Job_control( int *sock, char *input )
 		case OP_LPD:
 			if( permission == P_REJECT ){ goto noperm; }
 			DEBUGF(DCTRL1)( "Job_control: lpd pid %d", Server_pid );
-			plp_snprintf( error, sizeof(error), "lpd server pid %d on %s\n",
+			SNPRINTF( error, sizeof(error)) "lpd server pid %d on %s\n",
 				Server_pid, FQDNHost_FQDN );
 			if( Write_fd_str( *sock, error ) < 0 ) cleanup(0);
 			error[0] = 0;
@@ -159,7 +162,7 @@ int Job_control( int *sock, char *input )
 		case OP_STATUS:
 			/* we put out a space at the start to make PCNFSD happy */
 			if( permission == P_REJECT ){ goto noperm; }
-			plp_snprintf( error, sizeof(error), status_header,
+			SNPRINTF( error, sizeof(error)) status_header,
 				" Printer", "Printing", "Spooling", "Jobs",
 				"Server", "Subserver", "Redirect", "Status/(Debug)","" );
 			safestrncat(error,"\n");
@@ -191,8 +194,8 @@ int Job_control( int *sock, char *input )
 		case OP_MOVE:
 			/* we have Nprinter user move jobid* target */
 			if( tokencount < 5 ){
-				plp_snprintf( error, sizeof(error),
-					_("Use: move printer (user|jobid)* target") );
+				SNPRINTF( error, sizeof(error))
+					_("Use: OP_MOVE printer (user|jobid)* target") );
 				goto error;
 			}
 			break;
@@ -202,7 +205,7 @@ int Job_control( int *sock, char *input )
 	goto done;
 
  noperm:
-	plp_snprintf( error, sizeof(error),
+	SNPRINTF( error, sizeof(error))
 		_("no permission to control server") );
  error:
 	Name = "Job_control";
@@ -213,12 +216,14 @@ int Job_control( int *sock, char *input )
 	Name = "Job_control";
 	DEBUGF(DCTRL3)( "Job_control: DONE" );
 	Free_line_list(&tokens);
+#endif
 	return(0);
 }
 
-static void Do_printer_work( char *user, int action, int *sock,
+void Do_printer_work( char *user, int action, int *sock,
 	struct line_list *tokens, char *error, int errorlen )
 {
+#ifdef REMOVE
 	int i;
 
 	DEBUGF(DCTRL3)("Do_printer_work: printer '%s', action '%s'",
@@ -242,20 +247,22 @@ static void Do_printer_work( char *user, int action, int *sock,
 			Name = "Do_printer_work";
 		}
 	}
+#endif
 }
 
 /***************************************************************************
  * Do_queue_control()
  * do the actual queue control operations
  * - start, stop, enable, disable are simple
- * - others are more complex, and are handled in Do_job_ticket_file
+ * - others are more complex, and are handled in Do_control_file
  * We have tokens:
  *   printer user printer p1 p2 p3 -> p1 p2 p3
  ***************************************************************************/
 
-static void Do_queue_control( char *user, int action, int *sock,
+void Do_queue_control( char *user, int action, int *sock,
 	struct line_list *tokens, char *error, int errorlen )
 {
+#ifdef REMOVE
 	char *start, *end;
 	pid_t serverpid;			/* server pid to kill off */
 	struct stat statb;			/* status of file */
@@ -265,7 +272,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 	int status, change;
 	int signal_server = SIGUSR1;
 	struct line_list l;
-	const char *Action = "updated";
+	char *Action = "updated";
 	/* first get the printer name */
 
 	Init_line_list(&l);
@@ -274,7 +281,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 	change = 0;
 
 	if( action != OP_STATUS ){
-		plp_snprintf(msg,sizeof(msg), "Printer: %s@%s\n",
+		SNPRINTF(msg,sizeof(msg))"Printer: %s@%s\n",
 			Printer_DYN,ShortHost_FQDN);
 		Write_fd_str(*sock,msg);
 	}
@@ -284,7 +291,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 
 	c = Debug;
 	i = DbgFlag;
-	end = Find_str_value(&Spool_control,DEBUG);
+	end = Find_str_value(&Spool_control,DEBUG,Value_sep);
 	if( !end ) end = New_debug_DYN;
 	Parse_debug( end, 0 );
 
@@ -337,9 +344,6 @@ static void Do_queue_control( char *user, int action, int *sock,
 	case OP_PRINTCAP:
 		Do_control_printcap( sock );
 		goto done;
-	case OP_PPD:
-		Do_control_ppd( sock );
-		goto done;
 	case OP_STATUS:
 		if( Do_control_status( sock,
 			error, errorlen ) ){
@@ -380,7 +384,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 		Set_flag_value(&Spool_control,PRINTING_ABORTED, 0);
 		Set_flag_value(&Spool_control,PRINTING_DISABLED, 0);
 	case OP_HOLD:
-		if( Do_job_ticket_file( action, sock,
+		if( Do_control_file( action, sock,
 			tokens, error, errorlen, 0 ) ){
 			goto error;
 		}
@@ -403,7 +407,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 	case OP_MOVE:
 		--tokens->count;
 		start = tokens->list[tokens->count];
-		status = Do_job_ticket_file( action, sock,
+		status = Do_control_file( action, sock,
 			tokens, error, errorlen, start );
 		++tokens->count;
 		if( status ) goto error;
@@ -457,12 +461,14 @@ static void Do_queue_control( char *user, int action, int *sock,
 		break;
 		
 	default:
-		plp_snprintf( error, errorlen, _("not implemented yet") );
+		SNPRINTF( error, errorlen) _("not implemented yet") );
 		goto error;
 	}
 
 	Perm_check_to_list(&l, &Perm_check );
+#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGFC(DCTRL2)Dump_line_list("Do_queue_control - perms", &l);
+#endif
 	if( Server_queue_name_DYN ){
 		Set_flag_value(&Spool_control,CHANGE,1);
 	}
@@ -473,7 +479,10 @@ static void Do_queue_control( char *user, int action, int *sock,
 	/* signal or kill off the server */
 
 	serverpid = 0;
-	if( signal_server && (serverpid = Read_pid_from_file( Queue_lock_file_DYN ) ) > 0 ){
+	if( signal_server && (fd = Checkread( Queue_lock_file_DYN, &statb ) ) >= 0 ){
+		serverpid = Read_pid( fd, (char *)0, 0 );
+		close( fd );
+		if( serverpid ){
 			if( signal_server != SIGUSR1 ){
 				killpg( serverpid, signal_server );
 				killpg( serverpid, SIGHUP );
@@ -483,13 +492,14 @@ static void Do_queue_control( char *user, int action, int *sock,
 				kill( serverpid, SIGQUIT );
 			}
 			if( kill( serverpid, signal_server ) ){
-				plp_snprintf(msg,sizeof(msg), _("server process PID %ld exited\n"),
-					(long)serverpid );
+				SNPRINTF(msg,sizeof(msg))_("server process PID %d exited\n"),
+					serverpid );
 			} else {
-				plp_snprintf(msg,sizeof(msg), _("kill server process PID %ld with %s\n"),
-					(long)serverpid, Sigstr(signal_server) );
+				SNPRINTF(msg,sizeof(msg))_("kill server process PID %d with %s\n"),
+					serverpid, Sigstr(signal_server) );
 			}
 			Write_fd_str(*sock,msg);
+		}
 	}
 
 	switch( action ){
@@ -511,8 +521,10 @@ static void Do_queue_control( char *user, int action, int *sock,
 	case OP_FLUSH:		Action = _("flushed status"); break;
 	}
 	if( Action ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 		setmessage( 0, ACTION, "%s", Action );
-		plp_snprintf( line, sizeof(line), "%s@%s: %s\n",
+#endif
+		SNPRINTF( line, sizeof(line)) "%s@%s: %s\n",
 			Printer_DYN, FQDNHost_FQDN, Action );
 		if( Write_fd_str( *sock, line ) < 0 ) cleanup(0);
 	}
@@ -522,12 +534,13 @@ static void Do_queue_control( char *user, int action, int *sock,
 			goto error;
 		}
 		serverpid = 0;
-		if( signal_server ) {
-			serverpid = Read_pid_from_file( Queue_lock_file_DYN );
-			if( serverpid <= 0 || kill( serverpid, signal_server ) ){
+		if( signal_server && (fd = Checkread( Queue_lock_file_DYN, &statb ) ) >= 0 ){
+			serverpid = Read_pid( fd, (char *)0, 0 );
+			close( fd );
+			if( serverpid == 0 || kill( serverpid, signal_server ) ){
 				serverpid = 0;
 			} else {
-				plp_snprintf(msg,sizeof(msg), _(
+				SNPRINTF(msg,sizeof(msg))_(
 				"WARNING: the main load balance server may have exited before\n"
 				"it could be informed that there were new jobs.\n"
                 "Please use 'lpc start %s' to start the server\n"),
@@ -537,7 +550,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 		}
 	}
 
-	DEBUGF(DCTRL4)("Do_queue_control: server pid %ld", (long)serverpid );
+	DEBUGF(DCTRL4)("Do_queue_control: server pid %d", serverpid );
 
 	/* start the server if necessary */
 	switch( action ){
@@ -549,7 +562,7 @@ static void Do_queue_control( char *user, int action, int *sock,
 			serverpid = 0;
 			break;
 	}
-	if( serverpid <= 0 )switch( action ){
+	if( serverpid == 0 )switch( action ){
 	case OP_KILL:
 	case OP_TOPQ:
 	case OP_RELEASE:
@@ -559,43 +572,44 @@ static void Do_queue_control( char *user, int action, int *sock,
 	case OP_REDIRECT:
 	case OP_MOVE:
 	case OP_CLASS:
-		plp_snprintf( line, sizeof(line), "%s\n", Printer_DYN );
+		SNPRINTF( line, sizeof(line)) "%s\n", Printer_DYN );
 		DEBUGF(DCTRL3)("Do_queue_control: sending '%s' to LPD", line );
 		if( Write_fd_str( Lpd_request, line ) < 0 ){
-			logerr_die(LOG_ERR, _("Do_queue_control: write to fd '%d' failed"),
+			LOGERR_DIE(LOG_ERR) _("Do_queue_control: write to fd '%d' failed"),
 				Lpd_request );
 		}
 	}
 	goto done;
 
  noperm:
-	plp_snprintf( error, sizeof(error), "no permission");
+	SNPRINTF( error, sizeof(error)) "no permission");
  error:
 	DEBUGF(DCTRL2)("Do_queue_control: error msg '%s'", error );
 	if( (i = safestrlen(error)) ){
-		plp_snprintf( msg, sizeof(msg), "%s@%s: %s\n",
+		SNPRINTF( msg, sizeof(msg)) "%s@%s: %s\n",
 			Printer_DYN, ShortHost_FQDN, error );
 		if( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
 	}
  done:
 	DEBUGF(DCTRL3)( "Do_queue_control: done" );
 	Free_line_list(&l);
+#endif
 	return;
 }
 
 
 /***************************************************************************
- * Do_job_ticket_file:
+ * Do_control_file:
  *  perform a suitable operation on a control file
  * 1. get the control files
  * 2. check to see if the control file has been selected
- * 3. update the job ticket file for the control file
+ * 3. update the hold file for the control file
  ***************************************************************************/
 
-static int Do_job_ticket_file( int action, int *sock,
+int Do_control_file( int action, int *sock,
 	struct line_list *tokens, char *error, int errorlen, char *option )
 {
-	int i, permission, err, fd;		/* ACME! Nothing but the best */
+	int i, permission, err;		/* ACME! Nothing but the best */
 	int status, matchv;			/* status of last IO op */
 	char msg[SMALLBUFFER];		/* message field */
 	char *s, *identifier;
@@ -607,57 +621,59 @@ static int Do_job_ticket_file( int action, int *sock,
 	Init_line_list(&l);
 	Init_job(&job);
 	Free_line_list(&Sort_order);
+#if defined(JYWENG20031104Scan_queue)
 	if( Scan_queue( &Spool_control, &Sort_order,
 			0,0,0,0,0,0,0,0) ){
 		err = errno;
-		plp_snprintf(error, errorlen,
-			"Do_job_ticket_file: cannot read '%s' - '%s'",
+#ifdef ORIGINAL_DEBUG//JY@1020
+		SNPRINTF(error, errorlen)
+			"Do_control_file: cannot read '%s' - '%s'",
 			Spool_dir_DYN, Errormsg(err) );
+#endif
 			return(1);
 	}
+#endif
 
-	DEBUGF(DCTRL4)("Do_job_ticket_file: total files %d", Sort_order.count );
-	DEBUGFC(DCTRL2)Dump_line_list("Do_job_ticket_file - tokens", tokens);
+#ifdef ORIGINAL_DEBUG//JY@1020
+	DEBUGF(DCTRL4)("Do_control_file: total files %d", Sort_order.count );
+	DEBUGFC(DCTRL2)Dump_line_list("Do_control_file - tokens", tokens);
+#endif
 
 	/* scan the files to see if there is one which matches */
 
 	status = 0;
-	fd = -1;
 	for( i = 0; status == 0 && i < Sort_order.count; ++i ){
 		/*
 		 * check to see if this entry matches any of the patterns
 		 */
-		if( fd > 0 ) close(fd); fd = -1;
 		Free_job(&job);
-		Get_job_ticket_file( &fd, &job, Sort_order.list[i] );
-		DEBUGFC(DCTRL2)Dump_job("Do_job_ticket_file - getting info",&job);
-		if( Find_flag_value(&job.info,INCOMING_TIME) ){
-			DEBUGF(DCTRL2)("Do_job_ticket_file: incoming job");
-			continue;
-		}
-		identifier = Find_str_value(&job.info,IDENTIFIER);
-		if( identifier == 0 ) identifier = Find_str_value(&job.info,XXCFTRANSFERNAME);
+		Get_hold_file( &job, Sort_order.list[i] );
+#ifdef ORIGINAL_DEBUG//JY@1020
+		DEBUGFC(DCTRL2)Dump_job("Do_control_file - getting info",&job);
+#endif
+		identifier = Find_str_value(&job.info,IDENTIFIER,Value_sep);
+		if( identifier == 0 ) identifier = Find_str_value(&job.info,TRANSFERNAME,Value_sep);
 		if( identifier == 0 ) continue;
-		DEBUGF(DCTRL4)("Do_job_ticket_file: checking id '%s'", identifier );
+		DEBUGF(DCTRL4)("Do_control_file: checking id '%s'", identifier );
 
-		Perm_check.user = Find_str_value(&job.info,LOGNAME);
+		Perm_check.user = Find_str_value(&job.info,LOGNAME,Value_sep);
 		Perm_check.host = 0;
-		s = Find_str_value(&job.info,FROMHOST);
+		s = Find_str_value(&job.info,FROMHOST,Value_sep);
 		if( s && Find_fqdn( &PermHost_IP, s ) ){
 			Perm_check.host = &PermHost_IP;
 		}
 		permission = Perms_check( &Perm_line_list, &Perm_check, 0, 1 );
-		DEBUGF(DCTRL1)( "Do_job_ticket_file: id '%s', user '%s', host '%s', permission %s",
+		DEBUGF(DCTRL1)( "Do_control_file: id '%s', user '%s', host '%s', permission %s",
 			identifier, Perm_check.user, s, perm_str(permission) );
 		if( permission == P_REJECT ){
-			plp_snprintf( msg, sizeof(msg),
+			SNPRINTF( msg, sizeof(msg))
 				_("%s: no permission '%s'\n"),
 				Printer_DYN, identifier );
 			if( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
 			continue;
 		}
 
-		destinations = Find_flag_value(&job.info,DESTINATIONS);
+		destinations = Find_flag_value(&job.info,DESTINATIONS,Value_sep);
 
 		update_dest = 0;
 
@@ -677,9 +693,9 @@ static int Do_job_ticket_file( int action, int *sock,
 		}
 
 		DEBUGFC(DCTRL4){
-			LOGDEBUG("Do_job_ticket_file: selected id '%s'", identifier );
-			s = Find_str_value(&job.destination,IDENTIFIER);
-			LOGDEBUG("Do_job_ticket_file: update_dest %d, id '%s'", update_dest, s );
+			LOGDEBUG("Do_control_file: selected id '%s'", identifier );
+			s = Find_str_value(&job.destination,IDENTIFIER,Value_sep);
+			LOGDEBUG("Do_control_file: update_dest %d, id '%s'", update_dest, s );
 		}
 		
 		/* we report this job being selected */
@@ -689,7 +705,9 @@ static int Do_job_ticket_file( int action, int *sock,
 			if( update_dest ){
 				Set_flag_value(&job.destination,HOLD_TIME,time((void *)0) );
 			}
+#ifdef ORIGINAL_DEBUG//JY@1020
 			setmessage( &job, TRACE, "LPC held" );
+#endif
 			break;
 		case OP_TOPQ:
 			Set_flag_value(&job.info,HOLD_TIME,0 );
@@ -697,7 +715,9 @@ static int Do_job_ticket_file( int action, int *sock,
 			if( update_dest ){
 				Set_flag_value(&job.destination,HOLD_TIME,0 );
 			}
+#ifdef ORIGINAL_DEBUG//JY@1020
 			setmessage( &job, TRACE, "LPC topq");
+#endif
 			break;
 		case OP_MOVE:
 			Set_str_value(&job.info,MOVE,option);
@@ -705,9 +725,9 @@ static int Do_job_ticket_file( int action, int *sock,
 			Set_flag_value(&job.info,PRIORITY_TIME,0 );
 			Set_flag_value(&job.info,DONE_TIME,0 );
 			Set_flag_value(&job.info,REMOVE_TIME,0 );
-			Set_flag_value(&job.info,ERROR_TIME,0 );
-			Set_str_value(&job.info,ERROR,0 );
+#ifdef ORIGINAL_DEBUG//JY@1020
 			setmessage( &job, TRACE, "LPC move" );
+#endif
 			break;
 		case OP_RELEASE:
 			Set_flag_value(&job.info,HOLD_TIME,0 );
@@ -716,7 +736,9 @@ static int Do_job_ticket_file( int action, int *sock,
 				Set_flag_value(&job.destination,HOLD_TIME,0 );
 				Set_flag_value(&job.destination,ATTEMPT,0 );
 			}
+#ifdef ORIGINAL_DEBUG//JY@1020
 			setmessage( &job, TRACE, "LPC release" );
+#endif
 			break;
 		case OP_REDO:
 			Set_flag_value(&job.info,HOLD_TIME,0 );
@@ -729,22 +751,26 @@ static int Do_job_ticket_file( int action, int *sock,
 				Set_flag_value(&job.destination,DONE_TIME,0 );
 				Set_flag_value(&job.destination,COPY_DONE,0 );
 			}
+#ifdef ORIGINAL_DEBUG//JY@1020
 			setmessage( &job, TRACE, "LPC redo");
+#endif
 			break;
 		}
 		if( update_dest ){
 			Update_destination( &job );
 		}
-		plp_snprintf( msg, sizeof(msg), _("%s: selected '%s'\n"),
+		SNPRINTF( msg, sizeof(msg)) _("%s: selected '%s'\n"),
 			Printer_DYN, identifier );
 		if( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
 		Set_str_value(&job.info,ERROR,0 );
 		Set_flag_value(&job.info,ERROR_TIME,0);
 		/* record the last update person */
 		Perm_check_to_list(&l, &Perm_check );
-		if( Set_job_ticket_file(&job,&l,fd) ){
+		if( Set_hold_file(&job,&l,0) ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			setmessage( &job, TRACE, "LPC failed" );
-			plp_snprintf( msg, sizeof(msg),
+#endif
+			SNPRINTF( msg, sizeof(msg))
 				_("%s: cannot set hold file '%s'\n"),
 				Printer_DYN, identifier );
 			if( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
@@ -754,7 +780,6 @@ static int Do_job_ticket_file( int action, int *sock,
 			goto next_dest;
 		}
 	}
-	if( fd > 0 ) close(fd); fd = -1;
 	Free_job(&job);
 	Free_line_list(&Sort_order);
 	Free_line_list(&l);
@@ -768,9 +793,10 @@ static int Do_job_ticket_file( int action, int *sock,
  *  forward an OP_LPQ or OP_LPRM
  ***************************************************************************/
 
-static int Do_control_lpq( char *user, int action,
+int Do_control_lpq( char *user, int action,
 	struct line_list *tokens )
 {
+#ifdef REMOVE
 	char msg[LINEBUFFER];			/* message field */
 	int i = 0;
 
@@ -781,7 +807,7 @@ static int Do_control_lpq( char *user, int action,
 	case OP_LPRM: i = REQ_REMOVE; break;
 	}
 
-	plp_snprintf( msg, sizeof(msg), "%c%s", i, Printer_DYN );
+	SNPRINTF( msg, sizeof(msg)) "%c%s", i, Printer_DYN );
 	switch( action ){
 		case OP_LPRM: 
 			safestrncat( msg, " " );
@@ -801,6 +827,7 @@ static int Do_control_lpq( char *user, int action,
 	case OP_LPRM: Job_remove( sock,  msg ); break;
 	}
 	*/
+#endif
 	return(0);
 }
 
@@ -809,9 +836,10 @@ static int Do_control_lpq( char *user, int action,
  *  report current status
  ***************************************************************************/
 
-static int Do_control_status( int *sock,
+int Do_control_status( int *sock,
 	char *error, int errorlen )
 {
+#ifdef REMOVE
 	char msg[SMALLBUFFER];			/* message field */
 	char pr[LINEBUFFER];
 	char pr_status[LINEBUFFER];
@@ -830,15 +858,17 @@ static int Do_control_status( int *sock,
 	Get_spool_control( Queue_control_file_DYN, &Spool_control );
 	if( Scan_queue( &Spool_control, &Sort_order, &printable,
 			&held, &move,1,&err,&done,0,0) ){
-		plp_snprintf( error, errorlen,
+#ifdef ORIGINAL_DEBUG//JY@1020
+		SNPRINTF( error, errorlen)
 			"Do_control_status: cannot read '%s' - '%s'",
 			Spool_dir_DYN, Errormsg(errno) );
+#endif
 		return(1);
 	}
 	Free_line_list(&Sort_order);
 
 	DEBUGF(DCTRL1)( "Do_control_status: printable %d, held %d, move %d, err %d, done %d",
-		printable, held, move, err, done );
+		printable, held, move, error, done );
 
 	/* now check to see if there is a server and unspooler process active */
 	serverpid = Server_active( Printer_DYN );
@@ -847,44 +877,44 @@ static int Do_control_status( int *sock,
 	unspoolerpid = Server_active( Queue_unspooler_file_DYN );
 	DEBUGF(DCTRL4)("Get_queue_status: unspoolerpid %d", unspoolerpid );
 
-	plp_snprintf( pr, sizeof(pr), "%s@%s", Printer_DYN,
+	SNPRINTF( pr, sizeof(pr)) "%s@%s", Printer_DYN,
 		Report_server_as_DYN?Report_server_as_DYN:ShortHost_FQDN );
 	pr_status[0] = 0;
 	if( Hld_all(&Spool_control) ){
 		len = safestrlen(pr_status);
-		plp_snprintf( pr_status+len, sizeof(pr_status)-len, _(" holdall") );
+		SNPRINTF( pr_status+len, sizeof(pr_status)-len) _(" holdall") );
 	}
 	if( (s = Clsses(&Spool_control)) ){
 		len = safestrlen(pr_status);
-		plp_snprintf( pr_status+len, sizeof(pr_status)-len, _(" class=%s"),s );
+		SNPRINTF( pr_status+len, sizeof(pr_status)-len) _(" class=%s"),s );
 	}
 	if( Auto_hold_DYN ){
 		len = safestrlen(pr_status);
-		plp_snprintf( pr_status+len, sizeof(pr_status)-len, _(" autohold") );
+		SNPRINTF( pr_status+len, sizeof(pr_status)-len) _(" autohold") );
 	}
 	if( pr_status[0] ){
 		len = safestrlen(pr_status);
-		plp_snprintf( pr_status+len, sizeof(pr_status)-len, ")" );
+		SNPRINTF( pr_status+len, sizeof(pr_status)-len) ")" );
 		pr_status[0] = '(';
 		
 	}
-	plp_snprintf( count, sizeof(count), "%d", printable );
+	SNPRINTF( count, sizeof(count)) "%d", printable );
 	strcpy( server, "none" );
 	strcpy( spooler, "none" );
-	if( serverpid ) plp_snprintf( server, sizeof(server), "%d",serverpid );
-	if( unspoolerpid ) plp_snprintf( spooler, sizeof(spooler), "%d",unspoolerpid );
-	if( Server_names_DYN ) plp_snprintf( spooler, sizeof(spooler), "%s",Server_names_DYN );
+	if( serverpid ) SNPRINTF( server, sizeof(server))"%d",serverpid );
+	if( unspoolerpid ) SNPRINTF( spooler, sizeof(spooler))"%d",unspoolerpid );
+	if( Server_names_DYN ) SNPRINTF( spooler, sizeof(spooler))"%s",Server_names_DYN );
 
 	forward[0] = 0;
 	if( (s = Frwarding(&Spool_control)) ){
-		plp_snprintf( forward, sizeof( forward ), "%s", s );
+		SNPRINTF( forward, sizeof( forward )) "%s", s );
 	}
 
 	debugstr[0] = 0;
 	if( (s = Cntrol_debug(&Spool_control)) ){
-		plp_snprintf( debugstr, sizeof(debugstr), "(%s)", s );
+		SNPRINTF( debugstr, sizeof(debugstr)) "(%s)", s );
 	}
-	plp_snprintf( msg, sizeof(msg),
+	SNPRINTF( msg, sizeof(msg))
 		status_header,
 		pr,
 		Pr_disabled(&Spool_control)?"disabled":(Pr_aborted(&Spool_control)?"aborted":"enabled"),
@@ -893,6 +923,7 @@ static int Do_control_status( int *sock,
 	trunc_str( msg );
 	safestrncat(msg,"\n");
 	if( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
+#endif
 	return( 0 );
 }
 
@@ -906,7 +937,7 @@ static int Do_control_status( int *sock,
  * 4. if option = printer@host, specify name
  ***************************************************************************/
 
-static int Do_control_redirect( int *sock,
+int Do_control_redirect( int *sock,
 	struct line_list *tokens, char *error, int errorlen )
 {
 	char *s;
@@ -914,7 +945,9 @@ static int Do_control_redirect( int *sock,
 	int n = 0;
 
 	/* get the spool entries */
+#ifdef ORIGINAL_DEBUG//JY@1020
 	DEBUGFC(DCTRL2)Dump_line_list("Do_control_redirect - tokens",tokens);
+#endif
 	switch( tokens->count ){
 	case 3:
 	case 4:
@@ -931,16 +964,16 @@ static int Do_control_redirect( int *sock,
 		break;
 
 	default:
-		plp_snprintf( error, errorlen,
+		SNPRINTF( error, errorlen)
 			_("wrong number arguments, %d"), tokens->count );
 		goto error;
 	}
 
 	s = Frwarding(&Spool_control);
 	if( s ){
-		plp_snprintf( msg, sizeof(msg), _("forwarding to '%s'\n"), s );
+		SNPRINTF( msg, sizeof(msg)) _("forwarding to '%s'\n"), s );
 	} else {
-		plp_snprintf( msg, sizeof(msg), _("forwarding off\n") );
+		SNPRINTF( msg, sizeof(msg)) _("forwarding off\n") );
 	}
 
 	if( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
@@ -959,7 +992,7 @@ static int Do_control_redirect( int *sock,
  * 4. if option = printer@host, specify name
  ***************************************************************************/
 
-static int Do_control_class( int *sock,
+int Do_control_class( int *sock,
 	struct line_list *tokens, char *error, int errorlen )
 {
 	char forward[LINEBUFFER];
@@ -986,18 +1019,18 @@ static int Do_control_class( int *sock,
 		break;
 
 	default:
-		plp_snprintf( error, errorlen,
+		SNPRINTF( error, errorlen)
 			_("wrong number arguments, %d"), tokens->count );
 		goto error;
 	}
 
-	s = Find_str_value(&Spool_control,CLASS);
+	s = Find_str_value(&Spool_control,CLASS,Value_sep);
 
 	if( s ){
-		plp_snprintf( forward, sizeof(forward), _("classes printed '%s'\n"),
+		SNPRINTF( forward, sizeof(forward)) _("classes printed '%s'\n"),
 			s );
 	} else {
-		plp_snprintf( forward, sizeof(forward), _("all classes printed\n") );
+		SNPRINTF( forward, sizeof(forward)) _("all classes printed\n") );
 	}
 
 	if( Write_fd_str( *sock, forward ) < 0 ) cleanup(0);
@@ -1015,7 +1048,7 @@ static int Do_control_class( int *sock,
  * 4. if option = printer@host, specify name
  ***************************************************************************/
 
-static int Do_control_debug( int *sock,
+int Do_control_debug( int *sock,
 	struct line_list *tokens, char *error, int errorlen )
 {
 	char debugging[LINEBUFFER];
@@ -1041,16 +1074,16 @@ static int Do_control_debug( int *sock,
 		break;
 
 	default:
-		plp_snprintf( error, errorlen,
+		SNPRINTF( error, errorlen)
 			_("wrong number arguments, %d"), tokens->count );
 		goto error;
 	}
 
 	if( (s = Cntrol_debug(&Spool_control)) ){
-		plp_snprintf( debugging, sizeof(debugging),
+		SNPRINTF( debugging, sizeof(debugging))
 			_("debugging override set to '%s'"), s );
 	} else {
-		plp_snprintf( debugging, sizeof(debugging), _("debugging override off") );
+		SNPRINTF( debugging, sizeof(debugging)) _("debugging override off") );
 	}
 
 	if( debugging[0] ){
@@ -1071,7 +1104,7 @@ static int Do_control_debug( int *sock,
  * 3. if option = HUP, send signal
  ***************************************************************************/
 
-static int Do_control_printcap( int *sock )
+int Do_control_printcap( int *sock )
 {
 	char *printcap = 0, *s, *t, *w;
 
@@ -1093,51 +1126,17 @@ static int Do_control_printcap( int *sock )
 	return(0);
 }
 
-
-/***************************************************************************
- * Do_control_ppd:
- *  get the PPD file
- * 1. get the ppd file name
- * 2. if no ppdfile, write nothint
- ***************************************************************************/
-
-static int Do_control_ppd( int *sock )
-{
-	char *file = Ppd_file_DYN;
-	char buffer[LARGEBUFFER];
-	int fd, count;
-	struct stat statb;			/* status of file */
-
-	/* get the spool entries */
-
-	if( !ISNULL(file) ){
-		if( (fd = Checkread( file, &statb )) < 0 ){
-			plp_snprintf(buffer, sizeof(buffer), "%s: cannot open '%s' - '%s'\n",
-				Printer_DYN, file, Errormsg(errno) );
-			Write_fd_str( *sock, buffer );
-		} else {
-			while( (count = ok_read(fd, buffer, sizeof(buffer)-1)) > 0 ){
-				if( Write_fd_len( *sock, buffer, count ) < 0 ) cleanup(0);
-			}
-			if( count < 0 ){
-				plp_snprintf(buffer, sizeof(buffer), "%s: error reading '%s' - '%s'\n",
-					Printer_DYN, file, Errormsg(errno) );
-				if( Write_fd_str( *sock, buffer ) < 0 ) cleanup(0);
-			}
-		}
-	}
-	return(0);
-}
-
-static int Do_control_defaultq( int *sock )
+#ifdef REMOVE
+int Do_control_defaultq( int *sock )
 {
 	char msg [LINEBUFFER];
 
 	Printer_DYN = 0;
 	/* get the default queue */
 	Get_printer();
-	plp_snprintf( msg, sizeof(msg), "%s\n", Printer_DYN );
+	SNPRINTF( msg, sizeof(msg)) "%s\n", Printer_DYN );
 	if ( Write_fd_str( *sock, msg ) < 0 ) cleanup(0);
 
 	return(0);
 }
+#endif

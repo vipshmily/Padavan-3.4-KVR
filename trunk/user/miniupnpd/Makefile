@@ -12,8 +12,8 @@ IPTABLESPATH=$(ROOTDIR)/user/iptables/$(IPT_VERSION)
 
 #all: download_test extract_test
 all:
-	cd $(SRC_NAME) && ./configure --ipv6 --igd2
-	$(MAKE) -f Makefile.linux -j$(HOST_NCPU) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
+	cd $(SRC_NAME) && ./configure
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
@@ -27,10 +27,9 @@ extract_test:
 	fi )
 
 clean:
-	$(MAKE) -f Makefile.linux -C $(SRC_NAME) clean
+	$(MAKE) -C $(SRC_NAME) clean
 	rm -f miniupnpd
 
 romfs:
 	cp $(SRC_NAME)/miniupnpd .
 	$(ROMFSINST) /usr/bin/miniupnpd
-

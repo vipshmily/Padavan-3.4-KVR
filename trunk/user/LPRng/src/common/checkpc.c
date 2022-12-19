@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -7,9 +23,16 @@
  *
  ***************************************************************************/
 
+ static char *const _id =
+"$Id: checkpc.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+
+
+
 #include "lp.h"
+#include "defs.h"
 #include "getopt.h"
 #include "checkpc.h"
+#include "patchlevel.h"
 #include "getprinter.h"
 #include "getqueue.h"
 #include "initialize.h"
@@ -25,14 +48,15 @@
 /**** ENDINCLUDE ****/
 
  
-static int Noaccount;
-static int Nolog,  Nostatus,  Fix,  Age, Printcap;
-static int Truncate = -1;
-static int Remove;
-static char *User_specified_printer;
-static time_t Current_time;
-static int Check_path_list( char *plist, int allow_missing );
-int Mail_fd;
+ int Noaccount;
+ int Nolog,  Nostatus,  Fix,  Age, Printcap;
+ int Truncate = -1;
+ int Remove;
+ int Test;			/* carry out portability tests */
+ char *User_specified_printer;
+ time_t Current_time;
+ int Check_path_list( char *plist, int allow_missing );
+ int Mail_fd;
 
 
 /* pathnames of the spool directory (sd) and control directory (cd) */
@@ -45,8 +69,7 @@ int main( int argc, char *argv[], char *envp[] )
 	char *printcap;
 	/*char *serial_line = 0;*/
 	struct line_list raw, spooldirs;
-	const char *s, *t;
-	char *p;
+	char *s, *t;
 	struct stat statb;
 
 	(void)signal( SIGPIPE, SIG_IGN );
@@ -114,7 +137,7 @@ int main( int argc, char *argv[], char *envp[] )
 	}
 
 	if( Verbose ){
-		if(Verbose)MESSAGE("%s", Version);
+		if(Verbose)MESSAGE( Version );
 	}
 
 	Initialize(argc, argv, envp, 'D' );
@@ -133,11 +156,7 @@ int main( int argc, char *argv[], char *envp[] )
 		&PC_info_line_list, &raw, &Host_IP );
 	Free_line_list( &raw );
 
-#if defined (__CYGWIN__)
-	if( Fix && (geteuid() != ROOTUID && getuid() != ROOTUID) ){
-#else
 	if( Fix && geteuid() && getuid() ){
-#endif
 		WARNMSG("Fix option (-f) requires root permissions\n" );
 	}
 
@@ -168,7 +187,7 @@ int main( int argc, char *argv[], char *envp[] )
 
 	DEBUG1("Effective UID %d, Real UID %d, Effective GID %d, Real GID %d",
 		euid, ruid, egid, rgid );
-	if(Verbose)MESSAGE(" DaemonUID %ld, DaemonGID %ld", (long)DaemonUID, (long)DaemonGID );
+	if(Verbose)MESSAGE(" DaemonUID %d, DaemonGID %d", DaemonUID, DaemonGID );
 
 
 	if(Verbose )MESSAGE("Using Config file '%s'", Config_file_DYN);
@@ -185,17 +204,17 @@ int main( int argc, char *argv[], char *envp[] )
 		if(Verbose)MESSAGE( "LPD lockfile '%s'", path );
 		if( path[0] != '/' ){
 			WARNMSG( "Warning: LPD lockfile '%s' not absolute path", path );
-		} else if( !(p = safestrrchr(path+1,'/')) ){
+		} else if( !(s = safestrrchr(path+1,'/')) ){
 			WARNMSG( "Warning: bad LPD lockfile '%s' path format", path );
 		} else {
-			*p = 0;
+			*s = 0;
 			if( stat( path, &statb ) ){
 				WARNMSG( "  LPD Lockfile directory '%s' does not exist!", path);
 				if( Fix ){
 					mkdir_path( path );
 				}
 			}
-			*p = '/';
+			*s = '/';
 		}
 		if( path ) free( path ); path = 0;
 		Spool_file_perms_DYN = oldfile;
@@ -208,21 +227,25 @@ int main( int argc, char *argv[], char *envp[] )
         LOGDEBUG("main: START open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
 	if(Verbose)MESSAGE("Checking printcap info");
 	if( User_specified_printer ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 		if( DEBUGL1 ) Dump_line_list("checkpc: names", &PC_names_line_list );
-		s = Find_str_value( &PC_names_line_list, User_specified_printer );
+#endif
+		s = Find_str_value( &PC_names_line_list, User_specified_printer, Value_sep );
 		DEBUG1("checkpc: for SERVER %s is really %s", User_specified_printer, s );
 		if( s ){
 			Set_DYN(&Printer_DYN,s);
 			Scan_printer(&spooldirs);
 		}
 	} else {
+#ifdef ORIGINAL_DEBUG//JY@1020
 		if( DEBUGL1 ) Dump_line_list("checkpc: all", &All_line_list );
+#endif
 		for( i = 0; i < All_line_list.count; ++i ){
 			Set_DYN(&Printer_DYN,All_line_list.list[i]);
 			Scan_printer(&spooldirs);
@@ -234,7 +257,7 @@ int main( int argc, char *argv[], char *envp[] )
         LOGDEBUG("main: END open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
@@ -277,7 +300,7 @@ void mkdir_path( char *path )
  ***************************************************************************/
 
  /* check for these names and values */
- static const char *filter_names[] = {
+ static char *filter_names[] = {
 	"filter", "bp", "bs", "be", 0
 	};
 
@@ -285,8 +308,7 @@ void Scan_printer(struct line_list *spooldirs)
 {
 	DIR *dir;
 	struct dirent *d;
-	char *s, *cf_name;		/* ACME pointers */
-	const char *cs, **names;
+	char *s, *cf_name, **names;		/* ACME pointers */
 	int jobfile;
 	struct stat statb;
 	int fd = 0;				/* device file descriptor */
@@ -307,7 +329,7 @@ void Scan_printer(struct line_list *spooldirs)
         LOGDEBUG("Scan_printer: START open fd's");
         for( i = 0; i < 20; ++i ){
             if( fstat(i,&statb) == 0 ){
-                LOGDEBUG("  fd %d (0%o)", i, (unsigned int)(statb.st_mode&S_IFMT));
+                LOGDEBUG("  fd %d (0%o)", i, statb.st_mode&S_IFMT);
             }
         }
     }
@@ -329,16 +351,16 @@ void Scan_printer(struct line_list *spooldirs)
 		}
 		goto test_filters;
 	}
-	if( !Find_first_key(&PC_entry_line_list,"bq",Option_value_sep,&n)
-		|| !Find_first_key(&Config_line_list,"bq",Option_value_sep,&n ) ){
+	if( !Find_first_key(&PC_entry_line_list,"bq",Value_sep,&n)
+		|| !Find_first_key(&Config_line_list,"bq",Value_sep,&n ) ){
 		WARNMSG( "%s: bq option is no longer supported, use 'lpd_bounce' option", Printer_DYN);
 	}
-	if( !Find_first_key(&PC_entry_line_list,"check_idle",Option_value_sep,&n)
-		|| !Find_first_key(&Config_line_list,"check_idle",Option_value_sep,&n ) ){
+	if( !Find_first_key(&PC_entry_line_list,"check_idle",Value_sep,&n)
+		|| !Find_first_key(&Config_line_list,"check_idle",Value_sep,&n ) ){
 		WARNMSG( "%s: check_idle option is no longer supported, use 'chooser' option", Printer_DYN);
 	}
-	if( !Find_first_key(&PC_entry_line_list,"sf",Option_value_sep,&n)
-		|| !Find_first_key(&Config_line_list,"sf",Option_value_sep,&n ) ){
+	if( !Find_first_key(&PC_entry_line_list,"sf",Value_sep,&n)
+		|| !Find_first_key(&Config_line_list,"sf",Value_sep,&n ) ){
 		WARNMSG( "%s: sf (suppress form feeds) is deprecated.  Use 'ff_separator' if you want FF between job files", Printer_DYN);
 	}
 	if( strchr(Printer_DYN, '*') ){
@@ -358,7 +380,7 @@ void Scan_printer(struct line_list *spooldirs)
 			Printer_DYN);
 		return;
 	}
-	if( (s =  Find_str_value(spooldirs,Spool_dir_DYN)) ){
+	if( (s =  Find_str_value(spooldirs,Spool_dir_DYN,Value_sep)) ){
 		WARNMSG("%s: CATASTROPHIC ERROR! queue '%s' also has spool directory '%s'",
 			Printer_DYN, s, Spool_dir_DYN);
 		return;
@@ -370,14 +392,16 @@ void Scan_printer(struct line_list *spooldirs)
 	 * check the permissions of files and directories
 	 * Also remove old job or control files
 	 */
-	if( Check_spool_dir( Spool_dir_DYN ) > 1 ){
+	if( Check_spool_dir( Spool_dir_DYN, 1 ) > 1 ){
 		WARNMSG( "  Printer_DYN '%s' spool dir '%s' needs fixing",
 			Printer_DYN, Spool_dir_DYN );
 		return;
 	}
 	if( !(dir = opendir( Spool_dir_DYN )) ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 		WARNMSG( "  Printer_DYN '%s' spool dir '%s' cannot be scanned '%s'",
 			Printer_DYN, Spool_dir_DYN, Errormsg(errno) );
+#endif
 		return;
 	}
 	if( (Fix || Remove) && Lpq_status_file_DYN ){
@@ -395,8 +419,10 @@ void Scan_printer(struct line_list *spooldirs)
 			continue;
 		}
 		if( stat(cf_name,&statb) == -1 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			WARNMSG( "  stat of file '%s' failed '%s'",
 				cf_name, Errormsg(errno) );
+#endif
 			continue;
 		}
 		/* do not touch symbolic links */
@@ -419,8 +445,8 @@ void Scan_printer(struct line_list *spooldirs)
 		if( jobfile && Age && delta > Age ){
 			float n = (delta)/60.0 ;
 			float a = (Age)/60.0 ;
-			const char *remove = Remove?" (removing)":"";
-			const char *range = "mins";
+			char *remove = Remove?" (removing)":"";
+			char *range = "mins";
 			if( a/60 > 2 ){
 				a = a/60;
 				n = n/60;
@@ -459,9 +485,7 @@ void Scan_printer(struct line_list *spooldirs)
 	Fix_clean(Status_file_DYN,Nostatus);
 	Fix_clean(Log_file_DYN,Nolog);
 	Fix_clean(Accounting_file_DYN,Noaccount);
-	if( (s = Ppd_file_DYN) ){
-		Check_read_file( s, Fix, 0644 );
-	}
+
 	/*
 	 * get the jobs in the queue
 	 */
@@ -491,11 +515,15 @@ void Scan_printer(struct line_list *spooldirs)
 			WARNMSG( "%s: lp device not absolute  pathname '%s'",
 				Printer_DYN, s );
 		} else if( stat(s,&statb) < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			WARNMSG( "%s: cannot stat lp device '%s' - %s",
 				Printer_DYN, s, Errormsg(errno) );
+#endif
 		} else if( (fd = Checkwrite(s,&statb,0,0,1)) < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			WARNMSG( "%s: cannot open lp device '%s' - %s",
 				Printer_DYN, s, Errormsg(errno) );
+#endif
 		}
 		if( fd >= 0 ) close(fd);
 	}
@@ -508,8 +536,8 @@ void Scan_printer(struct line_list *spooldirs)
 		Check_executable_filter( error, 0 );
 	}
 
-	for( names = filter_names; (cs = *names); ++names ){
-		Check_executable_filter( cs, 0 );
+	for( names = filter_names; (s = *names); ++names ){
+		Check_executable_filter( s, 0 );
 	}
 
 	/* check the Lpd_port_DYN */
@@ -525,7 +553,7 @@ void Scan_printer(struct line_list *spooldirs)
 	}
 }
 
-void Check_executable_filter( const char *id, char *filter_str )
+void Check_executable_filter( char *id, char *filter_str )
 {
 	struct line_list files;
 	char *s, *t;
@@ -534,8 +562,8 @@ void Check_executable_filter( const char *id, char *filter_str )
 	
 	Init_line_list(&files);
 	if( !filter_str ){
-		filter_str = Find_str_value(&PC_entry_line_list,id);
-		if(!filter_str) filter_str = Find_str_value(&Config_line_list,id);
+		filter_str = Find_str_value(&PC_entry_line_list,id,Value_sep);
+		if(!filter_str) filter_str = Find_str_value(&Config_line_list,id,Value_sep);
 	}
 	Split(&files,filter_str,Whitespace,0,0,0,0,0,0);
 	if( files.count ){
@@ -568,8 +596,10 @@ void Check_executable_filter( const char *id, char *filter_str )
 		}
 		if(Verbose)MESSAGE("    executable '%s'", s );
 		if( stat(s,&statb) ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			WARNMSG("cannot stat '%s' filter '%s' - %s", id,
 			s, Errormsg(errno) );
+#endif
 		} else if(!S_ISREG(statb.st_mode)) {
 			WARNMSG("'%s' filter '%s' not a file", id, s);
 		} else {
@@ -609,14 +639,18 @@ void Make_write_file( char *file, char *printer )
 	}
 
 	if( (fd = Checkwrite( s, &statb, O_RDWR, 1, 1 )) < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 		WARNMSG( " ** cannot open '%s' - '%s'", s, Errormsg(errno) );
+#endif
 		if( Fix ){
 			int euid = geteuid();
 			To_euid_root();
 			fd = open( s, O_RDWR|O_CREAT, Spool_file_perms_DYN  );
 			To_euid(euid);
 			if( fd < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 				WARNMSG( " ** cannot create '%s' - '%s'", s, Errormsg(errno) );
+#endif
 			}
 			Fix_owner( s );
 		}
@@ -628,25 +662,32 @@ void Make_write_file( char *file, char *printer )
 	if( fd >= 0 ) close(fd); fd = -1;
 }
 
-static void usage(void)
+ char *usemsg[] = {
+	"checkpc [-aflprsV] [-A age] [-D debuglevel] [-P printer] [-t size]",
+	"   Check printcap for printer information and fix files where possible",
+	" Option:",
+	" -a             do not create accounting info (:af) file",
+	" -f             fix missing files and inconsistent file permissions",
+	" -l             do not create logging info (:lf) file",
+	" -p             verbose printcap information",
+	" -r             remove job files older than -A age seconds",
+	" -s             do not create filter status (:ps) info file",
+	" -t size[kM]    truncate log files (:lf) to size (k=Kbyte, M=Mbytes)",
+	" -A age[DHMS]   remove files of form ?f[A-Z][0-9][0-9][0-9] older than",
+	"                age, D days (default), H hours, M minutes, S seconds",
+	" -D debuglevel  set debug level",
+	" -P printer     check or fix only this printer entry",
+	" -V             really verbose information",
+	" -T line        portability diagnostic, use serial line device for stty test",
+	0
+};
+
+void usage(void)
 {
-	FPRINTF( STDERR,
-"checkpc [-aflprsV] [-A age] [-D debuglevel] [-P printer] [-t size]\n"
-"   Check printcap for printer information and fix files where possible\n"
-" Option:\n"
-" -a             do not create accounting info (:af) file\n"
-" -f             fix missing files and inconsistent file permissions\n"
-" -l             do not create logging info (:lf) file\n"
-" -p             verbose printcap information\n"
-" -r             remove job files older than -A age seconds\n"
-" -s             do not create filter status (:ps) info file\n"
-" -t size[kM]    truncate log files (:lf) to size (k=Kbyte, M=Mbytes)\n"
-" -A age[DHMS]   remove files of form ?f[A-Z][0-9][0-9][0-9] older than\n"
-"                age, D days (default), H hours, M minutes, S seconds\n"
-" -D debuglevel  set debug level\n"
-" -P printer     check or fix only this printer entry\n"
-" -V             really verbose information\n"
-" -T line        portability diagnostic, use serial line device for stty test\n");
+	char **s;
+	for( s = usemsg; *s; ++s ){
+		FPRINTF( STDERR, "%s\n", *s );
+	}
 	Parse_debug("=",-1);
 	FPRINTF( STDOUT, "%s\n", Version );
 	exit(1);
@@ -711,28 +752,30 @@ int Check_file( char  *path, int fix, int age, int rmflag )
 		path, fix, (long)Current_time, age );
 
 	if( stat( path, &statb ) ){
-		WARNMSG( "  %s: cannot stat file '%s', %s", Printer_DYN?Printer_DYN:"", path, Errormsg(errno) );
+#ifdef ORIGINAL_DEBUG//JY@1020
+		if(Verbose)MESSAGE( "cannot stat file '%s', %s", path, Errormsg(errno) );
+#endif
 		err = 1;
 		return( err );
 	}
 	if( S_ISDIR( statb.st_mode ) ){
-		WARNMSG("  %s: '%s' is a directory, not a file", Printer_DYN?Printer_DYN:"",path );
+		WARNMSG("'%s' is a directory, not a file", path );
 		return(2);
 	} else if( !S_ISREG( statb.st_mode ) ){
-		WARNMSG( " %s: '%s' not a regular file - unusual", Printer_DYN?Printer_DYN:"",path );
+		WARNMSG( "'%s' not a regular file - unusual", path );
 		return(2) ;
 	}
 
 	if( statb.st_uid != DaemonUID || statb.st_gid != DaemonGID ){
-		WARNMSG( "owner/group of '%s' are %ld/%ld, not %ld/%ld", path,
-			(long)(statb.st_uid), (long)(statb.st_gid), (long)DaemonUID, (long)DaemonGID );
+		WARNMSG( "owner/group of '%s' are %d/%d, not %d/%d", path,
+			(int)(statb.st_uid), (int)(statb.st_gid), DaemonUID, DaemonGID );
 		if( fix ){
 			if( Fix_owner( path ) ) err = 2;
 		}
 	}
 	if( 07777 & (statb.st_mode ^ Spool_file_perms_DYN) ){
 		WARNMSG( "permissions of '%s' are 0%o, not 0%o", path,
-			(unsigned int)(statb.st_mode & 07777), Spool_file_perms_DYN );
+			statb.st_mode & 07777, Spool_file_perms_DYN );
 		if( fix ){
 			if( Fix_perms( path, Spool_file_perms_DYN ) ) err = 1;
 		}
@@ -746,52 +789,14 @@ int Check_file( char  *path, int fix, int age, int rmflag )
 			if( rmflag ){
 				FPRINTF( STDOUT, "removing '%s'\n", path );
 				if( unlink( path ) == -1 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 					WARNMSG( "cannot remove '%s', %s", path,
 						Errormsg(errno) );
+#endif
 				}
 			}
 		}
 	}
-	return( err );
-}
-
-
-/***************************************************************************
- * Check_read_file( char  *dpath   - pathname of directory/files
- *    int fix  - fix or check
- ***************************************************************************/
-
-int Check_read_file( char  *path, int fix, int perms )
-{
-	struct stat statb;
-	int err = 0;
-	int fd;
-
-	DEBUG4("Check_read_file: '%s', fix %d", path, fix );
-
-	if( stat( path, &statb ) ){
-		WARNMSG( "  %s: cannot stat file '%s', %s", Printer_DYN?Printer_DYN:"",
-			path, Errormsg(errno) );
-		err = 1;
-		return( err );
-	}
-	if( S_ISDIR( statb.st_mode ) ){
-		WARNMSG("  %s: '%s' is a directory, not a file", Printer_DYN?Printer_DYN:"",path );
-		return(2);
-	} else if( !S_ISREG( statb.st_mode ) ){
-		WARNMSG( " %s: '%s' not a regular file - unusual", Printer_DYN?Printer_DYN:"",path );
-		return(2) ;
-	}
-	if( (fd = Checkread( path, &statb )) < 0 ){
-		if( fix ){
-			Fix_perms( path, perms );
-		} else {
-			WARNMSG( " %s: cannot open %s - %s", Printer_DYN?Printer_DYN:"",
-				path, Errormsg(errno) );
-		}
-	}
-	if( fd >= 0 ) close(fd);
-
 	return( err );
 }
 
@@ -808,8 +813,10 @@ int Fix_create_dir( char  *path, struct stat *statb )
 				WARNMSG( "not regular file '%s'", path );
 				err = 1;
 			} else if( unlink( s ) ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 				WARNMSG( "cannot unlink file '%s', %s",
 					path, Errormsg(errno) );
+#endif
 				err = 1;
 			}
 		}
@@ -819,7 +826,9 @@ int Fix_create_dir( char  *path, struct stat *statb )
 		int euid = geteuid();
 		To_euid_root();
 		if( mkdir( path, Spool_dir_perms_DYN ) ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			WARNMSG( "mkdir '%s' failed, %s", path, Errormsg(errno) );
+#endif
 			err = 1;
 		} else {
 			err = Fix_owner( path );
@@ -836,14 +845,16 @@ int Fix_owner( char *path )
 	int euid = geteuid();
 
 	To_euid_root();
-	WARNMSG( "  changing ownership '%s' to %ld/%ld", path, (long)DaemonUID, (long)DaemonGID );
+	WARNMSG( "  changing ownership '%s' to %d/%d", path, DaemonUID, DaemonGID );
 	chown( path, DaemonUID, DaemonGID );
 	if( geteuid() == ROOTUID ){
-		WARNMSG( "  changing ownership '%s' to %ld/%ld", path, (long)DaemonUID, (long)DaemonGID );
+		WARNMSG( "  changing ownership '%s' to %d/%d", path, DaemonUID, DaemonGID );
 		status = chown( path, DaemonUID, DaemonGID );
 		err = errno;
 		if( status ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			WARNMSG( "chown '%s' failed, %s", path, Errormsg(err) );
+#endif
 		}
 		errno = err;
 	}
@@ -863,8 +874,10 @@ int Fix_perms( char *path, int perms )
 	To_euid( euid );
 
 	if( status ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 		WARNMSG( "chmod '%s' to 0%o failed, %s", path, perms,
 			 Errormsg(err) );
+#endif
 	}
 	errno = err;
 	return( status != 0 );
@@ -875,7 +888,7 @@ int Fix_perms( char *path, int perms )
  * Check to see that the spool directory exists, and create it if necessary
  ***************************************************************************/
 
-int Check_spool_dir( char *path )
+int Check_spool_dir( char *path, int owner )
 {
 	struct stat statb;
 	struct line_list parts;
@@ -912,19 +925,25 @@ int Check_spool_dir( char *path )
 		if( stat( pathname, &statb ) == 0 && S_ISDIR( statb.st_mode )
 			&& chdir( pathname ) == -1 ){
 			if( !Fix ){
-				WARNMSG( "cannot chdir to '%s' as UID %ld, GRP %ld - '%s'",
-					pathname, (long)geteuid(), (long)getegid(), Errormsg(errno) );
+#ifdef ORIGINAL_DEBUG//JY@1020
+				WARNMSG( "cannot chdir to '%s' as UID %d, GRP %d - '%s'",
+					pathname, geteuid(), getegid(), Errormsg(errno) );
+#endif
 			} else {
 				Fix_perms( pathname, Spool_dir_perms_DYN );
 				if( chdir( pathname ) == -1 ){
-					WARNMSG( "Permission change FAILED: cannot chdir to '%s' as UID %ld, GRP %ld - '%s'",
-					pathname, (long)geteuid(), (long)getegid(), Errormsg(errno) );
+#ifdef ORIGINAL_DEBUG//JY@1020
+					WARNMSG( "Permission change FAILED: cannot chdir to '%s' as UID %d, GRP %d - '%s'",
+					pathname, geteuid(), getegid(), Errormsg(errno) );
+#endif
 					Fix_owner( pathname );
 					Fix_perms( pathname, Spool_dir_perms_DYN );
 				}
 				if( chdir( pathname ) == -1 ){
-					WARNMSG( "Owner and Permission change FAILED: cannot chdir to '%s' as UID %ld, GRP %ld - '%s'",
-					pathname, (long)geteuid(), (long)getegid(), Errormsg(errno) );
+#ifdef ORIGINAL_DEBUG//JY@1020
+					WARNMSG( "Owner and Permission change FAILED: cannot chdir to '%s' as UID %d, GRP %d - '%s'",
+					pathname, geteuid(), getegid(), Errormsg(errno) );
+#endif
 				}
 			}
 		}
@@ -932,26 +951,29 @@ int Check_spool_dir( char *path )
 	if(pathname) free(pathname); pathname = 0;
 	Free_line_list(&parts);
 	/* now we do chown if necessary */
+	if( !owner ) return(err);
 	if( Fix ){
 		char cmd[SMALLBUFFER];
 		int euid = geteuid();
 
 		To_euid_root();
-		plp_snprintf( cmd, sizeof(cmd), "%s -R %ld %s", CHOWN, (long)DaemonUID, path );
+		SNPRINTF( cmd, sizeof(cmd)) "%s -R %d %s", CHOWN, DaemonUID, path );
 		system( cmd );
-		plp_snprintf( cmd, sizeof(cmd), "%s -R %ld %s", CHGRP, (long)DaemonGID, path );
+		SNPRINTF( cmd, sizeof(cmd)) "%s -R %d %s", CHGRP, DaemonGID, path );
 		system( cmd );
 		To_euid(euid);
 	}
 	if( stat( path, &statb ) ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 		WARNMSG( "stat of '%s' failed - %s", path, Errormsg(errno) );
+#endif
 		err = 1;
 		return( err );
 	}
 	/* now we look at the last directory */
 	if( statb.st_uid != DaemonUID || statb.st_gid != DaemonGID ){
-		WARNMSG( "owner/group of '%s' are %ld/%ld, not %ld/%ld", path,
-			(long)(statb.st_uid), (long)(statb.st_gid), (long)DaemonUID, (long)DaemonGID );
+		WARNMSG( "owner/group of '%s' are %d/%d, not %d/%d", path,
+			(int)(statb.st_uid), (int)(statb.st_gid), DaemonUID, DaemonGID );
 		err = 1;
 		if( Fix ){
 			if( Fix_owner( path ) ) err = 2;
@@ -959,7 +981,7 @@ int Check_spool_dir( char *path )
 	}
 	if( 07777 & (statb.st_mode ^ Spool_dir_perms_DYN) ){
 		WARNMSG( "permissions of '%s' are 0%o, not 0%o", path,
-			(unsigned int)(statb.st_mode & 07777), Spool_dir_perms_DYN );
+			statb.st_mode & 07777, Spool_dir_perms_DYN );
 		err = 1;
 		if( Fix ){
 			if( Fix_perms( path, Spool_dir_perms_DYN ) ) err = 1;
@@ -989,8 +1011,8 @@ void Test_port(int ruid, int euid, char *serial_line )
 	char t2[LINEBUFFER];
 	char stty[LINEBUFFER];
 	char diff[LINEBUFFER];
-	const char *sttycmd;
-	const char *diffcmd;
+	char *sttycmd;
+	char *diffcmd;
 	int ttyfd;
 	static pid_t pid, result;
 	plp_status_t status;
@@ -1065,7 +1087,9 @@ void Test_port(int ruid, int euid, char *serial_line )
 				serial_line );
 			goto test_stty;
 		} else if( fd < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			FPRINTF( STDERR, "Error opening line '%s'\n", Errormsg(err));
+#endif
 			goto test_stty;
 		} else if( !isatty( fd ) ){
 			FPRINTF( STDERR,
@@ -1083,9 +1107,11 @@ void Test_port(int ruid, int euid, char *serial_line )
 				FPRINTF( STDERR, "***** Read with Timeout successful\n" );
 			} else {
 				 if( i < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 					FPRINTF( STDERR,
 					"***** Read with Timeout FAILED!! Error '%s'\n",
 						Errormsg( err ) );
+#endif
 				} else {
 					FPRINTF( STDERR,
 						"***** Read with Timeout FAILED!! read() returned %d\n",
@@ -1124,12 +1150,16 @@ void Test_port(int ruid, int euid, char *serial_line )
 		err = errno;
 		if( Alarm_timed_out || i < 0 ){
 			if( Alarm_timed_out ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 				FPRINTF( STDERR, "LockDevice timed out - %s", Errormsg(err) );
+#endif
 			}
 			FPRINTF( STDERR,
 				"*******************************************************\n" );
+#ifdef ORIGINAL_DEBUG//JY@1020
 				FPRINTF( STDERR, "********* LockDevice failed -  %s\n",
 					Errormsg(err) );
+#endif
 				FPRINTF( STDERR, "********* Try an alternate lock routine\n" );
 			FPRINTF( STDERR,
 				"*******************************************************\n" );
@@ -1141,7 +1171,9 @@ void Test_port(int ruid, int euid, char *serial_line )
 		 * now we fork a child with tries to reopen the file and lock it
 		 */
 		if( (pid = fork()) < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			FPRINTF( STDERR, "fork failed - %s", Errormsg(errno) );
+#endif
 		} else if( pid == 0 ){
 			close(fd);
 			fd = -1;
@@ -1160,8 +1192,10 @@ void Test_port(int ruid, int euid, char *serial_line )
 				FPRINTF( STDERR, "Timeout opening line '%s'\n",
 					serial_line );
 			} else if( fd < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 				FPRINTF( STDERR, "Error opening line '%s' - %s\n",
 				serial_line, Errormsg(err));
+#endif
 			} else if( i > 0 ){
 				FPRINTF( STDERR, "Lock '%s' succeeded! wrong result\n",
 					serial_line);
@@ -1183,8 +1217,10 @@ void Test_port(int ruid, int euid, char *serial_line )
 			while(1){
 				result = plp_waitpid( -1, &status, 0 );
 				err = errno;
+#ifdef ORIGINAL_DEBUG//JY@1020
 				FPRINTF( STDERR, "waitpid result %d, status %d, errno '%s'\n",
 					(int)result, status, Errormsg(err) );
+#endif
 				if( result == pid ){
 					FPRINTF( STDERR, "Daughter exit status %d\n", status );
 					if( status != 0 ){
@@ -1213,11 +1249,13 @@ void Test_port(int ruid, int euid, char *serial_line )
 		FPRINTF( STDERR, "\n\n" );
 		FPRINTF( STDERR, "Checking stty functions, fd %d\n\n", fd );
 		if( (pid = fork()) < 0 ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 			FPRINTF( STDERR, "fork failed - %s", Errormsg(errno) );
+#endif
 		} else if( pid == 0 ){
 			/* default for status */
-			plp_snprintf( t1, sizeof(t1), "/tmp/t1XXX%ld", (long)getpid() );
-			plp_snprintf( t2, sizeof(t2), "/tmp/t2XXX%ld", (long)getpid() );
+			SNPRINTF( t1, sizeof(t1)) "/tmp/t1XXX%d", getpid() );
+			SNPRINTF( t2, sizeof(t2)) "/tmp/t2XXX%d", getpid() );
 			diffcmd = "diff -c %s %s 1>&2";
 			ttyfd = 1;	/*STDOUT is reported */
 			sttycmd = "stty -a 2>%s";	/* on STDERR */
@@ -1239,24 +1277,27 @@ void Test_port(int ruid, int euid, char *serial_line )
 			if( fd != ttyfd ){
 				i = dup2(fd, ttyfd );
 				if( i != ttyfd ){
+#ifdef ORIGINAL_DEBUG//JY@1020
 					FPRINTF( STDERR, "dup2() failed - %s\n", Errormsg(errno) );
+#endif
 					exit(-1);
 				}
 				close( fd );
 			}
-			plp_snprintf( stty, sizeof(stty), sttycmd, t1 );
-			plp_snprintf( diff, sizeof(diff), diffcmd, t1, t2 );
-			plp_snprintf( cmd, sizeof(cmd), "%s; cat %s 1>&2", stty, t1 );
+			SNPRINTF( stty, sizeof(stty)) sttycmd, t1 );
+			SNPRINTF( diff, sizeof(diff)) diffcmd, t1, t2 );
+			SNPRINTF( cmd, sizeof(cmd)) "%s; cat %s 1>&2", stty, t1 );
 			FPRINTF( STDERR,
 			"Status before stty, using '%s', on fd %d->%d\n",
 				cmd, fd, ttyfd );
 			i = system( cmd );
 			FPRINTF( STDERR, "\n\n" );
+#ifdef ORIGINAL_DEBUG//JY@1020
 			Stty_command_DYN = "9600 -even odd echo";
 			FPRINTF( STDERR, "Trying 'stty %s'\n", Stty_command_DYN );
 			Do_stty( ttyfd );
-			plp_snprintf( stty, sizeof(stty), sttycmd, t2 );
-			plp_snprintf( cmd, sizeof(cmd),
+			SNPRINTF( stty, sizeof(stty)) sttycmd, t2 );
+			SNPRINTF( cmd, sizeof(cmd))
 				"%s; %s", stty, diff );
 			FPRINTF( STDERR, "Doing '%s'\n", cmd );
 			i = system( cmd );
@@ -1270,7 +1311,8 @@ void Test_port(int ruid, int euid, char *serial_line )
 			Stty_command_DYN = "300 -even -odd -echo cbreak";
 			FPRINTF( STDERR, "Trying 'stty %s'\n", Stty_command_DYN );
 			Do_stty( ttyfd );
-			plp_snprintf( stty, sizeof(stty), sttycmd, serial_line, t2 );
+			SNPRINTF( stty, sizeof(stty)) sttycmd, serial_line, t2 );
+#endif
 			FPRINTF( STDERR, "Doing '%s'\n", cmd );
 			i = system( cmd );
 			FPRINTF( STDERR, "\n\n" );
@@ -1313,13 +1355,15 @@ void Test_port(int ruid, int euid, char *serial_line )
 	/*
 	 * check out Lockf
 	 */
-	plp_snprintf( line, sizeof(line), "/tmp/XX%ldXX", (long)getpid() );
+	SNPRINTF( line, sizeof(line)) "/tmp/XX%dXX", getpid() );
 	FPRINTF( STDERR, "Checking Lockf '%s'\n", line );
 	if( (fd = Checkwrite(line, &statb, O_RDWR, 1, 0 )) < 0) {
 		err = errno;
+#ifdef ORIGINAL_DEBUG//JY@1020
 		FPRINTF( STDERR,
 			"open '%s' failed: wrong result - '%s'\n",
 			line, Errormsg(errno)  );
+#endif
 		exit(1);
 	}
 	if( Do_lock( fd, 0 ) < 0 ) {
@@ -1327,7 +1371,7 @@ void Test_port(int ruid, int euid, char *serial_line )
 			"Mother could not lock '%s', in correct result\n", line );
 		exit(0);
 	}
-	plp_snprintf( cmd, sizeof(cmd), "ls -l %s", line );
+	SNPRINTF( cmd, sizeof(cmd)) "ls -l %s", line );
 	i = system( cmd );
 	if( (pid = fork()) < 0 ){
 		FPRINTF( STDERR, "fork failed!\n");
@@ -1336,9 +1380,11 @@ void Test_port(int ruid, int euid, char *serial_line )
 		close( fd );
 		if( (fd = Checkwrite(line, &statb, O_RDWR, 1, 0 )) < 0) {
 			err = errno;
+#ifdef ORIGINAL_DEBUG//JY@1020
 			FPRINTF( STDERR,
 				"Daughter re-open '%s' failed: wrong result - '%s'\n",
 				line, Errormsg(errno)  );
+#endif
 			exit(1);
 		}
 		if( Do_lock( fd, 0 ) < 0 ) {
@@ -1378,9 +1424,11 @@ void Test_port(int ruid, int euid, char *serial_line )
 		close( fd );
 		if( (fd = Checkwrite(line, &statb, O_RDWR, 1, 0 )) < 0) {
 			err = errno;
+#ifdef ORIGINAL_DEBUG//JY@1020
 			FPRINTF( STDERR,
 				"Daughter re-open '%s' failed: wrong result - '%s'\n",
 				line, Errormsg(errno)  );
+#endif
 			exit(1);
 		}
 		FPRINTF( STDERR, "Daughter blocking for lock\n" );
@@ -1436,7 +1484,7 @@ void Test_port(int ruid, int euid, char *serial_line )
 	if( (tf = popen( "ps | grep XXYYZZ | grep -v grep", "r" )) ){
 		Max_open( fileno(tf) );
 		while( fgets( line, sizeof(line), tf ) ){
-			FPRINTF( STDOUT, "%s", line );
+			FPRINTF( STDOUT, line );
 			++i;
 		}
 		fclose(tf);
@@ -1445,7 +1493,7 @@ void Test_port(int ruid, int euid, char *serial_line )
 	if( i == 0 && (tf = popen( "ps | grep XXYYZZ | grep -v grep", "r" )) ){
 		Max_open( fileno(tf) );
 		while( fgets( line, sizeof(line), tf ) ){
-			FPRINTF( STDOUT, "%s", line );
+			FPRINTF( STDOUT, line );
 			++i;
 		}
 		fclose(tf);
@@ -1502,7 +1550,7 @@ int Check_path_list( char *plist, int allow_missing )
 				}
 			} else {
 				close(fd);
-				if(Verbose)MESSAGE("  found '%s', mod 0%o", path, (unsigned int)statb.st_mode );
+				if(Verbose)MESSAGE("  found '%s', mod 0%o", path, statb.st_mode );
 				++found_pc;
 				if( (statb.st_mode & 0444) != 0444 ){
 					WARNMSG(" '%s' is not world readable", path );

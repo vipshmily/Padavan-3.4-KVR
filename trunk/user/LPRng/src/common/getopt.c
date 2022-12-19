@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -7,16 +23,26 @@
  *
  ***************************************************************************/
 
+ static char *const _id =
+"$Id: getopt.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+
+
 #include "lp.h"
-#include "getopt.h"
 /**** ENDINCLUDE ****/
 
 
+# if 0
+   --------- now in lp.h ---------
+ int Optind;                 /* next argv to process */
+ int Opterr = 1;                 /* Zero disables errors msgs */
+ char *Optarg;               /* Pointer to option argument */
+ char *Name;					/* Name of program */
+#endif
  static char *next_opt;			    /* pointer to next option char */
  static char **Argv_p;
  static int Argc_p;
 
-int Getopt (int argc, char *argv[], const char *optstring)
+int Getopt (int argc, char *argv[], char *optstring)
 {
 	int  option;               /* current option found */
 	char *match;                /* matched option in optstring */
@@ -79,7 +105,7 @@ int Getopt (int argc, char *argv[], const char *optstring)
 	if (option == '-') {
 		if( *next_opt ){
 			if( Opterr ){
-				(void) FPRINTF (STDERR, _("--X option form illegal\n") );
+				(void) FPRINTF (STDERR, "--X option form illegal\n" );
 				return('?');
 			}
 		}
@@ -90,7 +116,7 @@ int Getopt (int argc, char *argv[], const char *optstring)
 	 */
 	if ((match = (char *) safestrchr (optstring, option)) == 0 ){
 		if( Opterr ){
-		    (void) FPRINTF (STDERR, _("%s: Illegal option '%c'\n"), Name, option);
+		    (void) FPRINTF (STDERR, "%s: Illegal option '%c'\n", Name, option);
 		}
 		return( '?' );
 	}
@@ -112,7 +138,7 @@ int Getopt (int argc, char *argv[], const char *optstring)
 		}
 		if( Optarg == 0 && Opterr ) {
 			(void) FPRINTF (STDERR,
-				_("%s: missing argument for '%c'\n"), Name, option);
+				"%s: missing argument for '%c'\n", Name, option);
 			option = '?';
 		}
 		next_opt = 0;

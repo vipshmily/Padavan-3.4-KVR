@@ -1,3 +1,19 @@
+/*
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 /***************************************************************************
  * LPRng - An Extended Print Spooler System
  *
@@ -6,6 +22,10 @@
  * See LICENSE for conditions of use.
  *
  ***************************************************************************/
+
+ static char *const _id =
+"$Id: child.c,v 1.1.1.1 2008/10/15 03:28:26 james26_jang Exp $";
+
 
 #include "lp.h"
 #include "getqueue.h"
@@ -47,13 +67,14 @@ pid_t plp_waitpid (pid_t pid, plp_status_t *statusPtr, int options)
 {
 	int report;
 	memset(statusPtr,0,sizeof(statusPtr[0]));
-	DEBUG2("plp_waitpid: pid %ld, options %d", (long)pid, options );
+	DEBUG2("plp_waitpid: pid %d, options %d", pid, options );
 	report = waitpid(pid, statusPtr, options );
 	DEBUG2("plp_waitpid: returned %d, status %s", report,
 		Decode_status( statusPtr ) );
 	return report;
 }
 
+#ifdef ORIGINAL_DEBUG//JY@1020
 /***************************************************************************
  * Commentary:
  * When we fork a child, then we need to clean it up.
@@ -69,7 +90,7 @@ pid_t plp_waitpid (pid_t pid, plp_status_t *statusPtr, int options)
  * Killchildren( signal ) - kill all children of this process
  ***************************************************************************/
 
-static void Dump_pinfo( const char *title, struct line_list *p ) 
+void Dump_pinfo( char *title, struct line_list *p ) 
 {
 	int i, pid;
 	LOGDEBUG("*** Dump_pinfo %s - count %d ***", title, p->count );
@@ -79,12 +100,15 @@ static void Dump_pinfo( const char *title, struct line_list *p )
 	}
 	LOGDEBUG("*** done ***");
 }
+#endif
 
 int Countpid(void)
 {
 	int i, j, pid;
 
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL4)Dump_pinfo("Countpid - before",&Process_list);
+#endif
 	for( i = j = 0; i < Process_list.count; ++i ){
 		pid = Cast_ptr_to_int(Process_list.list[i]);
 		if( kill(pid, 0) == 0 ){
@@ -93,7 +117,9 @@ int Countpid(void)
 		}
 	}
 	Process_list.count = j;
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL4)Dump_pinfo("Countpid - after", &Process_list);
+#endif
 	return( Process_list.count );
 }
 
@@ -117,7 +143,9 @@ void Killchildren( int sig )
 		}
 	}
 	Process_list.count = j;
+#ifdef ORIGINAL_DEBUG//JY@1020
 	if(DEBUGL2)Dump_pinfo("Killchildren - after",&Process_list);
+#endif
 }
 
 /*
@@ -128,7 +156,7 @@ pid_t dofork( int new_process_group )
 {
 	pid_t pid;
 	int i;
-	const char *s;
+	char *s;
 
 	pid = fork();
 	if( pid == 0 ){
@@ -157,14 +185,14 @@ pid_t dofork( int new_process_group )
 # endif
 #endif
 		if( i < 0 ){
-			logerr_die(LOG_ERR, "dofork: %s failed", s );
+			LOGERR_DIE(LOG_ERR) "dofork: %s failed", s );
 		}
 #ifdef TIOCNOTTY
 		/* BSD: non-zero process group id, so it cannot get control terminal */
 		/* you MUST be able to turn off the control terminal this way */
 		if ((i = open ("/dev/tty", O_RDWR, 0600 )) >= 0) {
 			if( ioctl (i, TIOCNOTTY, (void *)0 ) < 0 ){
-				logerr_die(LOG_ERR, "dofork: TIOCNOTTY failed" );
+				LOGERR_DIE(LOG_ERR) "dofork: TIOCNOTTY failed" );
 			}
 			(void)close(i);
 		}
@@ -238,14 +266,12 @@ void Max_open( int fd )
 	if( fd > 0 ){
 #if 0
 		if( fd > Max_fd+10 ){
-			fatal(LOG_ERR, "Max_open: fd %d and old Max_fd %d", fd, Max_fd);
+			FATAL(LOG_ERR) "Max_open: fd %d and old Max_fd %d", fd, Max_fd);
 		}
 #endif
 		if( fd > Max_fd ) Max_fd = fd;
 	}
 }
-
-static void Dump_unfreed_mem(const char *title);
 
 plp_signal_t cleanup (int passed_signal)
 {
@@ -270,8 +296,8 @@ plp_signal_t cleanup (int passed_signal)
 	/* first we try to close all the output ports */
 	for( i = 3; i < Max_fd; ++i ){
 #ifdef DMALLOC
-		extern int dmalloc_outfile_fd;
-		if( i == dmalloc_outfile_fd ) continue;
+		extern int _dmalloc_outfile_fd;
+		if( i == _dmalloc_outfile_fd ) continue;
 #endif
 		close(i);
 	}
@@ -304,24 +330,24 @@ plp_signal_t cleanup (int passed_signal)
 	exit(Errorcode);
 }
 
-static void Dump_unfreed_mem(const char *title)
+void Dump_unfreed_mem(char *title)
 {
 	char buffer[SMALLBUFFER];
 	buffer[0] = 0;
-	plp_snprintf(buffer,sizeof(buffer), "*** Dump_unfreed_mem: %s, pid %ld\n",
-		title, (long)getpid() );
+	SNPRINTF(buffer,sizeof(buffer))"*** Dump_unfreed_mem: %s, pid %d\n",
+		title, getpid() );
 #if defined(DMALLOC)
 	{
-	extern int dmalloc_outfile_fd;
-	extern char *dmalloc_logpath;
+	extern int _dmalloc_outfile_fd;
+	extern char *_dmalloc_logpath;
 
-	if( dmalloc_logpath && dmalloc_outfile_fd < 0 ){
-		dmalloc_outfile_fd = open( dmalloc_logpath,  O_WRONLY | O_CREAT | O_TRUNC, 0666);
-		Max_open( dmalloc_outfile_fd );
+	if( _dmalloc_logpath && _dmalloc_outfile_fd < 0 ){
+		_dmalloc_outfile_fd = open( _dmalloc_logpath,  O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		Max_open( _dmalloc_outfile_fd );
 	}
-	plp_snprintf(buffer,sizeof(buffer), "*** Dump_unfreed_mem: %s, pid %ld\n",
-		title, (long)getpid() );
-	Write_fd_str(dmalloc_outfile_fd, buffer );
+	SNPRINTF(buffer,sizeof(buffer))"*** Dump_unfreed_mem: %s, pid %d\n",
+		title, getpid() );
+	Write_fd_str(_dmalloc_outfile_fd, buffer );
 	if(Outbuf) free(Outbuf); Outbuf = 0;
 	if(Inbuf) free(Inbuf); Inbuf = 0;
 	Clear_tempfile_list();
@@ -335,7 +361,7 @@ static void Dump_unfreed_mem(const char *title)
     Clear_var_list( Pc_var_list, 0 );
     Clear_var_list( DYN_var_list, 0 );
 	dmalloc_log_unfreed();
-	Write_fd_str(dmalloc_outfile_fd, "***\n" );
+	Write_fd_str(_dmalloc_outfile_fd, "***\n" );
 	exit(Errorcode);
 	}
 #endif
