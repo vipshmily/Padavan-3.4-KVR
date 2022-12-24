@@ -6,14 +6,14 @@ IPT_VERSION:=iptables-1.8.7
 
 # disable support IPv6 yet, because no profit w/o IGDv2
 # e.g. Windows not supported IGDv2 and UPnP not worked
-ENABLE_IPV6:=1
+ENABLE_IPV6:=0
 
 IPTABLESPATH=$(ROOTDIR)/user/iptables/$(IPT_VERSION)
 
 #all: download_test extract_test
 all:
 	cd $(SRC_NAME) && ./configure
-	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
+	$(MAKE) -f Makefile.linux -j$(HOST_NCPU) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
@@ -27,7 +27,7 @@ extract_test:
 	fi )
 
 clean:
-	$(MAKE) -C $(SRC_NAME) clean
+	$(MAKE) -f Makefile.linux -C $(SRC_NAME) clean
 	rm -f miniupnpd
 
 romfs:
