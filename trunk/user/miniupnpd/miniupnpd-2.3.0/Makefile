@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.110 2021/11/09 17:56:29 nanard Exp $
+# $Id: Makefile.linux,v 1.110 2021/11/09 17:56:29 nanard Exp $
 # MiniUPnP project
 # (c) 2006-2021 Thomas Bernard
 # http://miniupnp.free.fr/ or https://miniupnp.tuxfamily.org/
