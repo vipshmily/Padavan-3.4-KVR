@@ -1175,7 +1175,6 @@ GetListOfPortMappings(struct upnphttp * h, const char * action, const char * ns)
 	}
 /*
 build the PortMappingList xml document :
-
 <p:PortMappingList xmlns:p="urn:schemas-upnp-org:gw:WANIPConnection"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="urn:schemas-upnp-org:gw:WANIPConnection
@@ -1391,7 +1390,6 @@ ForceTermination(struct upnphttp * h, const char * action, const char * ns)
 If a control point calls QueryStateVariable on a state variable that is not
 buffered in memory within (or otherwise available from) the service,
 the service must return a SOAP fault with an errorCode of 404 Invalid Var.
-
 QueryStateVariable remains useful as a limited test tool but may not be
 part of some future versions of UPnP.
 */
@@ -2397,4 +2395,3 @@ SoapError(struct upnphttp * h, int errCode, const char * errDesc)
 	BuildResp2_upnphttp(h, 500, "Internal Server Error", body, bodylen);
 	SendRespAndClose_upnphttp(h);
 }
-

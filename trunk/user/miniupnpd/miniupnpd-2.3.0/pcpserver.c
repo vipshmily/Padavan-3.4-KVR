@@ -1,4 +1,4 @@
-/* $Id: pcpserver.c,v 1.56 2022/10/16 06:03:56 nanard Exp $ */
+/* $Id: pcpserver.c,v 1.57 2022/10/21 19:44:59 nanard Exp $ */
 /* vim: tabstop=4 shiftwidth=4 noexpandtab
  * MiniUPnP project
  * Website : http://miniupnp.free.fr/ or https://miniupnp.tuxfamily.org/
@@ -934,7 +934,7 @@ static int CreatePCPMap_NAT(pcp_info_t *pcp_msg_info)
 		     (!check_upnp_rule_against_permissions(upnppermlist,
 							   num_upnpperm, pcp_msg_info->ext_port,
 							   ((struct in_addr*)pcp_msg_info->mapped_ip->s6_addr)[3],
-							   pcp_msg_info->int_port)))) {
+							   pcp_msg_info->int_port, pcp_msg_info->desc)))) {
 			if (pcp_msg_info->pfailure_present) {
 				return PCP_ERR_CANNOT_PROVIDE_EXTERNAL;
 			}

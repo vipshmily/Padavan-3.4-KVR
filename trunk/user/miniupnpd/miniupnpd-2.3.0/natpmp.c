@@ -1,4 +1,4 @@
-/* $Id: natpmp.c,v 1.58 2022/10/16 06:03:56 nanard Exp $ */
+/* $Id: natpmp.c,v 1.59 2022/10/21 19:44:59 nanard Exp $ */
 /* MiniUPnP project
  * (c) 2007-2022 Thomas Bernard
  * http://miniupnp.free.fr/ or https://miniupnp.tuxfamily.org/
@@ -350,7 +350,7 @@ void ProcessIncomingNATPMPPacket(int s, unsigned char *msg_buff, int len,
 						}
 						break;
 					}
-					if(!check_upnp_rule_against_permissions(upnppermlist, num_upnpperm, eport, senderaddr->sin_addr, iport)) {
+					if(!check_upnp_rule_against_permissions(upnppermlist, num_upnpperm, eport, senderaddr->sin_addr, iport, "NAT-PMP")) {
 						eport++;
 						if(eport == 0) eport++; /* skip port zero */
 						continue;

@@ -1,10 +1,10 @@
-/* $Id: nftnlrdr_misc.c,v 1.17 2022/10/16 05:46:35 nanard Exp $ */
+/* $Id: nftnlrdr_misc.c,v 1.18 2023/01/19 23:15:03 nanard Exp $ */
 /* vim: tabstop=4 shiftwidth=4 noexpandtab
  * MiniUPnP project
  * http://miniupnp.free.fr/ or https://miniupnp.tuxfamily.org/
  * (c) 2015 Tomofumi Hayashi
  * (c) 2019 Paul Chambers
- * (c) 2019-2021 Thomas Bernard
+ * (c) 2019-2023 Thomas Bernard
  *
  * This software is subject to the conditions detailed
  * in the LICENCE file provided within the distribution.
@@ -291,6 +291,7 @@ parse_rule_nat(struct nftnl_expr *e, rule_t *r)
 	reg_val_ptr = get_reg_val_ptr(r, proto_min_reg);
 	if (reg_val_ptr != NULL) {
 		proto_min_val = htons((uint16_t)*reg_val_ptr);
+		syslog(LOG_DEBUG, "%s: proto_min_reg %u : %08x => %hd", "parse_rule_nat", proto_min_reg, *reg_val_ptr, proto_min_val);
 	} else {
 		syslog(LOG_ERR, "%s: invalid proto_min_reg %u", "parse_rule_nat", proto_min_reg);
 	}
@@ -544,18 +545,16 @@ table_cb(const struct nlmsghdr *nlh, void *data)
 			result = MNL_CB_ERROR;
 		} else {
 			const char *chain;
-			uint32_t len;
 
 			memset(r, 0, sizeof(rule_t));
 
-			chain = (const char *) nftnl_rule_get_data(rule, NFTNL_RULE_CHAIN, &len);
+			chain = nftnl_rule_get_str(rule, NFTNL_RULE_CHAIN);
 			if (strcmp(chain, nft_prerouting_chain) == 0 ||
 				strcmp(chain, nft_postrouting_chain) == 0 ||
 				strcmp(chain, nft_forward_chain) == 0) {
-				r->table = strdup((const char *) nftnl_rule_get_data(rule, NFTNL_RULE_TABLE, &len));
+				r->table = strdup(nftnl_rule_get_str(rule, NFTNL_RULE_TABLE));
 				r->chain = strdup(chain);
-				r->family = *(uint32_t *) nftnl_rule_get_data(rule, NFTNL_RULE_FAMILY,
-																  &len);
+				r->family = nftnl_rule_get_u32(rule, NFTNL_RULE_FAMILY);
 				if (nftnl_rule_is_set(rule, NFTNL_RULE_USERDATA)) {
 					const char *descr;
 					descr = (const char *) nftnl_rule_get_data(rule, NFTNL_RULE_USERDATA,
@@ -571,9 +570,7 @@ table_cb(const struct nlmsghdr *nlh, void *data)
 					}
 				}
 
-				r->handle = *(uint32_t *) nftnl_rule_get_data(rule,
-															  NFTNL_RULE_HANDLE,
-															  &len);
+				r->handle = nftnl_rule_get_u64(rule, NFTNL_RULE_HANDLE);
 				r->type = CB_DATA(type);
 
 				itr = nftnl_expr_iter_create(rule);
