@@ -1,5 +1,5 @@
-SRC_NAME=jpeg-9d
-SRC_URL=http://www.ijg.org/files/jpegsrc.v9d.tar.gz
+SRC_NAME=jpeg-9e
+SRC_URL=http://www.ijg.org/files/jpegsrc.v9e.tar.gz
 
 all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
@@ -41,4 +41,3 @@ install:
 	$(MAKE) -C $(SRC_NAME) install DESTDIR=""
 
 romfs:
-
