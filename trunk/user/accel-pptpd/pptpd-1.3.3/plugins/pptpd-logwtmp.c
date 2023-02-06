@@ -1,5 +1,5 @@
 /*
- * $Id: pptpd-logwtmp.c,v 1.4 2005/08/03 09:10:59 quozl Exp $
+ * $Id: pptpd-logwtmp.c,v 1.6 2013/02/07 00:37:39 quozl Exp $
  * pptpd-logwtmp.c - pppd plugin to update wtmp for a pptpd user
  *
  * Copyright 2004 James Cameron.
@@ -12,10 +12,9 @@
 #include <unistd.h>
 #include <utmp.h>
 #include <string.h>
-#include "pppd.h"
-#include "config.h"
+#include <pppd/pppd.h>
 
-char pppd_version[] = PPPD_VERSION;
+char pppd_version[] = VERSION;
 
 static char pptpd_original_ip[PATH_MAX+1];
 static bool pptpd_logwtmp_strip_domain = 0;
@@ -29,14 +28,21 @@ static option_t options[] = {
   { NULL }
 };
 
+static char *reduce(char *user)
+{
+  char *sep;
+  if (!pptpd_logwtmp_strip_domain) return user;
+
+  sep = strstr(user, "//"); /* two slash */
+  if (sep != NULL) user = sep + 2;
+  sep = strstr(user, "\\"); /* or one backslash */
+  if (sep != NULL) user = sep + 1;
+  return user;
+}
+
 static void ip_up(void *opaque, int arg)
 {
-  char *user = peer_authname;
-  if (pptpd_logwtmp_strip_domain) {
-    char *sep = strstr(user, "//");
-    if (sep != NULL)
-      user = sep + 2;
-  }
+  char *user = reduce(peer_authname);
   if (debug)
     notice("pptpd-logwtmp.so ip-up %s %s %s", ifname, user, 
 	   pptpd_original_ip);

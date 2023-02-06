@@ -88,16 +88,6 @@ dropping the connection. This is a denial of service protection
 feature.
 
 .TP
-\fB-T\fR|\fB--ptimeout \fImilliseconds
-number of miliseconds to wait for a PPTP "ack" packet after transmitting
-was stoped due to sliding window exceeded. The default is 1000 miliseconds.
-
-.TP
-\fB-k\fR|\fB--keep
-Keep connections after pptpd daemon exit. Default do not keep connections,
-all connections would be terminated on pptpd exit.
-
-.TP
 .BR -w | --logwtmp
 update
 .BR wtmp (5)
@@ -125,6 +115,10 @@ Without this option, which is the default, pptpd manages the list of
 IP addresses for clients and passes the next free address to pppd.
 With this option, pptpd does not pass an address, and so pppd may use
 radius or chap-secrets to allocate an address.
+
+.TP
+\fB-V\fR|\fB--vrf \fIvrf-name
+specifies the VRF to be used for listening in.
 
 .TP
 .BR -v | --version
@@ -202,4 +196,3 @@ SourceForge at
 .BR pppd (8),
 .BR pptpd (8),
 .BR pptpd.conf (5).
-.BR pppd-pptp (8)

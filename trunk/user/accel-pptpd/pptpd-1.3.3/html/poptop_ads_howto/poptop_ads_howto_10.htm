@@ -7,10 +7,10 @@
 </head>
 
 <body>
-<p><strong>14. pptpd and freeradius </strong></p>
+<p><strong>16. pptpd and freeradius </strong></p>
 <p>The section covers the configuration of pptpd + freeradius + AD. If you are looking at the integration via winbind. Go to <a href="poptop_ads_howto_7.htm">this section</a>.</p>
 <hr>
-<a name="radiusd"></a><strong>14.1 Enable freeradius</strong>
+<a name="radiusd"></a><strong>16.1 Enable freeradius</strong>
 <p>To enable radiusd on bootup, use the chkconfig command.</p>
 <blockquote>
   <pre>[root@pptp ~]# chkconfig radiusd on </pre>
@@ -23,12 +23,13 @@ Starting RADIUS server: Sun Sep  4 11:26:24 2005 : Info: Starting - reading conf
 </blockquote>
 <p></p>
 <hr>
-<a name="pptpdradius"></a><strong>14.2 Configure pptpd </strong>
+<a name="pptpdradius"></a><strong>16.2 Configure pptpd </strong>
 <p>There are two configuration files for pptpd. The first one is /etc/pptpd.conf. You can very much keep it as it is except the ip address range for the ppp connections. Edit the file and add two lines at the bottom to specify the local ip address and the ip address pool for the remote connections. </p>
 <blockquote>
   <pre>localip 10.0.0.10<br>remoteip 10.0.0.101-200 </pre>
 </blockquote>
-<p>10.0.0.10 is the ip address of the internal network card eth0. The remoteip is the address pool for the remote connections. </p>
+<p>10.0.0.10 is the ip address of the internal network card eth0. The remoteip is the address pool for the remote connections. If you are running FC6, please refer to <a href="file:///C:/StudioMX/poptop_ads_howto_4.htm#pptpd">Section 8.2</a> for details on the logwtmp option.</p>
+<p>Please note that pptpd by default has a 100 connections limit. You can override it by the "connection" parameter in the pptp.conf file. Read the remarks in the file.</p>
 <p>The second configuration file is /etc/ppp/options.pptpd. I stripped off all remarks from my options.pptpd and it is like this:</p>
 <blockquote>
   <pre>name pptpd
@@ -47,10 +48,6 @@ plugin radius.so
 plugin radattr.so</pre>
 </blockquote>
 <p>There are two plugins we used in here. The first one radius.so is required while the second one radattr.so is optional. Radattr.so basically records the parameters passed from radius to pppd in a file. Check the man page of pppd-radattr for details. </p>
-<p>Then, we need to fix the permission of a winbind directory.</p>
-<blockquote>
-  <pre>[root@pptp ~]# chgrp radiusd /var/cache/samba/winbindd_privileged/</pre>
-</blockquote>
 <p>If you have Windows XP clients, you may want to reduce the MTU size. Add the  line, /sbin/ifconfig $1 mtu 1400, to /etc/ppp/ip-up as shown in the following list.</p>
 <blockquote>
   <pre>[root@pptp ppp]# cat ip-up

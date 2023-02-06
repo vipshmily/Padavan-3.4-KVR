@@ -32,23 +32,12 @@ denial of service protection feature.
 Equivalent to the command line 
 .B --stimeout
 option.
-
 .TP
-.BI "ptimeout " miliseconds
-number of miliseconds to wait for a PPTP "ack" packet after transmitting
-was stoped due to sliding window exceeded. The default is 1000 miliseconds.
-Equivalent to the command line 
-.B --ptimeout
-option.
-
-.TP
-.BI "keep"
-Keep connections after pptpd daemon exit. Default do not keep connections,
-all connections would be terminated on pptpd exit.
-Equivalent to the command line 
-.B --keep
-option.
-
+.BI "logwtmp"
+update
+.BR wtmp (5)
+as users connect and disconnect.  See
+.BR wtmp (1).
 .TP
 .B debug
 turns on debugging mode, sending debugging information to 
@@ -126,6 +115,12 @@ option.
 the local interface IP address to listen on for incoming PPTP
 connections (TCP port 1723). Equivalent to the command line
 .B --listen
+option.
+.TP
+.BI "vrf " vrf-name
+VRF to use for the TCP listening socket as well as the GRE
+packets. Equivalent to the command line
+.B --vrf
 option.
 .TP
 .BI "pidfile " pid-file

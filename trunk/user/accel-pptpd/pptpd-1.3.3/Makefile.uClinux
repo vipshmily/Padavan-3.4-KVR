@@ -36,7 +36,7 @@ clean:
 ## DO NOT ADD BELOW THIS POINT, DEPS ARE AUTOMATICALLY ADDED
 bcrelay.o: bcrelay.c config.embed.h defaults.h our_syslog.h our_getopt.h
 
-compat.o: compat.c config.embed.h compat.h inststr.h
+compat.o: compat.c config.embed.h compat.h our_syslog.h inststr.h
 
 configfile.o: configfile.c config.embed.h defaults.h configfile.h \
  our_syslog.h
@@ -50,12 +50,19 @@ getopt1.o: getopt1.c config.embed.h our_getopt.h
 
 inststr.o: inststr.c config.embed.h inststr.h compat.h
 
+ppphdlc.o: ppphdlc.c config.embed.h ppphdlc.h
+
 pptpctrl.o: pptpctrl.c config.embed.h our_syslog.h compat.h pptpctrl.h \
- pptpdefs.h ctrlpacket.h defaults.h
+ pptpgre.h pptpdefs.h ctrlpacket.h defaults.h
 
 pptpd.o: pptpd.c config.embed.h our_syslog.h our_getopt.h configfile.h \
  defaults.h compat.h pptpmanager.h
 
+pptpgre.o: pptpgre.c config.embed.h our_syslog.h ppphdlc.h pptpgre.h \
+ pptpdefs.h pptpctrl.h defaults.h pqueue.h compat.h
+
 pptpmanager.o: pptpmanager.c config.embed.h our_syslog.h configfile.h \
  defaults.h pptpctrl.h pptpdefs.h pptpmanager.h compat.h
+
+pqueue.o: pqueue.c config.embed.h pqueue.h
 

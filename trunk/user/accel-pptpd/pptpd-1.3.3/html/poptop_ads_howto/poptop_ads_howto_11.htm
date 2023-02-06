@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<p><strong>15. pptp Client Installation</strong></p>
+<p><strong>17. pptp Client Installation</strong></p>
 <p>I will only describe the Windows XP pptp client installation. For other operating system, please see the documents in <a href="http://poptop.sourceforge.net/dox/">here</a>. </p>
 <ul>
   <li>Start -> Settings -> Control Panels -> Network Connections.</li>
@@ -27,7 +27,7 @@
 </ul>
 <p>That's all for a standard configuration. All traffic from the PC will pipe through the pptp tunnel except those for the local attached network segment. This is the recommended way of implementing VPN for security reasons.</p>
 <hr>
-<strong><a name="splittunnel"></a>15.1 Split Tunneling</strong>
+<strong><a name="splittunnel"></a>17.1 Split Tunneling</strong>
 <p>Split Tunneling allows you to configure the network so that only selected traffic is directed to the VPN tunnel. For instance,   you want browsing  traffic to go to the Internet directly but corporate traffic goes via the VPN, then you will need split tunneling. It is also important if your ISP requires a heatbeat from your machine to keep the connection alive. </p>
 <p>While split tunneling provides convenience, it causes  security problems because <span name="intelliTxt" id="intelliTxt">it essentially renders the VPN vulnerable to attack as it is accessible through the public, non-secure network. Check your company security policy before inplementing split tunneling. </span></p>
 <p>To set up split tunneling:</p>
