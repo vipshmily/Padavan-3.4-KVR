@@ -153,6 +153,7 @@ static int set_option_auo(char *filename, int line, OPTION *option, char *p)
 			*iptr = AUTH_RADIUS_FST;
 	else {
 		error("%s: auth_order: unknown keyword: %s", filename, p);
+		free(iptr);
 		return (-1);
 	}
 
@@ -165,6 +166,7 @@ static int set_option_auo(char *filename, int line, OPTION *option, char *p)
 			*iptr = (*iptr) | AUTH_RADIUS_SND;
 		else {
 			error("%s: auth_order: unknown or unexpected keyword: %s", filename, p);
+			free(iptr);
 			return (-1);
 		}
 	}
@@ -271,8 +273,8 @@ char *rc_conf_str(char *optname)
 	option = find_option(optname, OT_STR);
 
 	if (option == NULL)
-		fatal("rc_conf_str: unkown config option requested: %s", optname);
-		return (char *)option->val;
+		fatal("rc_conf_str: unknown config option requested: %s", optname);
+	return (char *)option->val;
 }
 
 int rc_conf_int(char *optname)
@@ -282,7 +284,7 @@ int rc_conf_int(char *optname)
 	option = find_option(optname, OT_INT|OT_AUO);
 
 	if (option == NULL)
-		fatal("rc_conf_int: unkown config option requested: %s", optname);
+		fatal("rc_conf_int: unknown config option requested: %s", optname);
 	return *((int *)option->val);
 }
 
@@ -293,7 +295,7 @@ SERVER *rc_conf_srv(char *optname)
 	option = find_option(optname, OT_SRV);
 
 	if (option == NULL)
-		fatal("rc_conf_srv: unkown config option requested: %s", optname);
+		fatal("rc_conf_srv: unknown config option requested: %s", optname);
 	return (SERVER *)option->val;
 }
 
@@ -480,26 +482,14 @@ int rc_find_server (char *server_name, UINT4 *ip_addr, char *secret)
 		if ((h = strtok (buffer, " \t\n")) == NULL) /* first hostname */
 			continue;
 
-		memset (hostnm, '\0', AUTH_ID_LEN);
-		len = strlen (h);
-		if (len > AUTH_ID_LEN)
-		{
-			len = AUTH_ID_LEN;
-		}
-		strncpy (hostnm, h, (size_t) len);
-		hostnm[AUTH_ID_LEN] = '\0';
+		memset (hostnm, '\0', AUTH_ID_LEN + 1);
+		strlcpy (hostnm, h, AUTH_ID_LEN + 1);
 
 		if ((s = strtok (NULL, " \t\n")) == NULL) /* and secret field */
 			continue;
 
-		memset (secret, '\0', MAX_SECRET_LENGTH);
-		len = strlen (s);
-		if (len > MAX_SECRET_LENGTH)
-		{
-			len = MAX_SECRET_LENGTH;
-		}
-		strncpy (secret, s, (size_t) len);
-		secret[MAX_SECRET_LENGTH] = '\0';
+		memset (secret, '\0', MAX_SECRET_LENGTH + 1);
+		strlcpy (secret, s, MAX_SECRET_LENGTH + 1);
 
 		if (!strchr (hostnm, '/')) /* If single name form */
 		{

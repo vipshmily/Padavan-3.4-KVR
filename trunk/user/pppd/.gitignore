@@ -4,3 +4,4 @@
 *.so
 *.a
 *.cat8
+Makefile
