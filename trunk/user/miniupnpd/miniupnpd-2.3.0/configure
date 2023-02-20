@@ -158,6 +158,7 @@ if [ -z "$OS_VERSION" ] || [ -z "$OS_MACHINE" ] ; then
 	exit 1
 fi
 fi
+
 # N56U special case
 OS_NAME=RT-N56U
 
@@ -349,7 +350,7 @@ case $OS_NAME in
 		fi
 		echo "#define USE_IFACEWATCHER 1" >> ${CONFIGFILE}
 		# PFRULE_INOUT_COUNTS should be set for DragonFly > 2.8
-		# version detection is not yet added to this script.
+		# version detection is not yet added to this script.
 		echo "#define PFRULE_INOUT_COUNTS" >> ${CONFIGFILE}
 		# net.inet6.ip6.v6only has been on by default for many years
 		# and this sysctl node has been removed
@@ -691,6 +692,14 @@ else
 fi
 echo "" >> ${CONFIGFILE}
 
+echo "/* Uncomment the following line to enable description regex filter */" >> ${CONFIGFILE}
+if [ -n "$REGEX" ]; then
+	echo "#define ENABLE_REGEX" >> ${CONFIGFILE}
+else
+	echo "/*#define ENABLE_REGEX*/" >> ${CONFIGFILE}
+fi
+echo "" >> ${CONFIGFILE}
+
 echo "/* Define one or none of the two following macros in order to make some" >> ${CONFIGFILE}
 echo " * clients happy. It will change the XML Root Description of the IGD." >> ${CONFIGFILE}
 echo " * Enabling the Layer3Forwarding Service seems to be the more compatible" >> ${CONFIGFILE}
@@ -814,20 +823,24 @@ cat >> ${CONFIGFILE} <<EOF
 #if defined(ENABLE_6FC_SERVICE) || (defined(ENABLE_PCP) && defined(ENABLE_IPV6))
 #define ENABLE_UPNPPINHOLE
 #endif
+
 EOF
 
 cat >> ${CONFIGFILE} <<EOF
 /* Uncomment the following line if your device does not have a proper clock
  * BOOTID.UPNP.ORG can be set with command line */
 #define USE_TIME_AS_BOOTID
+
 EOF
 
 cat >> ${CONFIGFILE} <<EOF
 /* With the following macro defined, a random string is prepended to all URLs */
 /*#define RANDOMIZE_URLS*/
+
 /* maximum length of SSDP packets we are generating
  * (reception is done in a 1500byte buffer) */
 #define SSDP_PACKET_MAX_LEN 1024
+
 EOF
 
 echo "/* disable forking to the background and writing the pid file */" >> ${CONFIGFILE}

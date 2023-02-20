@@ -77,7 +77,7 @@ getifstats(const char * ifname, struct ifdata * data)
 	char * p;
 	int i;
 	int r = -1;
-	#if 0
+#if 0
 	char fname[64];
 #endif
 #ifdef ENABLE_GETIFSTATS_CACHING

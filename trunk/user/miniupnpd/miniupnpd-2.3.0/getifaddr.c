@@ -147,7 +147,7 @@ err:
 		if(mask) *mask = ((struct sockaddr_in *)candidate->ifa_netmask)->sin_addr;
 	}
 	freeifaddrs(ifap);
-return 0;
+    return 0;
 #endif
 }
 
@@ -209,7 +209,7 @@ int getifaddr_in6(const char * ifname, int af, struct in6_addr * addr)
 	}
 	freeifaddrs(ifap);
 	return (found ? 0 : -1);
-#else /* defined(ENABLE_IPV6) || defined(USE_GETIFADDRS) */
+#else /* defined(ENABLE_IPV6) || defined(USE_GETIFADDRS) */
 	/* IPv4 only */
 	struct in_addr addr4;
 	if(af != AF_INET)

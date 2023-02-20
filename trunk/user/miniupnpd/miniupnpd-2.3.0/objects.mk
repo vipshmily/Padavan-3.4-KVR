@@ -6,7 +6,7 @@ BASEOBJS = miniupnpd.o upnphttp.o upnpdescgen.o upnpsoap.o \
            upnpstun.o upnppinhole.o pcplearndscp.o asyncsendto.o
 
 # sources in linux/ directory
-LNXOBJS = getifstats.o ifacewatcher.o getroute.o
+LNXOBJS = linux/getifstats.o linux/ifacewatcher.o
 ifeq ($(ENABLE_IPV6),1)
 LNXOBJS += linux/getroute.o
 endif

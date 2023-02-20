@@ -202,7 +202,7 @@ OpenAndConfSSDPReceiveSocket(int ipv6)
 	{
 		syslog(LOG_WARNING, "setsockopt(udp, SO_REUSEPORT): %m");
 	}
-*/
+	*/
 #ifdef IP_RECVIF
 	/* BSD */
 	if(!ipv6) {
@@ -475,6 +475,7 @@ LOCATION: http://192.168.0.1:49152/gatedesc.xml
 SERVER: Linux/2.4.17, UPnP/1.0, Intel SDK for UPnP devices /1.2
 ST: upnp:rootdevice
 USN: uuid:75802409-bccb-40e7-8e6c-fa095ecce13e::upnp:rootdevice
+
  * response from a Linksys 802.11b :
 HTTP/1.1 200 OK
 Cache-Control:max-age=120
