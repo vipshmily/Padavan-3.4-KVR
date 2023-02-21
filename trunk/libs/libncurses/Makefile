@@ -1,5 +1,5 @@
-SRC_NAME=ncurses-6.2
-SRC_URL=https://github.com/mirror/ncurses/archive/v6.2.zip
+SRC_NAME=ncurses-6.4
+SRC_URL=https://github.com/mirror/ncurses/archive/v6.4.zip
 
 all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
@@ -12,7 +12,7 @@ download_test:
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
 		unzip -qq $(SRC_NAME).zip ; \
-		patch -p1 -d $(SRC_NAME) < $(SRC_NAME).patch ; \
+	#	patch -p1 -d $(SRC_NAME) < $(SRC_NAME).patch ; \
 	fi )
 
 config_test:
