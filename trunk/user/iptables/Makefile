@@ -1,4 +1,4 @@
-SRC_NAME=iptables-1.8.7
+SRC_NAME=iptables-1.8.9
 
 CFLAGS  += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
@@ -10,7 +10,7 @@ all: extract_test config_test
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xvf $(SRC_NAME).tar.bz2 ; \
+		tar xf $(SRC_NAME).tar.xz ; \
 	fi )
 
 config_test:
