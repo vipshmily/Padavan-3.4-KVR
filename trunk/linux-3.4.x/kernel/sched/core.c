@@ -1435,6 +1435,8 @@ static void
 ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
 {
 #ifdef CONFIG_SMP
+	 /* Pairs with smp_wmb in __schedule() */
+	smp_rmb();
 	if (p->sched_contributes_to_load)
 		rq->nr_uninterruptible--;
 #endif

@@ -14,6 +14,11 @@ obj-y     = fork.o exec_domain.o panic.o printk.o \
 
 ifdef CONFIG_FUNCTION_TRACER
 # Do not trace debug files and internal ftrace files
+CFLAGS_REMOVE_lockdep.o = $(CC_FLAGS_FTRACE)
+CFLAGS_REMOVE_lockdep_proc.o = $(CC_FLAGS_FTRACE)
+CFLAGS_REMOVE_mutex-debug.o = $(CC_FLAGS_FTRACE)
+CFLAGS_REMOVE_rtmutex-debug.o = $(CC_FLAGS_FTRACE)
+
 CFLAGS_REMOVE_lockdep.o = -pg
 CFLAGS_REMOVE_lockdep_proc.o = -pg
 CFLAGS_REMOVE_mutex-debug.o = -pg
