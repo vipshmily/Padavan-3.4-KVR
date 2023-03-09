@@ -1,6 +1,6 @@
 --- a/osdep/Binder.hpp
 +++ b/osdep/Binder.hpp
-@@ -440,9 +440,9 @@ class Binder {
+@@ -444,9 +444,9 @@
  					}
  #endif	 // __LINUX__
  					if (_bindingCount < ZT_BINDER_MAX_BINDINGS) {
@@ -10,6 +10,6 @@
 +						_bindings[(unsigned int)_bindingCount].udpSock = udps;
 +						_bindings[(unsigned int)_bindingCount].tcpListenSock = tcps;
 +						_bindings[(unsigned int)_bindingCount].address = ii->first;
- 						phy.setIfName(udps, (char*)ii->second.c_str(), (int)ii->second.length());
+ 						memcpy(_bindings[_bindingCount].ifname, (char*)ii->second.c_str(), (int)ii->second.length());
  						++_bindingCount;
  					}
