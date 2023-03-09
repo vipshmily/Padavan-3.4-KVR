@@ -1,4 +1,4 @@
-SRC_NAME1=squashfs-4.3
+SRC_NAME1=squashfs-4.5.1
 SRC_NAME2=xz-5.2.4
 
 all: config_xz build_xz build_squashfs
@@ -14,6 +14,7 @@ configure_xz:
 	( cd $(SRC_NAME2) ; \
 	./autogen.sh ; \
 	./configure \
+		--disable-doc \
 		--disable-shared \
 		--disable-werror \
 		--disable-xz \
