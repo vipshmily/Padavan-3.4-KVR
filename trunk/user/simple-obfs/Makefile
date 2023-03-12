@@ -6,6 +6,7 @@ all: extract_test config_test
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
+	        tar -xf $(SRC_NAME).tar.xz; \
 		git clone https://github.com/shadowsocks/simple-obfs.git ; \
 		cd $(SRC_NAME) ; \
 		git submodule update --init --recursive ; \

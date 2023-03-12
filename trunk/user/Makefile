@@ -154,8 +154,8 @@ ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
 dir_$(CONFIG_FIRMWARE_INCLUDE_V2RAY)			+= v2ray
 dir_$(CONFIG_FIRMWARE_INCLUDE_XRAY)			+= xray
 dir_$(CONFIG_FIRMWARE_INCLUDE_TROJAN)			+= trojan
-endif
 dir_$(CONFIG_FIRMWARE_INCLUDE_SSOBFS)			+= simple-obfs
+endif
 dir_$(CONFIG_FIRMWARE_INCLUDE_ZEROTIER)			+= zerotier
 dir_$(CONFIG_FIRMWARE_INCLUDE_WYY)			+= unblockmusic
 dir_$(OPENSSH_ENABLED)					+= openssh
