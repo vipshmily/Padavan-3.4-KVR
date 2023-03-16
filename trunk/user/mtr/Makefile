@@ -1,9 +1,14 @@
 #https://github.com/traviscross/mtr
-SRC_NAME = mtr-0.94
+SRC_NAME = mtr-0.95
 THISDIR = $(shell pwd)
 
-all: config_test
+all: extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+
+extract_test:
+	( if [ ! -d $(SRC_NAME) ]; then \
+		tar -xzf $(SRC_NAME).tar.gz; \
+	fi )
 
 config_test:
 	( if [ -f ./config_done ]; then \
