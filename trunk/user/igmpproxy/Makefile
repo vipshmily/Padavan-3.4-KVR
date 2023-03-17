@@ -1,7 +1,10 @@
 SRC_NAME=igmpproxy-0.3
 
+CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
+LDFLAGS += -Wl,--gc-sections
+
 all: config_test
-	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 config_test:
 	( if [ -f ./config_done ]; then \
