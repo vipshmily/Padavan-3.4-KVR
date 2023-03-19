@@ -1,5 +1,5 @@
-SRC_NAME=ntfs-3g_ntfsprogs-2022.5.17
-SRC_URL=https://tuxera.com/opensource/$(SRC_NAME).tgz
+SRC_NAME=ntfs-3g-2022.10.3
+SRC_URL=https://tuxera.com/opensource/$(SRC_NAME).tar.gz
 
 CFLAGS += -O2 -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
@@ -8,13 +8,13 @@ all: download_test extract_test config_test
 	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 download_test:
-	( if [ ! -f $(SRC_NAME).tgz ]; then \
-		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tgz $(SRC_URL); \
+	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.gz $(SRC_URL); \
 	fi )
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar zxf $(SRC_NAME).tgz; \
+		tar zxf $(SRC_NAME).tar.gz; \
 	fi )
 
 config_test:
