@@ -1,4 +1,4 @@
-SRC_NAME = ZeroTierOne-1.10.2
+SRC_NAME = ZeroTierOne-1.10.6
 THISDIR = $(shell pwd)
 FLAGS := DEFS=""
 CFLAGS := -Os -ffunction-sections -fdata-sections
@@ -9,7 +9,7 @@ all: extract_test
 
 extract_test:
 	 if [ ! -d $(SRC_NAME) ] ; then \
-		tar xf $(SRC_NAME).tar.gz ; \
+		tar xf $(SRC_NAME).tar.xz ; \
 		patch -d $(SRC_NAME) -p1 -i ../0001-fix-makefile.patch ; \
 		patch -d $(SRC_NAME) -p1 -i ../0002-fix-compilation-for-arm_cortex-a7-neon.patch ; \
 		patch -d $(SRC_NAME) -p1 -i ../0006-gcc10.patch ; \
