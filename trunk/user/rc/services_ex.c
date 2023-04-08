@@ -344,7 +344,8 @@ start_dns_dhcpd(int is_ap_mode)
 		is_dns_used = 1;
 		fprintf(fp, "min-port=%d\n", 4096);
 		fprintf(fp, "cache-size=%d\n", DNS_RELAY_CACHE_MAX);
-		fprintf(fp, "dns-forward-max=%d\n", DNS_RELAY_QUERIES_MAX);
+		//remove it for overwrite // simonchen - 2023-2-16
+		//fprintf(fp, "dns-forward-max=%d\n", DNS_RELAY_QUERIES_MAX);
 		fprintf(fp, "addn-hosts=%s/hosts\n", storage_dir);
 		fprintf(fp, "servers-file=%s\n", DNS_SERVERS_FILE);
 		fprintf(fp, "dhcp-hostsfile=%s/dhcp.conf\n", storage_dir);

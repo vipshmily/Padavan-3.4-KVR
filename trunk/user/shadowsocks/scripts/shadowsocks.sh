@@ -4,6 +4,7 @@
 # Copyright (C) 2017 yushi studio <ywb94@qq.com>
 # Copyright (C) 2018 lean <coolsnowwolf@gmail.com>
 # Copyright (C) 2019 chongshengB <bkye@vip.qq.com>
+# Copyright (C) 2023 simonchen
 #
 # This is free software, licensed under the GNU General Public License v3.
 # See /LICENSE for more information.
@@ -79,8 +80,6 @@ cgroups_init() {
 		mkdir -p /sys/fs/cgroup/memory/$NAME
 		echo $cpu_limit > /sys/fs/cgroup/cpu/$NAME/cpu.shares
 		echo $mem_limit > /sys/fs/cgroup/memory/$NAME/memory.limit_in_bytes
-		limit_bytes="$(cat /sys/fs/cgroup/memory/$NAME/memory.limit_in_bytes)"
-		[ -n "$limit_bytes" ] && export GOMEMLIMIT="$limit_bytes"
 	fi
 }
 
@@ -92,7 +91,7 @@ cgroups_cleanup() {
 }
 
 gen_config_file() {
-	fastopen="false"
+	#fastopen="false"
 	case "$2" in
 	0) config_file=$CONFIG_FILE && local stype=$(nvram get d_type) ;;
 	1) config_file=$CONFIG_UDP_FILE && local stype=$(nvram get ud_type) ;;
@@ -210,9 +209,9 @@ start_rules() {
 	cat /etc/storage/ss_lan_gmip.sh | grep -v '^!' | grep -v "^$" >$lan_gm_ips
 	dports=$(nvram get s_dports)
 	if [ $dports = "0" ]; then
-		proxyport=" "
+		proxyport="--syn"
 	else
-		proxyport="-m multiport --dports 22,53,587,465,995,993,143,80,443"
+		proxyport="-m multiport --dports 22,53,587,465,995,993,143,80,443,3389 --syn"
 	fi
 	/usr/bin/ss-rules \
 		-s "$server" \
@@ -315,30 +314,86 @@ start_redir_udp() {
 	return 0
 }
 
+stop_dns_proxy() {
+	pgrep dns2tcp | args kill
+	pgrep dnsproxy | args kill	
+}
+
+start_dns_proxy() {
+	pdnsd_enable=$(nvram get pdnsd_enable) # 0: dnsproxy , 1: dns2tcp
+	pdnsd_enable_flag=$pdnsd_enable
+	dnsstr="$(nvram get tunnel_forward)"
+	dnsserver=$(echo "$dnsstr" | awk -F '#' '{print $1}')
+	if [ $pdnsd_enable = 1 ]; then
+	    log "启动 dns2tcp：5353 端口..."
+		# 将dnsserver (上游国外DNS: 比如 8.8.8.8) 放入ipset:gfwlist，强制走SS_SPEC_WAN_FW代理
+		ipset add gfwlist $dnsserver 2>/dev/null
+		dns2tcp -L"127.0.0.1#5353" -R"$dnsserver" >/dev/null 2>&1 &
+	elif [ $pdnsd_enable = 0 ]; then
+		log "启动 dnsproxy：5353 端口..."
+		# 将dnsserver (上游国外DNS: 比如 8.8.8.8) 放入ipset:gfwlist，强制走SS_SPEC_WAN_FW代理
+		ipset add gfwlist $dnsserver 2>/dev/null
+		dnsproxy -d -p 5353 -R $dnsserver >/dev/null 2>&1 &
+	else
+		log "DNS解析方式不支持该选项: $pdnsd_enable , 建议选择dnsproxy"
+	fi
+}
+
 start_dns() {
 	echo "create china hash:net family inet hashsize 1024 maxelem 65536" >/tmp/china.ipset
 	awk '!/^$/&&!/^#/{printf("add china %s'" "'\n",$0)}' /etc/storage/chinadns/chnroute.txt >>/tmp/china.ipset
 	ipset -! flush china
 	ipset -! restore </tmp/china.ipset 2>/dev/null
 	rm -f /tmp/china.ipset
+	start_chinadns() {
+		ss_chdns=$(nvram get ss_chdns)
+		if [ $ss_chdns = 1 ]; then
+			chinadnsng_enable_flag=1
+			local_chnlist_file='/etc/storage/chinadns/chnlist_mini.txt'
+			if [ -f "$local_chnlist_file" ]; then
+			  log "启动chinadns分流，仅国外域名走DNS代理..."
+			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china -M -m $local_chnlist_file >/dev/null 2>&1 &
+			else
+			  log "启动chinadns分流，全部域名走DNS代理...本次不使用本地cdn域名文件$local_chnlist_file, 下次你自已可以创建它，文件中每行表示一个域名（不用要子域名）"
+			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china >/dev/null 2>&1 &
+			fi
+			# adding upstream chinadns-ng 
+			sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+			sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
+			cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+no-resolv
+server=127.0.0.1#65353
+EOF
+		fi
+		# dnsmasq optimization
+		sed -i '/min-cache-ttl/d' /etc/storage/dnsmasq/dnsmasq.conf
+		sed -i '/dns-forward-max/d' /etc/storage/dnsmasq/dnsmasq.conf
+		cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+min-cache-ttl=1800
+dns-forward-max=1000
+EOF
+		# restart dnsmasq
+		killall dnsmasq
+		/user/sbin/dnsmasq >/dev/null 2>&1 &
+	}
 	case "$run_mode" in
 	router)
-		dnsstr="$(nvram get tunnel_forward)"
-		dnsserver=$(echo "$dnsstr" | awk -F '#' '{print $1}')
-		#dnsport=$(echo "$dnsstr" | awk -F '#' '{print $2}')
-		log "启动 dns2tcp：5353 端口..."
-		dns2tcp -L"127.0.0.1#5353" -R"$dnsstr" >/dev/null 2>&1 &
-		pdnsd_enable_flag=0
-		log "开始处理 gfwlist..."
+		ipset add gfwlist $dnsserver 2>/dev/null
+		# 不论chinadns-ng打开与否，都重启dns_proxy 
+		# 原因是针对gfwlist ipset有一个专有的dnsmasq配置表（由ss-rule创建放在/tmp/dnsmasq.dom/gfwlist_list.conf)
+		# 需要查询上游dns_proxy在本地5353端口
+		stop_dns_proxy
+		start_dns_proxy
+		start_chinadns
 	;;
 	gfw)
 		dnsstr="$(nvram get tunnel_forward)"
 		dnsserver=$(echo "$dnsstr" | awk -F '#' '{print $1}')
 		#dnsport=$(echo "$dnsstr" | awk -F '#' '{print $2}')
 		ipset add gfwlist $dnsserver 2>/dev/null
-		log "启动 dns2tcp：5353 端口..."
-		dns2tcp -L"127.0.0.1#5353" -R"$dnsstr" >/dev/null 2>&1 &
-		pdnsd_enable_flag=0
+		stop_dns_proxy
+		start_dns_proxy
+		start_chinadns
 		log "开始处理 gfwlist..."
 		;;
 	oversea)
@@ -514,10 +569,10 @@ ssp_close() {
 
 clear_iptable() {
 	s5_port=$(nvram get socks5_port)
-	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT 2>/dev/null
-	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT 2>/dev/null
-	ip6tables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT 2>/dev/null
-	ip6tables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT 2>/dev/null
+	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
+	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
+	ip6tables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
+	ip6tables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
 }
 
 kill_process() {
@@ -588,6 +643,13 @@ kill_process() {
 		log "关闭 dns2tcp 进程..."
 		killall dns2tcp >/dev/null 2>&1
 		kill -9 "$dns2tcp_process" >/dev/null 2>&1
+	fi
+	
+	dnsproxy_process=$(pidof dnsproxy)
+	if [ -n "$dnsproxy_process" ]; then
+		log "关闭 dnsproxy 进程..."
+		killall dnsproxy >/dev/null 2>&1
+		kill -9 "$dnsproxy_process" >/dev/null 2>&1
 	fi
 	
 	microsocks_process=$(pidof microsocks)

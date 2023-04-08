@@ -114,6 +114,36 @@ if [ -f /usr/bin/htop ]; then
 	echo "color_scheme=6" > /home/root/.config/htop/htoprc
 fi
 
+# clear cache for more memory
+echo 3 > /proc/sys/vm/drop_caches
+
+# optimize kernel / tcp
+# https://developer.aliyun.com/article/661318
+echo 0 > /proc/sys/kernel/sysrq
+echo 65536 > /proc/sys/kernel/msgmnb
+echo 65536 > /proc/sys/kernel/msgmax
+echo 0 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/conf/default/accept_source_route
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+echo "4096 131072 1048576" > /proc/sys/net/ipv4/tcp_wmem
+echo "4096 131072 1048576" > /proc/sys/net/ipv4/tcp_rmem
+echo 16777216 > /proc/sys/net/core/wmem_max
+echo 8388608 > /proc/sys/net/core/wmem_default
+echo 8388608 > /proc/sys/net/core/rmem_default
+echo 16777216 > /proc/sys/net/core/rmem_max
+echo 262144 > /proc/sys/net/core/somaxconn
+echo 0 > /proc/sys/net/ipv4/tcp_timestamps
+echo 262144 > /proc/sys/net/ipv4/tcp_max_syn_backlog
+echo 262144 > /proc/sys/net/core/netdev_max_backlog
+echo 1 > /proc/sys/net/ipv4/tcp_syn_retries
+echo 1 > /proc/sys/net/ipv4/tcp_synack_retries
+echo 15 > /proc/sys/net/ipv4/tcp_fin_timeout
+echo 30 > /proc/sys/net/ipv4/tcp_keepalive_time
+echo "2048 65000" > /proc/sys/net/ipv4/ip_local_port_range
+
+echo 15 > /proc/sys/net/ipv4/tcp_fin_timeout
+echo 60 > /proc/sys/net/ipv4/tcp_keepalive_time
+
 # perform start script
 if [ -x /etc/storage/start_script.sh ] ; then
 	/etc/storage/start_script.sh
