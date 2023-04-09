@@ -1,3 +1,32 @@
+2022-10-29 12:01:46 +0200  Pali Rohár <pali.rohar@gmail.com>
+
+	* Release version 0.4
+
+2021-07-09 22:19:12 +0200  Björn Ketelaars <bjorn.ketelaars@hydroxide.nl>
+
+	* Complement phyint whitelist with blacklist
+
+	  Fixes: #54
+
+	  Implement new phyint configuration option (blacklist), which enables
+	  blocking of specific traffic.
+
+2021-06-29 20:17:47 +0200  Björn Ketelaars <bjorn.ketelaars@hydroxide.nl>
+
+	* Chroot and drop privileges after startup
+
+	  With this PR:
+
+	  - The apparent root directory can be changed after startup, thus denying
+	    igmpproxy access to files and commands outside that environmental
+	    directory tree.
+	  - igmpproxy can drop root privileges after startup by changing id to
+	    another user.
+
+2021-07-04 14:14:50 +0200  Pali Rohár <pali.rohar@gmail.com>
+
+	* Add travis apt repositories for Ubuntu Precise
+
 2021-01-04 18:40:01 +0100  Pali Rohár <pali.rohar@gmail.com>
 
 	* Release version 0.3
