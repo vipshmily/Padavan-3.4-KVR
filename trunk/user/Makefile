@@ -108,8 +108,8 @@ dir_y							+= iptables
 dir_y							+= coremark
 ifneq ($(CONFIG_WITHOUT_KERNEL),y)
 dir_$(CONFIG_FIRMWARE_INCLUDE_IPSET)		        += ipset
-dir_y							+= accel-pptpd
 endif
+dir_y							+= poptop
 dir_y							+= ebtables
 dir_y							+= iproute2
 dir_y							+= wireless_tools
