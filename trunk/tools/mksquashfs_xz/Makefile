@@ -1,11 +1,12 @@
 SRC_NAME1=squashfs-4.5.1
-SRC_NAME2=xz-5.2.10
+SRC_NAME2=xz-5.4.2
+SRC_URL2=https://gigenet.dl.sourceforge.net/project/lzmautils/$(SRC_NAME2).tar.gz
 
 all: extract_xz config_xz build_xz build_squashfs
 
 extract_xz:
 	( if [ ! -d $(SRC_NAME2) ]; then \
-		tar -xf $(SRC_NAME2).tar.xz; \
+		tar xf $(SRC_NAME2).tar.xz; \
 	fi )
 
 config_xz:
