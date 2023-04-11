@@ -105,7 +105,7 @@ rules() {
 	iptables -A FORWARD -i $zt0 -j ACCEPT
 	if [ $nat_enable -eq 1 ]; then
 		iptables -t nat -A POSTROUTING -o $zt0 -j MASQUERADE
-		ip_segment=$(ip route | grep "dev $zt0  proto kernel" | awk '{print $1}')
+		ip_segment="$(ip route | grep "dev $zt0  proto kernel" | awk '{print $1}')"
 		iptables -t nat -A POSTROUTING -s $ip_segment -j MASQUERADE
 		zero_route "add"
 	fi
@@ -124,7 +124,7 @@ del_rules() {
 	iptables -t nat -D POSTROUTING -s $ip_segment -j MASQUERADE 2>/dev/null
 }
 
-zero_route(){
+zero_route() {
 	rulesnum=`nvram get zero_staticnum_x`
 	for i in $(seq 1 $rulesnum)
 	do
@@ -165,7 +165,7 @@ stop_zero() {
 }
 
 #创建moon节点
-creat_moon(){
+creat_moon() {
 	moonip="$(nvram get zerotiermoon_ip)"
 	logger -t "zerotier" "moonip $moonip"
 	#检查是否合法ip
@@ -217,7 +217,7 @@ creat_moon(){
 	fi
 }
 
-remove_moon(){
+remove_moon() {
 	zmoonid="$(nvram get zerotiermoon_id)"
 	
 	if [ ! -n "$zmoonid"]; then

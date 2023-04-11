@@ -23,7 +23,7 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	./autogen.sh;\
+	./autogen.sh ; \
 	./configure \
 		--prefix=$(STAGEDIR) \
 		--enable-static \
