@@ -1,4 +1,4 @@
-SRC_NAME=libid3tag-0.15.2b
+SRC_NAME=libid3tag-0.15.1b
 
 all: config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
