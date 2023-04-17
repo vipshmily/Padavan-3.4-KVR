@@ -1,5 +1,5 @@
-SRC_NAME=openvpn-2.6.1
-SRC_URL=https://github.com/OpenVPN/openvpn/archive/v2.6.1.tar.gz
+SRC_NAME=openvpn-2.6.3
+SRC_URL=https://github.com/OpenVPN/openvpn/archive/v2.6.3.tar.gz
 
 CFLAGS += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
@@ -14,7 +14,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xzf $(SRC_NAME).tar.gz; \
+		tar zxf $(SRC_NAME).tar.gz; \
 	fi )
 
 config_test:
