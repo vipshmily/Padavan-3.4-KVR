@@ -1,0 +1,7 @@
+*.o
+*.gch
+chinadns
+chinadns-ng
+.vscode/
+test.c
+test
