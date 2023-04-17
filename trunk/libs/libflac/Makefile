@@ -11,7 +11,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xJf  $(SRC_NAME).tar.xz ; \
+		tar xf  $(SRC_NAME).tar.xz ; \
 	#	patch -d $(SRC_NAME) -p1 -i ../flac-orig.patch ; \
 	#	patch -d $(SRC_NAME) -p1 -i ../010-utime.patch ; \
 	fi )
