@@ -83,33 +83,22 @@ void acceptGroupReport(uint32_t src, uint32_t group) {
         my_log(LOG_DEBUG, 0, "Should insert group %s (from: %s) to route table. Vif Ix : %d",
             inetFmt(group,s1), inetFmt(src,s2), sourceVif->index);
 
-        // If we don't have a black- and whitelist we insertRoute and done
+        // If we don't have a whitelist we insertRoute and done
         if(sourceVif->allowedgroups == NULL)
         {
             insertRoute(group, sourceVif->index, src);
             return;
         }
-
         // Check if this Request is legit on this interface
-        bool                 allow_list = false;
-        struct SubnetList   *match = NULL;
-        struct SubnetList   *sn;
-
-        for(sn = sourceVif->allowedgroups; sn != NULL; sn = sn->next) {
-            // Check if there is a whitelist
-            if (sn->allow)
-                allow_list = true;
+        struct SubnetList *sn;
+        for(sn = sourceVif->allowedgroups; sn != NULL; sn = sn->next)
             if((group & sn->subnet_mask) == sn->subnet_addr)
-                match = sn;
+            {
+                // The membership report was OK... Insert it into the route table..
+                insertRoute(group, sourceVif->index, src);
+                return;
         }
-
-        if((!allow_list && match == NULL) ||
-          (allow_list && match != NULL && match->allow)) {
-            // The membership report was OK... Insert it into the route table..
-            insertRoute(group, sourceVif->index, src);
-            return;
-        }
-        my_log(LOG_INFO, 0, "The group address %s may not be requested from this interface. Ignoring.", inetFmt(group, s1));
+    my_log(LOG_INFO, 0, "The group address %s may not be requested from this interface. Ignoring.", inetFmt(group, s1));
     } else {
         // Log the state of the interface the report was received on.
         my_log(LOG_INFO, 0, "Mebership report was received on %s. Ignoring.",
@@ -202,7 +191,7 @@ void sendGroupSpecificMemberQuery(void *argument) {
                     sendIgmp(Dp->InAdr.s_addr, gvDesc->group,
                             IGMP_MEMBERSHIP_QUERY,
                             conf->lastMemberQueryInterval * IGMP_TIMER_SCALE,
-                            gvDesc->group, 0, Dp->ifIndex);
+                            gvDesc->group, 0);
 
                     my_log(LOG_DEBUG, 0, "Sent membership query from %s to %s. Delay: %d",
                             inetFmt(Dp->InAdr.s_addr,s1), inetFmt(gvDesc->group,s2),
@@ -232,12 +221,11 @@ void sendGeneralMembershipQuery(void) {
                 // Send the membership query...
                 sendIgmp(Dp->InAdr.s_addr, allhosts_group,
                          IGMP_MEMBERSHIP_QUERY,
-                         conf->queryResponseInterval * IGMP_TIMER_SCALE, 0, 0, Dp->ifIndex);
+                         conf->queryResponseInterval * IGMP_TIMER_SCALE, 0, 0);
 
                 my_log(LOG_DEBUG, 0,
-                    "Sent membership query from %s ifIndex %d to %s. Delay: %d",
+                    "Sent membership query from %s to %s. Delay: %d",
                     inetFmt(Dp->InAdr.s_addr,s1),
-                    Dp->ifIndex,
                     inetFmt(allhosts_group,s2),
                     conf->queryResponseInterval);
             }

@@ -157,25 +157,18 @@ static void sendJoinLeaveUpstream(struct RouteTable* route, int join) {
                 my_log(LOG_ERR, 0 ,"FATAL: Unable to get Upstream IF.");
             }
 
-            // Check if there is a black- or whitelist for the upstram VIF
+            // Check if there is a white list for the upstram VIF
             if (upstrIf->allowedgroups != NULL) {
-                bool                 allow_list = false;
-                struct SubnetList   *match = NULL;
-                struct SubnetList   *sn;
-                uint32_t             group = route->group;
+              uint32_t           group = route->group;
+                struct SubnetList* sn;
 
                 // Check if this Request is legit to be forwarded to upstream
-                for(sn = upstrIf->allowedgroups; sn != NULL; sn = sn->next) {
-                    // Check if there is a whitelist
-                    if (sn->allow)
-                        allow_list = true;
+                for(sn = upstrIf->allowedgroups; sn != NULL; sn = sn->next)
                     if((group & sn->subnet_mask) == sn->subnet_addr)
-                        match = sn;
-                }
+                        // Forward is OK...
+                        break;
 
-                // Keep in sync with request.c, note the negation
-                if(!((!allow_list && match == NULL) ||
-                  (allow_list && match != NULL && match->allow))) {
+                if (sn == NULL) {
                     my_log(LOG_INFO, 0, "The group address %s may not be forwarded upstream. Ignoring.", inetFmt(group, s1));
                     return;
                 }
@@ -817,7 +810,7 @@ int interfaceInRoute(int32_t group, int Ix) {
     struct RouteTable*  croute;
     croute = findRoute(group);
     if (croute != NULL) {
-        my_log(LOG_DEBUG, 0, "Interface id %d is in group %d", Ix, group);
+        my_log(LOG_DEBUG, 0, "Interface id %d is in group $d", Ix, group);
         return BIT_TST(croute->vifBits, Ix);
     } else {
         return 0;

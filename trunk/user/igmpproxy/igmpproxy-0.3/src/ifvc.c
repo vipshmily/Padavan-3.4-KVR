@@ -117,10 +117,6 @@ void rebuildIfVc () {
 
         memcpy( IfReq.ifr_name, Dp->Name, sizeof( IfReq.ifr_name ) );
 
-        if (ioctl(Sock, SIOCGIFINDEX, &IfReq ) < 0)
-            my_log(LOG_ERR, errno, "ioctl SIOCGIFINDEX for %s", IfReq.ifr_name);
-        Dp->ifIndex = IfReq.ifr_ifindex;
-
         // Get the subnet mask...
         if (ioctl(Sock, SIOCGIFNETMASK, &IfReq ) < 0)
             my_log(LOG_ERR, errno, "ioctl SIOCGIFNETMASK for %s", IfReq.ifr_name);
@@ -179,9 +175,8 @@ void rebuildIfVc () {
         }
 
         // Debug log the result...
-        my_log( LOG_DEBUG, 0, "rebuildIfVc: Interface %s Index: %d Addr: %s, Flags: 0x%04x, Network: %s",
+        my_log( LOG_DEBUG, 0, "rebuildIfVc: Interface %s Addr: %s, Flags: 0x%04x, Network: %s",
             Dp->Name,
-            Dp->ifIndex,
             fmtInAdr( FmtBu, Dp->InAdr ),
             Dp->Flags,
             inetFmts(subnet, mask, s1));
@@ -273,10 +268,6 @@ void buildIfVc(void) {
 
             memcpy( IfReq.ifr_name, IfDescEp->Name, sizeof( IfReq.ifr_name ) );
 
-            if (ioctl(Sock, SIOCGIFINDEX, &IfReq ) < 0)
-                my_log(LOG_ERR, errno, "ioctl SIOCGIFINDEX for %s", IfReq.ifr_name);
-            IfDescEp->ifIndex = IfReq.ifr_ifindex;
-
             // Get the subnet mask...
             if (ioctl(Sock, SIOCGIFNETMASK, &IfReq ) < 0)
                 my_log(LOG_ERR, errno, "ioctl SIOCGIFNETMASK for %s", IfReq.ifr_name);
@@ -322,9 +313,8 @@ void buildIfVc(void) {
             IfDescEp->ratelimit     = DEFAULT_RATELIMIT;
 
             // Debug log the result...
-            my_log( LOG_DEBUG, 0, "buildIfVc: Interface %s Index: %d Addr: %s, Flags: 0x%04x, Network: %s",
+            my_log( LOG_DEBUG, 0, "buildIfVc: Interface %s Addr: %s, Flags: 0x%04x, Network: %s",
                  IfDescEp->Name,
-                 IfDescEp->ifIndex,
                  fmtInAdr( FmtBu, IfDescEp->InAdr ),
                  IfDescEp->Flags,
                  inetFmts(subnet,mask, s1));

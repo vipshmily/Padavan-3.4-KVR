@@ -1,5 +1,5 @@
 AC_PREREQ([2.63])
-AC_INIT([igmpproxy], [0.4])
+AC_INIT([igmpproxy], [0.3])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/igmpproxy.c])
 AC_CONFIG_HEADERS([config.h])
@@ -28,12 +28,6 @@ AC_CHECK_MEMBERS([struct sockaddr_in.sin_len], [], [], [[
 #include <netinet/in.h>
 ]])
 
-# Check for Linux-style extension struct ip_mreqn (Linux, FreeBSD)
-# Adopted from https://github.com/troglobit/smcroute/blob/2.5.6/configure.ac#L144 
-AC_CHECK_MEMBER([struct ip_mreqn.imr_ifindex],
-	AC_DEFINE([HAVE_STRUCT_IP_MREQN], [1], [Define to 1 if you have a Linux-style struct ip_mreqn]),
-	[], [[#include <netinet/in.h>]])
-	
 AC_SEARCH_LIBS(socket, socket)
 
 AC_SEARCH_LIBS([clock_gettime],[rt])

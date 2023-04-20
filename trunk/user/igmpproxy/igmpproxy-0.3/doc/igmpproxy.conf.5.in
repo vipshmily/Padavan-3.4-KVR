@@ -41,28 +41,7 @@ aliases not in use should be configured as disabled.
 Any line in the configuration file starting with
 .B #
 is treated as a comment. Keywords and parameters can be distributed over many lines.
-The configuration file has four main keywords:
-
-.B chroot
-.I directory
-.RS
-Changes the apparent root directory to the given path after startup, thus
-denying
-.B igmpproxy
-access to files and commands outside that environmental directory tree.
-.RE
-
-
-.B user
-.I username
-.RS
-Specifies the userid to which
-.B igmpproxy
-will change after startup.
-.B igmpproxy
-must be started as root, but it will drop root privileges to the specified
-user.
-.RE
+The configuration file has two main keywords:
 
 .B quickleave
 .RS 
@@ -160,26 +139,6 @@ You may also specify whitelist entries for the upstream interface. Only igmp mem
 for explicitly whitelisted multicast groups will be sent out on the upstream interface. This
 is useful if you want to use multicast groups only between your downstream interfaces, like SSDP
 from a UPnP server.
-
-This option can be combined with
-.B blacklist
-for fine-grained control.
-.RE
-
-.B blacklist
-.I networkaddr
-.RS
-Defines a blacklist for multicast groups. Similar to
-.B whitelist
-except that if a blacklist entry is defined, all igmp membership reports for
-that multicast group will be ignored and therefore not be served by igmpproxy.
-
-Each time a multicast group is forwarded or requested, whitelist and blacklist
-entries are evaluated in sequential order, from first to last. The last matching
-entry decides what action is taken; if no entry matches the multicast group, the
-default action is to serve. Note that, if at least one whitelist entry is
-defined before any blacklist entry, all igmp membership reports for not
-explicitly whitelisted multicast groups will be ignored.
 .RE
 
 .SH EXAMPLE

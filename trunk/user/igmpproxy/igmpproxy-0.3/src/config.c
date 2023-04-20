@@ -189,36 +189,11 @@ int loadConfig(char *configFile) {
             continue;
         }
         else if(strcmp("rescanvif", token)==0) {
-            // Got a rescanvif token...
+            // Got a defaultdown token...
             my_log(LOG_DEBUG, 0, "Config: Need detect new interface.");
             commonConfig.rescanVif = 1;
 
             // Read next token...
-            token = nextConfigToken();
-            continue;
-        }
-        else if(strcmp("chroot", token)==0) {
-            // path is in next token
-            token = nextConfigToken();
-
-            if (snprintf(commonConfig.chroot, sizeof(commonConfig.chroot), "%s",
-              token) >= (int)sizeof(commonConfig.chroot))
-                my_log(LOG_ERR, 0, "Config: chroot is truncated");
-
-            my_log(LOG_DEBUG, 0, "Config: chroot set to %s",
-              commonConfig.chroot);
-            token = nextConfigToken();
-            continue;
-        }
-        else if(strcmp("user", token)==0) {
-            // username is in next token
-            token = nextConfigToken();
-
-            if (snprintf(commonConfig.user, sizeof(commonConfig.user), "%s",
-              token) >= (int)sizeof(commonConfig.user))
-                my_log(LOG_ERR, 0, "Config: user is truncated");
-
-            my_log(LOG_DEBUG, 0, "Config: user set to %s", commonConfig.user);
             token = nextConfigToken();
             continue;
         } else {
@@ -351,26 +326,10 @@ struct vifconfig *parsePhyintToken(void) {
 
             *agrpPtr = parseSubnetAddress(token);
             if(*agrpPtr == NULL) {
-                free(tmpPtr->name);
-                free(tmpPtr);
-                my_log(LOG_ERR, 0, "Unable to parse subnet address.");
+                parseError = 1;
+                my_log(LOG_WARNING, 0, "Unable to parse subnet address.");
+                break;
             } else {
-                (*agrpPtr)->allow = true;
-                agrpPtr = &(*agrpPtr)->next;
-            }
-        }
-        else if(strcmp("blacklist", token)==0) {
-            // Blacklist
-            token = nextConfigToken();
-            my_log(LOG_DEBUG, 0, "Config: IF: Got blacklist token %s.", token);
-
-            *agrpPtr = parseSubnetAddress(token);
-            if(*agrpPtr == NULL) {
-                free(tmpPtr->name);
-                free(tmpPtr);
-                my_log(LOG_ERR, 0, "Unable to parse subnet address.");
-            } else {
-                (*agrpPtr)->allow = false;
                 agrpPtr = &(*agrpPtr)->next;
             }
         }
