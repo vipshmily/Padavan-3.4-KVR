@@ -161,7 +161,7 @@ static void handle_local_packet(void) {
 
         log_verbose("forward [%s] to %s (%s)", s_name_buf, g_upstream_addrs[i], is_chinadns_idx(i) ? "chinadns" : "trustdns");
 
-        int n_sent = sendmmsg(s_upstream_sockfds[i], msgv, msg_n, 0);
+        int n_sent = x_sendmmsg(s_upstream_sockfds[i], msgv, msg_n, 0);
         unlikely_if (n_sent != msg_n) {
             if (n_sent < 0)
                 log_error("failed to send query to %s: (%d) %s", g_upstream_addrs[i], errno, strerror(errno));
@@ -283,7 +283,7 @@ static void handle_remote_packet(int index) {
                 log_verbose("reply [%s] from <previous-trustdns> (%u), result: filter", s_name_buf, (uint)dns_header->id);
             if (g_add_tagchn_ip && context->name_tag == NAME_TAG_CHN) {
                 log_verbose("add the answer ip of name-tag:chn [%s] to ipset", s_name_buf);
-                dns_add_ip(reply_buffer, reply_length, namelen);
+                dns_add_ip(reply_buffer, reply_length, namelen, true);
             }
         } else {
             log_verbose("reply [%s] from %s (%u), result: filter", s_name_buf, addr, (uint)dns_header->id);
@@ -299,6 +299,10 @@ static void handle_remote_packet(int index) {
     } else {
         if (context->name_tag == NAME_TAG_GFW || context->chinadns_got || use_trust_reply(reply_buffer, &reply_length, namelen)) {
             log_verbose("reply [%s] from %s (%u), result: accept", s_name_buf, addr, (uint)dns_header->id);
+            if (g_add_taggfw_ip && context->name_tag == NAME_TAG_GFW) {
+                log_verbose("add the answer ip of name-tag:gfw [%s] to ipset", s_name_buf);
+                dns_add_ip(reply_buffer, reply_length, namelen, false);
+            }
         } else {
             /* trustdns returns before chinadns */
             if (!context->trustdns_buf) {
@@ -325,7 +329,7 @@ static void handle_remote_packet(int index) {
 }
 
 static void handle_timeout_event(struct queryctx *context) {
-    log_warning("upstream reply timeout, unique msgid: %u", (uint)context->unique_msgid);
+    log_verbose("upstream reply timeout, unique msgid: %u", (uint)context->unique_msgid);
     free_context(context);
 }
 
@@ -334,6 +338,8 @@ int main(int argc, char *argv[]) {
     setvbuf(stdout, NULL, _IOLBF, 256);
     opt_parse(argc, argv);
 
+    net_init();
+
     log_info("local listen addr: %s#%u", g_bind_ip, (uint)g_bind_port);
 
     if (g_upstream_addrs[CHINADNS1_IDX]) log_info("chinadns server#1: %s", g_upstream_addrs[CHINADNS1_IDX]);
@@ -341,7 +347,7 @@ int main(int argc, char *argv[]) {
     if (g_upstream_addrs[TRUSTDNS1_IDX]) log_info("trustdns server#1: %s", g_upstream_addrs[TRUSTDNS1_IDX]);
     if (g_upstream_addrs[TRUSTDNS2_IDX]) log_info("trustdns server#2: %s", g_upstream_addrs[TRUSTDNS2_IDX]);
 
-    bool need_ipset = g_add_tagchn_ip || g_default_tag == NAME_TAG_NONE;
+    bool need_ipset = g_add_tagchn_ip || g_add_taggfw_ip || g_default_tag == NAME_TAG_NONE;
     if (need_ipset) ipset_init();
 
     dnl_init();

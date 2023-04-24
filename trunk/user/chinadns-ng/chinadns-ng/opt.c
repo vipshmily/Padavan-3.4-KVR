@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CHINADNS_VERSION "ChinaDNS-NG 2023.04.11-2 <https://github.com/zfl9/chinadns-ng>"
+#define CHINADNS_VERSION "ChinaDNS-NG 2023.04.20 <https://github.com/zfl9/chinadns-ng>"
 
 bool    g_verbose       = false;
 bool    g_reuse_port    = false;
@@ -17,10 +17,11 @@ u8      g_default_tag   = NAME_TAG_NONE;
 const char *g_gfwlist_fname = NULL; /* gfwlist filename(s) "a.txt,b.txt,..." */
 const char *g_chnlist_fname = NULL; /* chnlist filename(s) "m.txt,n.txt,..." */
 bool        g_gfwlist_first = true; /* match gfwlist first */
-bool        g_add_tagchn_ip = false; /* add the answer ip of name-tag:chn to ipset/nftset */
 
-const char *g_ipset_name4 = "chnroute"; /* ipset:"set_name" | nftset:"family_name@table_name@set_name" */
-const char *g_ipset_name6 = "chnroute6"; /* ipset:"set_name" | nftset:"family_name@table_name@set_name" */
+const char *g_ipset_name4 = "chnroute"; /* (tag:none) ipset:"set_name" | nft:"family_name@table_name@set_name" */
+const char *g_ipset_name6 = "chnroute6"; /* (tag:none) ipset:"set_name" | nft:"family_name@table_name@set_name" */
+const char *g_add_tagchn_ip = NULL; /* add the answer ip of name-tag:chn to ipset/nft (setname4,setname6) */
+const char *g_add_taggfw_ip = NULL; /* add the answer ip of name-tag:gfw to ipset/nft (setname4,setname6) */
 
 const char     *g_bind_ip   = "127.0.0.1";
 u16             g_bind_port = 65353;
@@ -44,6 +45,7 @@ u8              g_repeat_times         = 1; /* used by trust-dns only */
 #define OPT_REPEAT_TIMES 'p'
 #define OPT_CHNLIST_FIRST 'M'
 #define OPT_ADD_TAGCHN_IP 'a'
+#define OPT_ADD_TAGGFW_IP 'A'
 #define OPT_NO_IPV6 'N'
 #define OPT_FAIR_MODE 'f'
 #define OPT_REUSE_PORT 'r'
@@ -67,7 +69,8 @@ static const char s_shortopts[] = {
     OPT_REPEAT_TIMES, ':', /* required_argument */
     OPT_NO_IPV6, ':', ':', /* optional_argument */
     OPT_CHNLIST_FIRST, /* no_argument */
-    OPT_ADD_TAGCHN_IP, /* no_argument */
+    OPT_ADD_TAGCHN_IP, ':', ':', /* optional_argument */
+    OPT_ADD_TAGGFW_IP, ':', /* required_argument */
     OPT_FAIR_MODE, /* no_argument */
     OPT_REUSE_PORT, /* no_argument */
     OPT_NOIP_AS_CHNIP, /* no_argument */
@@ -91,7 +94,8 @@ static const struct option s_options[] = {
     {"repeat-times",  required_argument, NULL, OPT_REPEAT_TIMES},
     {"no-ipv6",       optional_argument, NULL, OPT_NO_IPV6},
     {"chnlist-first", no_argument,       NULL, OPT_CHNLIST_FIRST},
-    {"add-tagchn-ip", no_argument,       NULL, OPT_ADD_TAGCHN_IP},
+    {"add-tagchn-ip", optional_argument, NULL, OPT_ADD_TAGCHN_IP},
+    {"add-taggfw-ip", required_argument, NULL, OPT_ADD_TAGGFW_IP},
     {"fair-mode",     no_argument,       NULL, OPT_FAIR_MODE},
     {"reuse-port",    no_argument,       NULL, OPT_REUSE_PORT},
     {"noip-as-chnip", no_argument,       NULL, OPT_NOIP_AS_CHNIP},
@@ -111,6 +115,7 @@ static void show_help(void) {
            " -6, --ipset-name6 <ipv6-setname>     ipset ipv6 set name, default: chnroute6\n"
            "                                      if it contains @, then use nftables set\n"
            "                                      format: family_name@table_name@set_name\n"
+           "                                      this ipset/nftset is used for tag:none\n"
            " -g, --gfwlist-file <path,...>        path(s) of gfwlist, '-' indicate stdin\n"
            " -m, --chnlist-file <path,...>        path(s) of chnlist, '-' indicate stdin\n"
            " -d, --default-tag <name-tag>         domain default tag: gfw,chn,none(default)\n"
@@ -127,7 +132,9 @@ static void show_help(void) {
            "                                      rule T: check answer ip of trust upstream\n"
            "                                      if no rules is given, it defaults to 'a'\n"
            " -M, --chnlist-first                  match chnlist first, default: <disabled>\n"
-           " -a, --add-tagchn-ip                  add the ip of name-tag:chn to ipset/nftset\n"
+           " -a, --add-tagchn-ip=[set4,set6]      add the ip of name-tag:chn to ipset/nft\n"
+           "                                      use '--ipset-name4/6' set-name if no arg\n"
+           " -A, --add-taggfw-ip <set4,set6>      add the ip of name-tag:gfw to ipset/nft\n"
            " -f, --fair-mode                      enable fair mode (nop, only fair mode now)\n"
            " -r, --reuse-port                     enable SO_REUSEPORT, default: <disabled>\n"
            " -n, --noip-as-chnip                  accept reply without ipaddr (A/AAAA query)\n"
@@ -255,6 +262,8 @@ void opt_parse(int argc, char *argv[]) {
     const char *chinadns_optarg = "114.114.114.114";
     const char *trustdns_optarg = "8.8.8.8";
 
+    char no_arg;
+
     while ((shortopt = getopt_long(argc, argv, s_shortopts, s_options, &optindex)) != -1) {
         switch (shortopt) {
             case OPT_BIND_ADDR:
@@ -323,7 +332,16 @@ void opt_parse(int argc, char *argv[]) {
                 break;
 
             case OPT_ADD_TAGCHN_IP:
-                g_add_tagchn_ip = true;
+                if (!optarg)
+                    g_add_tagchn_ip = &no_arg;
+                else if (*optarg == '=')
+                    g_add_tagchn_ip = optarg + 1;
+                else
+                    g_add_tagchn_ip = optarg;
+                break;
+
+            case OPT_ADD_TAGGFW_IP:
+                g_add_taggfw_ip = optarg;
                 break;
 
             case OPT_FAIR_MODE:
@@ -371,6 +389,16 @@ void opt_parse(int argc, char *argv[]) {
                 }
                 break;
         }
+    }
+
+    if ((uintptr_t)g_add_tagchn_ip == (uintptr_t)&no_arg) {
+        size_t len4 = strlen(g_ipset_name4) + 1;
+        size_t len6 = strlen(g_ipset_name6) + 1;
+        char *p = malloc(len4 + len6);
+        memcpy(p, g_ipset_name4, len4 - 1);
+        p[len4 - 1] = ',';
+        memcpy(p + len4, g_ipset_name6, len6);
+        g_add_tagchn_ip = p;
     }
 
     skaddr_build(get_ipstr_family(g_bind_ip), &g_bind_skaddr, g_bind_ip, g_bind_port);
