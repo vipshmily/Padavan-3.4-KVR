@@ -155,7 +155,7 @@ struct nvram_pair router_defaults[] = {
 	{ "https_clist", DEF_HTTPS_CIPH_LIST },	/* HTTPS SSL cipher list */
 	{ "fw_dos_x", "0" },			// oleg patch
 	{ "dr_enable_x", "1" },			// oleg patch
-	{ "mr_enable_x", "1" },			// oleg patch
+	{ "mr_enable_x", "0" },			// oleg patch
 	{ "mr_qleave_x", "1" },
 
 #if BOARD_HAS_5G_RADIO
@@ -774,7 +774,7 @@ struct nvram_pair router_defaults[] = {
 	/*Zerotier*/
 	{ "zerotier_enable", "0" },
 	{ "zerotier_id", "" },
-	{ "zerotier_nat", "1" },
+	{ "zerotier_nat", "0" },
 	{ "zerotier_secret", "" },
 	{ "zero_staticnum_x", "0" },
 #endif
@@ -817,7 +817,7 @@ struct nvram_pair router_defaults[] = {
 #if defined(APP_SQM)
 	/*SQM QoS*/
 	{ "sqm_enable", "0" },
-	{ "sqm_flag"  , "3" },
+	{ "sqm_flag"  , "1" },
 	{ "sqm_active", "ra0" },
 	{ "sqm_down_speed", "0" },
 	{ "sqm_up_speed", "0" },
@@ -1062,7 +1062,7 @@ struct nvram_pair router_defaults[] = {
 #endif
 	{ "fw_syn_cook", "0" },
 	{ "fw_mac_drop", "0" },
-	{ "nf_nat_type", "1" },
+	{ "nf_nat_type", "2" },
 	{ "nf_nat_loop", "1" },
 #if (BOARD_RAM_SIZE > 128)
 	{ "nf_max_conn", "32768" },
