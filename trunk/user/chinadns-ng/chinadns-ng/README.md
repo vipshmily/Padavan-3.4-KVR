@@ -8,7 +8,7 @@
 - 修复原版对保留地址的处理问题，去除过时特性，只留核心功能。
 - 修复原版对可信 DNS 先于国内 DNS 返回而导致判断失效的问题。
 - 支持 `gfwlist/chnlist` 黑/白名单模式，并对 **时空效率** 进行了优化。
-- 支持纯域名分流：要么走china上游，要么走trust上游，不依赖ipset。
+- 支持纯域名分流：要么走china上游，要么走trust上游，不进行ip测试。
 - 可动态添加大陆域名结果IP至`ipset/nftset`，实现完美chnroute分流。
 - 可动态添加gfw域名结果IP至`ipset/nftset`，用于实现gfwlist透明代理。
 - 支持`nftables set`，并针对 add 操作进行了性能优化，避免操作延迟。
@@ -20,13 +20,15 @@
 
 - 两组DNS上游：china组(大陆DNS)、trust组(国外DNS)
 - 两个域名列表：chnlist.txt(大陆域名)、gfwlist.txt(受污染域名)
-- 两个ip地址集合：chnroute(大陆v4地址段)、chnroute6(大陆v6地址段)
-- chnlist.txt域名，转发给china组，保证大陆域名不会被解析到国外，对大陆域名cdn友好
-- gfwlist.txt域名，转发给trust组，trust需返回未受污染的结果，比如走代理(或透明代理)，具体方式不限
-- 其他域名，转发给china组和trust组，如果china组解析结果(A/AAAA)是大陆ip，则采纳china组，否则采纳trust组
-- 如果使用纯域名分流模式，则不存在"其他域名"，因此要么走china组，要么走trust组，可完全避免dns泄露问题
-- 若启用`--add-tagchn-ip`，则chnlist.txt域名（准确来说是tag为chn的域名）的解析结果IP会被动态添加到ipset/nftset，配合chnroute透明代理分流时，可用于实现大陆域名必走直连（不被代理），使dns分流与ip分流一致；原理类似于 dnsmasq 的 ipset/nftset 功能
-- 若启用`--add-taggfw-ip`，则gfwlist.txt域名（准确来说是tag为gfw的域名）的解析结果IP会被动态添加到ipset/nftset，可用来实现gfwlist透明代理分流；也可配合chnroute透明代理分流，用来收集黑名单域名的IP，用于iptables/nftables操作，比如确保黑名单域名必走代理，即使某些黑名单域名的IP是大陆IP
+- 两个ip集合(用于tag:none域名，ip test)：chnroute(大陆v4地址段)、chnroute6(大陆v6地址段)
+- chnlist.txt域名(tag:chn域名)，转发给china组，保证大陆域名不会被解析到国外，对大陆域名cdn友好
+- gfwlist.txt域名(tag:gfw域名)，转发给trust组，trust需返回未受污染的结果，比如走代理(或透明代理)，方式不限
+- 其他域名(tag:none域名)，同时转发给china组和trust组，如果china组解析结果(A/AAAA)是大陆ip，则采纳china组，否则采纳trust组。是否为大陆ip的核心依据，就是测试ip是否位于ipset/nftset，即`--ipset-name4/name6`指定的那个集合
+- 如果使用纯域名分流模式，则不存在tag:none域名，因此要么走china组，要么走trust组，可避免dns泄露问题
+- 若启用`--add-tagchn-ip`，则tag:chn域名的解析结果IP会被动态添加到指定的ipset/nftset，配合chnroute透明代理分流时，可用于实现大陆域名必走直连（不被代理），使dns分流与ip分流一致；原理类似于 dnsmasq 的 ipset/nftset 功能
+- 若启用`--add-taggfw-ip`，则tag:gfw域名的解析结果IP会被动态添加到指定的ipset/nftset，可用来实现gfwlist透明代理分流；也可配合chnroute透明代理分流，用来收集黑名单域名的IP，用于iptables/nftables操作，比如确保黑名单域名必走代理，即使某些黑名单域名的IP是大陆IP
+
+> chinadns-ng 根据域名 tag 来执行不同逻辑，包括 ipset/nftset 的逻辑（test、add），见 [原理](#tagchntaggfwtagnone-%E6%98%AF%E6%8C%87%E4%BB%80%E4%B9%88)。
 
 ## 编译
 
@@ -163,31 +165,33 @@ bug report: https://github.com/zfl9/chinadns-ng. email: zfl9.com@gmail.com (Otok
 
 ---
 
-- `default-tag` 用来实现"纯域名分流"，可提供比`dnsmasq`更优秀的匹配性能。
-- 通常与`-g`或`-m`选项一起用，纯域名分流模式下不执行 ipset/nftset 逻辑，如：
+- `default-tag` 可用于实现"纯域名分流"，也可用于实现 [gfwlist分流模式](#chinadns-ng-也可用于-gfwlist-透明代理分流)。
+- 该选项的核心逻辑就是指定**不匹配任何列表的域名**的tag，并无特别之处。
+- 通常与`-g`或`-m`选项一起使用，比如下述例子，实现了"纯域名分流"模式：
   - `-g gfwlist.txt -d chn`：gfw列表的域名走可信上游，其他走国内上游。
   - `-m chnlist.txt -d gfw`：chn列表的域名走国内上游，其他走可信上游。
+- 如果想了解更多细节，建议看一下 [chinadns-ng 的核心处理流程](#tagchntaggfwtagnone-是指什么)。
   
 ---
 
-- `no-ipv6` 选项表示过滤 IPv6-Address(AAAA) 查询，默认不设置此选项。
-  - `2023.02.27`版本开始，允许指定一个可选的"规则串"，目前有如下规则：
-  - `a`：过滤所有域名的v6查询，同之前
-  - `g`：过滤gfwlist域名的v6查询
-  - `m`：过滤chnlist域名的v6查询
-  - `n`：过滤非gfwlist、非chnlist域名的v6查询
-  - `c`：禁止向chinadns上游转发v6查询
-  - `t`：禁止向trustdns上游转发v6查询
-  - `C`：若一个AAAA查询只转发给了china上游(非gfw域名 && 非chn域名 && trust被禁用v6)，是否过滤非大陆ip的响应；默认不过滤，除非设置此规则
-  - `T`：若一个AAAA查询只转发给了trust上游(非gfw域名 && 非chn域名 && china被禁用v6)，是否过滤非大陆ip的响应；默认不过滤，除非设置此规则
-  - 如`-N=gt`/`--no-ipv6=gt`：过滤gfwlist域名的v6、禁止向trustdns转发v6
+- `no-ipv6` 用于过滤 AAAA 查询（查询域名的 IPv6 地址），默认不设置此选项。
+  - `2023.02.27`版本开始，允许指定一个可选的"规则串"，有如下规则：
+  - `a`：过滤 所有 域名的 AAAA 查询，同之前
+  - `g`：过滤 tag:gfw 域名的 AAAA 查询
+  - `m`：过滤 tag:chn 域名的 AAAA 查询
+  - `n`：过滤 tag:none 域名的 AAAA 查询
+  - `c`：禁止向 china 上游转发 AAAA 查询
+  - `t`：禁止向 trust 上游转发 AAAA 查询
+  - `C`：当 tag:none 域名的 AAAA 查询只存在 china 上游路径时，过滤 china 上游的 非大陆ip 响应
+  - `T`：当 tag:none 域名的 AAAA 查询只存在 trust 上游路径时，过滤 trust 上游的 非大陆ip 响应
+  - 如`-N=gt`/`--no-ipv6=gt`：过滤 tag:gfw 域名的 AAAA 查询、禁止向 trust 上游转发 AAAA 查询
 
 ---
 
-- `add-tagchn-ip` 用于动态添加 白名单域名的解析结果ip 到 ipset/nftset。
+- `add-tagchn-ip` 用于动态添加 tag:chn域名 的解析结果ip 到 ipset/nftset。
   - 与`ipset-name4/6`用的是同一个集合(chnroute)，无需提供集合名（2023.04.20版本之前）。
   - 2023.04.20 版本开始，允许指定其他集合：`-a/--add-tagchn-ip=ipv4集合名,ipv6集合名`。
-- `add-taggfw-ip` 用于动态添加 黑名单域名的解析结果ip 到 ipset/nftset。
+- `add-taggfw-ip` 用于动态添加 tag:gfw域名 的解析结果ip 到 ipset/nftset。
   - 格式是：`ipv4集合名,ipv6集合名`，nftset格式同`ipset-name4/6`。
 - 如果使用nftset，在创建set时，必须带上 `flags interval` 标志。
 - 如果v6集合没用到（如使用-N屏蔽了AAAA），可以不创建v6集合，但参数中还是需要指定v6集合名。
@@ -195,10 +199,10 @@ bug report: https://github.com/zfl9/chinadns-ng. email: zfl9.com@gmail.com (Otok
 ---
 
 - `reuse-port` 选项用于支持 chinadns-ng 多进程负载均衡，提升性能。
-- `timeout-sec` 选项用于指定上游的响应超时时长，单位秒，默认5秒。
+- `timeout-sec` 选项用于指定上游的响应超时时长，单位秒，默认 5 秒。
 - `repeat-times` 选项表示向可信 DNS 发送几个 dns 查询包，默认为 1。
 - `fair-mode` 从`2023.03.06`版本开始，只有公平模式，指不指定都一样。
-- `noip-as-chnip` 选项表示接受 qtype 为 A/AAAA 但却没有 IP 的 reply。
+- `noip-as-chnip` 表示接受 qtype=A/AAAA 但没有 IP 的响应，[详细说明](#--noip-as-chnip-选项的作用)。
 - `verbose` 选项表示记录详细的运行日志，除非调试，否则不建议启用。
 
 ## 域名列表
@@ -251,18 +255,15 @@ chinadns-ng 默认监听 `127.0.0.1:65353/udp`，可以给 chinadns-ng 带上 -v
 
 - 被 chnlist.txt 匹配的域名归为 `tag:chn`
 - 被 gfwlist.txt 匹配的域名归为 `tag:gfw`
-- 其它未匹配的域名归为 `tag:none`
+- 其它域名默认归为 `tag:none`，可通过 -d 修改
 
-当使用纯域名分流模式时，不存在 `tag:none` 域名：
+**域名分流** 和 **ipset/nftset** 的核心流程，可以用三句话来描述：
 
-- 对于 `-m chnlist.txt -d gfw`，未被匹配的域名归为 `tag:gfw`
-- 对于 `-g gfwlist.txt -d chn`，未被匹配的域名归为 `tag:chn`
+- `tag:chn`：只走 china 上游（单纯转发），如果启用 --add-tagchn-ip，则添加解析结果至 ipset/nftset
+- `tag:gfw`：只走 trust 上游（单纯转发），如果启用 --add-taggfw-ip，则添加解析结果至 ipset/nftset
+- `tag:none`：同时走 china 和 trust，如果 china 上游返回国内 IP，则接受其结果，否则采纳 trust 结果
 
-因此分流的核心流程，可以用三句话来描述：
-
-- `tag:chn` 域名：只走 china 上游，即单纯转发，没有 ipset/nftset test 逻辑
-- `tag:gfw` 域名：只走 trust 上游，即单纯转发，没有 ipset/nftset test 逻辑
-- `tag:none` 域名：同时走 china 和 trust，如果 china 上游返回国内 IP，则接受其结果，否则采纳 trust 结果
+> `tag:chn`和`tag:gfw`不存在任何判定/过滤；`tag:none`的判定/过滤也仅限于 china 上游的响应结果
 
 ---
 
@@ -350,7 +351,7 @@ chinadns-ng -c 114.114.114.114 -t '127.0.0.1#5353'
 
 意思是指定的 ipset 集合不存在；如果是 `[ipset_addr4_is_exists]` 提示此错误，说明没有导入 `chnroute` ipset（IPv4）；如果是 `[ipset_addr6_is_exists]` 提示此错误，说明没有导入 `chnroute6` ipset（IPv6）。要解决此问题，请导入项目根目录下 `chnroute.ipset`、`chnroute6.ipset` 文件。
 
-需要提示的是：chinadns-ng 在查询 ipset 集合时，如果遇到类似的 ipset 错误，都会将给定 IP 视为国外 IP。因此如果你因为各种原因不想导入 `chnroute6.ipset`，那么产生的效果就是：当客户端查询 IPv6 域名时（即 AAAA 查询），会导致所有国内 DNS 返回的解析结果都被过滤，然后采用可信 DNS 的解析结果
+需要提示的是：chinadns-ng 在查询 ipset 集合时，如果遇到类似的 ipset 错误，都会将给定 IP 视为国外 IP。因此如果你因为各种原因不想导入 `chnroute6.ipset`，那么产生的效果就是：当客户端查询 IPv6 域名时（即 AAAA 查询），会导致所有国内 DNS 返回的解析结果都被过滤，然后采用可信 DNS 的解析结果。
 
 > 只有 tag:none 域名存在 ipset/nftset 判断&&过滤，tag:gfw 和 tag:chn 域名不会走 ip test 逻辑。
 
@@ -358,7 +359,9 @@ chinadns-ng -c 114.114.114.114 -t '127.0.0.1#5353'
 
 ### trust上游存在一定的丢包，怎么缓解
 
-如果 trust-dns 上游存在丢包的情况（特别是 udp-based 类型的代理隧道），可以使用 `--repeat-times` 选项进行一定的缓解。比如设置为 3，则表示：chinadns-ng 从客户端收到一个 query 包后，会同时向 trust-dns 发送 3 个相同的 query 包，向 china-dns 发送 1 个 query 包（所以该选项仅针对 trust-dns）。也就是所谓的 **多倍发包**、**重复发包**，并没有其它魔力。
+如果 trust 上游存在丢包的情况（特别是 udp-based 类型的代理隧道），可以使用 `--repeat-times` 选项进行一定的缓解。比如设置为 3，表示：chinadns-ng 从客户端收到一个 query 包后，会同时向 trust 上游转发 3 个相同的 query 包（默认是发 1 个包）。其实就是 **多倍发包**、**重复发包**，并没有其它魔力。
+
+或者换个思路，将发往 trust 上游的 dns 查询从 udp 转为 tcp；因为对于天朝网络，由于 QoS 等因素，tcp 流量的优先级通常比 udp 高，而且 tcp 传输协议本身就提供丢包重传，比重复发包策略更可靠。另外，有些代理处理 udp 流量的效率要低于 tcp，可能会出现 tcp 查询耗时低于 udp 的情况。
 
 ---
 
@@ -415,13 +418,15 @@ chinadns-ng -g gfwlist.txt -d chn -A gfwlist,gfwlist6
 
 ### --noip-as-chnip 选项的作用
 
+> 此选项只用于 tag:none 域名，下面说的 拒绝接受 也仅针对 **大陆 DNS**。
+
 首先解释一下什么是：**qtype 为 A/AAAA 但却没有 IP 的 reply**。
 
 qtype 即 query type，常见的有 A（查询给定域名的 IPv4 地址）、AAAA（查询给定域名的 IPv6 地址）、CNAME（查询给定域名的别名）、MX（查询给定域名的邮件服务器）；
 
 chinadns-ng 实际上只关心 A/AAAA 类型的查询和回复，因此这里强调 qtype 为 A/AAAA；A/AAAA 查询显然是想获得给定域名的 IP 地址，但是某些解析结果中却并不没有任何 IP 地址，比如 `yys.163.com` 的 A 记录查询有 IPv4 地址，但是 AAAA 记录查询却没有 IPv6 地址（见下面的演示）；
 
-默认情况下，chinadns-ng 会拒绝接受这种没有 IP 地址的 reply（此处的拒绝仅针对**国内 DNS**，可信 DNS 不存在任何过滤；另外此过滤也仅针对`非gfwlist && 非chnlist`域名），如果你希望 chinadns-ng 接受这种 reply，那么请指定 `--noip-as-chnip` 选项。
+默认情况下，chinadns-ng 会拒绝接受这种没有 IP 地址的 reply，如果你希望 chinadns-ng 接受这种 reply，那么请指定 `--noip-as-chnip` 选项。
 
 > 这里举的例子并没有体现该选项的真正目的，其实我本意是为了避开 gfw 污染，因为我担心 gfw 可能会对受污染域名返回空 answer（也就是没有 ip），所以默认情况下，chinadns-ng 并不接受 china 上游的这类响应（仅针对 tag:none 域名），我看很多人默认设置 --noip-as-chnip，我认为他们误解了这个选项的作用（当然还是我的锅，文档没写清楚）。
 
