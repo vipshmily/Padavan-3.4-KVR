@@ -87,7 +87,8 @@
 ** This is a user-callable routine.
 */
 void
-MD4Print(MD4_CTX *MDp)
+MD4Print(MDp)
+MD4_CTX *MDp;
 {
   int i,j;
   for (i=0;i<4;i++)
@@ -100,7 +101,8 @@ MD4Print(MD4_CTX *MDp)
 ** This is a user-callable routine.
 */
 void
-MD4Init(MD4_CTX *MDp)
+MD4Init(MDp)
+MD4_CTX *MDp;
 {
   int i;
   MDp->buffer[0] = I0;
@@ -118,7 +120,9 @@ MD4Init(MD4_CTX *MDp)
 ** This routine is not user-callable.
 */
 static void
-MDblock(MD4_CTX *MDp, unsigned char *Xb)
+MDblock(MDp,Xb)
+MD4_CTX *MDp;
+unsigned char *Xb;
 {
   register unsigned int tmp, A, B, C, D;
   unsigned int X[16];
@@ -202,7 +206,10 @@ MDblock(MD4_CTX *MDp, unsigned char *Xb)
 ** if desired.
 */
 void
-MD4Update(MD4_CTX *MDp, unsigned char *X, unsigned int count)
+MD4Update(MDp,X,count)
+MD4_CTX *MDp;
+unsigned char *X;
+unsigned int count;
 {
   unsigned int i, tmp, bit, byte, mask;
   unsigned char XX[64];
@@ -270,7 +277,9 @@ MD4Update(MD4_CTX *MDp, unsigned char *X, unsigned int count)
 ** Finish up MD4 computation and return message digest.
 */
 void
-MD4Final(unsigned char *buf, MD4_CTX *MD)
+MD4Final(buf, MD)
+unsigned char *buf;
+MD4_CTX *MD;
 {
   int i, j;
   unsigned int w;

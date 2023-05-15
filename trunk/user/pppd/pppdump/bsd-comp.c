@@ -124,15 +124,15 @@ struct bsd_db {
 #define BSD_OVHD	2		/* BSD compress overhead/packet */
 #define BSD_INIT_BITS	BSD_MIN_BITS
 
-static void	*bsd_decomp_alloc(u_char *options, int opt_len);
-static void	bsd_free(void *state);
-static int	bsd_decomp_init(void *state, u_char *options, int opt_len,
-				int unit, int hdrlen, int mru, int debug);
-static void	bsd_incomp(void *state, u_char *dmsg, int len);
-static int	bsd_decompress(void *state, u_char *cmp, int inlen,
-			       u_char *dmp, int *outlen);
-static void	bsd_reset(void *state);
-static void	bsd_comp_stats(void *state, struct compstat *stats);
+static void	*bsd_decomp_alloc __P((u_char *options, int opt_len));
+static void	bsd_free __P((void *state));
+static int	bsd_decomp_init __P((void *state, u_char *options, int opt_len,
+				     int unit, int hdrlen, int mru, int debug));
+static void	bsd_incomp __P((void *state, u_char *dmsg, int len));
+static int	bsd_decompress __P((void *state, u_char *cmp, int inlen,
+				    u_char *dmp, int *outlen));
+static void	bsd_reset __P((void *state));
+static void	bsd_comp_stats __P((void *state, struct compstat *stats));
 
 /*
  * Exported procedures.
@@ -174,7 +174,8 @@ struct compressor ppp_bsd_compress = {
  * clear the dictionary
  */
 static void
-bsd_clear(struct bsd_db *db)
+bsd_clear(db)
+    struct bsd_db *db;
 {
     db->clear_count++;
     db->max_ent = FIRST-1;
@@ -199,7 +200,8 @@ bsd_clear(struct bsd_db *db)
  * must compute the same ratio.
  */
 static int				/* 1=output CLEAR */
-bsd_check(struct bsd_db *db)
+bsd_check(db)
+    struct bsd_db *db;
 {
     u_int new_ratio;
 
@@ -239,7 +241,9 @@ bsd_check(struct bsd_db *db)
  * Return statistics.
  */
 static void
-bsd_comp_stats(void *state, struct compstat *stats)
+bsd_comp_stats(state, stats)
+    void *state;
+    struct compstat *stats;
 {
     struct bsd_db *db = (struct bsd_db *) state;
     u_int out;
@@ -264,7 +268,8 @@ bsd_comp_stats(void *state, struct compstat *stats)
  * Reset state, as on a CCP ResetReq.
  */
 static void
-bsd_reset(void *state)
+bsd_reset(state)
+    void *state;
 {
     struct bsd_db *db = (struct bsd_db *) state;
 
@@ -277,7 +282,9 @@ bsd_reset(void *state)
  * Allocate space for a (de) compressor.
  */
 static void *
-bsd_alloc(u_char *options, int opt_len, int decomp)
+bsd_alloc(options, opt_len, decomp)
+    u_char *options;
+    int opt_len, decomp;
 {
     int bits;
     u_int newlen, hsize, hshift, maxmaxcode;
@@ -343,7 +350,8 @@ bsd_alloc(u_char *options, int opt_len, int decomp)
 }
 
 static void
-bsd_free(void *state)
+bsd_free(state)
+    void *state;
 {
     struct bsd_db *db = (struct bsd_db *) state;
 
@@ -353,7 +361,9 @@ bsd_free(void *state)
 }
 
 static void *
-bsd_decomp_alloc(u_char *options, int opt_len)
+bsd_decomp_alloc(options, opt_len)
+    u_char *options;
+    int opt_len;
 {
     return bsd_alloc(options, opt_len, 1);
 }
@@ -362,8 +372,10 @@ bsd_decomp_alloc(u_char *options, int opt_len)
  * Initialize the database.
  */
 static int
-bsd_init(struct bsd_db *db, u_char *options, int opt_len, int unit,
-	 int hdrlen, int mru, int debug, int decomp)
+bsd_init(db, options, opt_len, unit, hdrlen, mru, debug, decomp)
+    struct bsd_db *db;
+    u_char *options;
+    int opt_len, unit, hdrlen, mru, debug, decomp;
 {
     int i;
 
@@ -397,8 +409,10 @@ bsd_init(struct bsd_db *db, u_char *options, int opt_len, int unit,
 }
 
 static int
-bsd_decomp_init(void *state, u_char *options, int opt_len,
-		int unit, int hdrlen, int mru, int debug)
+bsd_decomp_init(state, options, opt_len, unit, hdrlen, mru, debug)
+    void *state;
+    u_char *options;
+    int opt_len, unit, hdrlen, mru, debug;
 {
     return bsd_init((struct bsd_db *) state, options, opt_len,
 		    unit, hdrlen, mru, debug, 1);
@@ -410,7 +424,10 @@ bsd_decomp_init(void *state, u_char *options, int opt_len,
  * incompressible data by pretending to compress the incoming data.
  */
 static void
-bsd_incomp(void *state, u_char *dmsg, int mlen)
+bsd_incomp(state, dmsg, mlen)
+    void *state;
+    u_char *dmsg;
+    int mlen;
 {
     struct bsd_db *db = (struct bsd_db *) state;
     u_int hshift = db->hshift;
@@ -527,7 +544,10 @@ bsd_incomp(void *state, u_char *dmsg, int mlen)
  * compression, even though they are detected by inspecting the input.
  */
 static int
-bsd_decompress(void *state, u_char *cmsg, int inlen, u_char *dmp, int *outlenp)
+bsd_decompress(state, cmsg, inlen, dmp, outlenp)
+    void *state;
+    u_char *cmsg, *dmp;
+    int inlen, *outlenp;
 {
     struct bsd_db *db = (struct bsd_db *) state;
     u_int max_ent = db->max_ent;
