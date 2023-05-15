@@ -1,7 +1,13 @@
-SRC_NAME=igmpproxy-0.3
+SRC_NAME="igmpproxy-0.1"
+THISDIR=$(shell pwd)
 
-all: config_test
-	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+all: extract_test config_test
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+
+extract_test:
+	( if [ ! -d $(SRC_NAME) ]; then \
+		tar xf $(SRC_NAME).tar.xz; \
+	fi )
 
 config_test:
 	( if [ -f ./config_done ]; then \
@@ -12,7 +18,6 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	./autogen.sh ; \
 	./configure \
 		--prefix=/ \
 		--host=$(HOST_TARGET) \
