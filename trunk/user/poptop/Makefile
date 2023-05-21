@@ -1,6 +1,9 @@
 SRC_NAME=pptpd-1.4.0
 THISDIR=$(shell pwd)
 
+PPPD_DIR=$(ROOTDIR)/user/pppd
+PPPD_VER=2.4.7
+
 CFLAGS  += -O2
 CFLAGS  += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
@@ -24,7 +27,11 @@ configure:
 	( cd $(SRC_NAME) ; \
 	./reconf ; \
 	export ac_cv_header_libintl_h=no ; \
+	export ac_cv_lib_intl_gettext=no ; \
 	./configure \
+		KDIR=$(ROOTDIR)/$(LINUXDIR) \
+		PPPDIR=$(PPPD_DIR) \
+		PPPVER=$(PPPD_VER) \
 		--prefix=/usr \
 		--enable-bcrelay \
 		--host=$(HOST_TARGET) \
