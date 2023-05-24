@@ -726,7 +726,7 @@ remove_unused_rules(struct rule_state * list)
 				       list->eport, proto_itoa(list->proto),
 				       packets, bytes);
 				if(_upnp_delete_redir(list->eport, list->proto) >= 0)
-				n++;
+					n++;
 			}
 		}
 		tmp = list;

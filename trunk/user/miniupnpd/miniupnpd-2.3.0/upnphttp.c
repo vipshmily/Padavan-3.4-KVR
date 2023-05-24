@@ -969,12 +969,13 @@ Process_upnphttp(struct upnphttp * h)
 				char clientaddr_str[INET6_ADDRSTRLEN];
 				if(inet_ntop(AF_INET6, &(h->clientaddr_v6), clientaddr_str, INET6_ADDRSTRLEN) == NULL)
 					strncpy(clientaddr_str, "*inet_ntop error*", sizeof(clientaddr_str));
-				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly", clientaddr_str);
+				syslog(LOG_WARNING, "HTTP Connection from %s closed unexpectedly", clientaddr_str);
 			}
 			else
 #endif
 			{
-				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly", inet_ntoa(h->clientaddr));
+				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly",
+				inet_ntoa(h->clientaddr));
 			}
 			h->state = EToDelete;
 		}
@@ -1056,7 +1057,8 @@ Process_upnphttp(struct upnphttp * h)
 			else
 #endif
 			{
-				syslog(LOG_WARNING, "HTTP Connection from %s closed unexpectedly", inet_ntoa(h->clientaddr));
+				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly",
+				inet_ntoa(h->clientaddr));
 			}
 			h->state = EToDelete;
 		}

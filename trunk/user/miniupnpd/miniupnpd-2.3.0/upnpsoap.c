@@ -1613,7 +1613,7 @@ PinholeVerification(struct upnphttp * h, char * int_ip, unsigned short int_port)
 			freeaddrinfo(ai);
 			if (!found)
 			{
-				syslog(LOG_NOTICE, "%s: No IPv6 address for hostname '%s'",
+				syslog(LOG_DEBUG, "%s: No IPv6 address for hostname '%s'",
 				       "PinholeVerification", int_ip);
 				SoapError(h, 402, "Invalid Args");
 				return -1;
@@ -1621,7 +1621,7 @@ PinholeVerification(struct upnphttp * h, char * int_ip, unsigned short int_port)
 		}
 		else
 		{
-			syslog(LOG_DEBUG, "%s: Failed to convert hostname '%s' to IP address : %s",
+			syslog(LOG_WARNING, "%s: Failed to convert hostname '%s' to IP address : %s",
 			       "PinholeVerification", int_ip, gai_strerror(r));
 			SoapError(h, 402, "Invalid Args");
 			return -1;

@@ -28,7 +28,7 @@
 
 static int next_uid = 1;
 
-static const char * miniupnpd_v6_filter_chain = "upnp";
+static const char * miniupnpd_v6_filter_chain = "MINIUPNPD";
 
 static LIST_HEAD(pinhole_list_t, pinhole_t) pinhole_list;
 

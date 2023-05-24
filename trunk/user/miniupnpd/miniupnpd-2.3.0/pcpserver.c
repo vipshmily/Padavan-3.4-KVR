@@ -1576,7 +1576,7 @@ int ProcessIncomingPCPPacket(int s, unsigned char *buff, int len,
 			(const struct sockaddr_in6 *)senderaddr;
 		pcp_msg_info.sender_ip = senderaddr_v6->sin6_addr;
 	} else {
-		syslog(LOG_WARNING, "unknown PCP packet sender address family %d",
+		syslog(LOG_DEBUG, "unknown PCP packet sender address family %d",
 		       senderaddr->sa_family);
 		return 0;
 	}
@@ -1595,7 +1595,7 @@ int ProcessIncomingPCPPacket(int s, unsigned char *buff, int len,
 	if (!GETFLAG(PCP_ALLOWTHIRDPARTYMASK)) {
 		lan_addr = get_lan_for_peer(senderaddr);
 		if(lan_addr == NULL) {
-			syslog(LOG_DEBUG, "PCP packet sender %s not from a LAN, ignoring",
+			syslog(LOG_WARNING, "PCP packet sender %s not from a LAN, ignoring",
 			       addr_str);
 			return 0;
 		}

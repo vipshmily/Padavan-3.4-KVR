@@ -179,8 +179,8 @@ OpenAndConfSSDPReceiveSocket(int ipv6)
 		saddr->sin6_port = htons(SSDP_PORT);
 		saddr->sin6_addr = ipv6_bind_addr;
 		sockname_len = sizeof(struct sockaddr_in6);
-	}
-	else
+	} else
+
 #endif /* ENABLE_IPV6 */
 	{
 		struct sockaddr_in * saddr = (struct sockaddr_in *)&sockname;
@@ -197,12 +197,10 @@ OpenAndConfSSDPReceiveSocket(int ipv6)
 	{
 		syslog(LOG_WARNING, "setsockopt(udp, SO_REUSEADDR): %m");
 	}
-	/*
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) < 0)
 	{
 		syslog(LOG_WARNING, "setsockopt(udp, SO_REUSEPORT): %m");
 	}
-	*/
 #ifdef IP_RECVIF
 	/* BSD */
 	if(!ipv6) {
@@ -1017,7 +1015,7 @@ ProcessSSDPData(int s, const char *bufr, int n,
 			if(lan_addr->index != (unsigned)source_if && lan_addr->index != 0)
 #endif
 			{
-				syslog(LOG_DEBUG, "interface index not matching %u != %d", lan_addr->index, source_if);
+				syslog(LOG_WARNING, "interface index not matching %u != %d", lan_addr->index, source_if);
 			}
 		}
 		else

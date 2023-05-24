@@ -92,7 +92,7 @@ getifaddr(const char * ifname, char * buf, int len,
 #endif
 	}
 	ret = 0;
-err:
+ err:
 	close(s);
 	return ret;
 #else /* ifndef USE_GETIFADDRS */
@@ -147,7 +147,8 @@ err:
 		if(mask) *mask = ((struct sockaddr_in *)candidate->ifa_netmask)->sin_addr;
 	}
 	freeifaddrs(ifap);
-    return 0;
+
+	return 0;
 #endif
 }
 
