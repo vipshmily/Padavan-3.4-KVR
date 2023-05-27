@@ -28,14 +28,12 @@ CFLAGS ?= -Os
 CFLAGS += -fno-strict-aliasing
 CFLAGS += -fno-common
 CFLAGS += -D_GNU_SOURCE
-CFLAGS += -fstack-protector -fPIE
-CFLAGS += -D_FORTIFY_SOURCE=2
 CPPFLAGS += -D_GNU_SOURCE
 CFLAGS += -Wall
 CFLAGS += -Wextra -Wstrict-prototypes -Wdeclaration-after-statement
 #CFLAGS += -Wno-missing-field-initializers
 #CFLAGS += -ansi	# iptables headers does use typeof which is a gcc extension
-LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
+#LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
 CC ?= gcc
 RM = rm -f
 INSTALL = install
@@ -72,11 +70,12 @@ include $(SRCDIR)/gitrev.mk
 include $(SRCDIR)/objects.mk
 
 # sources in netfilter/ directory
+# NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
 LNXOBJS = linux/getifstats.o linux/ifacewatcher.o
 ifeq ($(ENABLE_IPV6),1)
 LNXOBJS += linux/getroute.o
 endif
-NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
+NETFILTEROBJS = netfilter/iptcrdr.o netfilter/iptpinhole.o netfilter/nfct_get.o
 
 ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(NETFILTEROBJS)
 
@@ -158,6 +157,20 @@ testportinuse:	testportinuse.o portinuse.o getifaddr.o \
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o
 
+CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
+LDFLAGS += -Wl,--gc-sections
+
+LDLIBS  = $(IPTABLESPATH)/libiptc/.libs/libip4tc.a
+ifeq ($(ENABLE_IPV6),1)
+LDLIBS += $(IPTABLESPATH)/libiptc/.libs/libip6tc.a
+ifndef DISABLE_NFNETLINK
+CFLAGS += -DUSE_LIBNFNETLINK
+LDLIBS += $(STAGEDIR)/lib/libnfnetlink.a
+endif
+endif
+#LDLIBS += lssl
+CFLAGS += -I$(IPTABLESPATH)/include
+LDFLAGS += -L$(IPTABLESPATH)/libiptc/.libs
 
 miniupnpdctl:	miniupnpdctl.o
 

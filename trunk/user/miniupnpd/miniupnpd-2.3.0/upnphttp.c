@@ -974,8 +974,7 @@ Process_upnphttp(struct upnphttp * h)
 			else
 #endif
 			{
-				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly",
-				inet_ntoa(h->clientaddr));
+				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly", inet_ntoa(h->clientaddr));
 			}
 			h->state = EToDelete;
 		}
@@ -1057,8 +1056,7 @@ Process_upnphttp(struct upnphttp * h)
 			else
 #endif
 			{
-				syslog(LOG_DEBUG, "HTTP Connection from %s closed unexpectedly",
-				inet_ntoa(h->clientaddr));
+				syslog(LOG_WARNING, "HTTP Connection from %s closed unexpectedly", inet_ntoa(h->clientaddr));
 			}
 			h->state = EToDelete;
 		}

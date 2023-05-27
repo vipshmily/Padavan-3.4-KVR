@@ -1,16 +1,16 @@
 # $Id: Makefile,v 1.9 2020/03/22 22:47:19 nanard Exp $
 CFLAGS?=-Wall -g -D_GNU_SOURCE -DDEBUG -Wstrict-prototypes -Wdeclaration-after-statement
-CC?=gcc
-
+CC ?= gcc
 # the following sucks, but works
-LIBS = $(IPTABLESPATH)/libiptc/.libs/libip4tc.a
+LIBS  = $(IPTABLESPATH)/libiptc/.libs/libip4tc.a
+ifeq ($(ENABLE_IPV6),1)
+LIBS += $(IPTABLESPATH)/libiptc/.libs/libip6tc.a
 endif
-CFLAGS += -DIPTABLES_143 -I$(IPTABLESPATH)/include/
+
+CFLAGS += -I$(IPTABLESPATH)/include/
 LDFLAGS += -L$(IPTABLESPATH)/libiptc/.libs
 
 all:	iptcrdr.o iptpinhole.o
-#        testiptcrdr_peer testiptcrdr_dscp test_nfct_get
-#        testiptcrdr testiptpinhole
 
 clean:
 	$(RM) *.o testiptcrdr testiptpinhole testiptcrdr_peer test_nfct_get \

@@ -14,6 +14,12 @@
 #include "config.h"
 #include "portinuse.h"
 
+#ifdef USE_NETFILTER
+const char * miniupnpd_nat_chain = "upnp";
+const char * miniupnpd_nat_postrouting_chain = "upnp-post";
+const char * miniupnpd_forward_chain = "upnp";
+#endif /* USE_NETFILTER */
+
 int main(int argc, char * * argv)
 {
 #ifndef CHECK_PORTINUSE
