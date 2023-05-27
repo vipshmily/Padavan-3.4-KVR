@@ -1,5 +1,5 @@
 SRC_NAME=dropbear-2022.83
-SRC_URL=https://matt.ucc.asn.au/dropbear/releases/$(SRC_NAME).tar.bz2
+SRC_URL=https://matt.ucc.asn.au/dropbear/$(SRC_NAME).tar.bz2
 
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SFTP),y)
 COPT=-DSFTPSERVER_PATH=\"/usr/libexec/sftp-server\"
@@ -7,9 +7,7 @@ else
 COPT=-DSFTPSERVER_PATH=\"/opt/libexec/sftp-server\"
 endif
 ifneq ($(CONFIG_FIRMWARE_INCLUDE_DROPBEAR_FAST_CODE),y)
-COPT+=-DDROPBEAR_SMALL_CODE=1
-else
-COPT+=-DDROPBEAR_SMALL_CODE=0
+COPT+=-DDROPBEAR_SMALL_CODE
 endif
 CFLAGS+=$(COPT) -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
@@ -25,6 +23,7 @@ download_test:
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
 		tar xjf $(SRC_NAME).tar.bz2; \
+		patch -d $(SRC_NAME) -p1 -i ../100-update-default-host-keys-path.patch; \
 	fi )
 
 config_test:
@@ -39,7 +38,6 @@ configure:
 	autoreconf -v; \
 	./configure \
 		--prefix=/usr \
-		--disable-harden \
 		--disable-lastlog \
 		--disable-utmp \
 		--disable-utmpx \
@@ -48,6 +46,7 @@ configure:
 		--disable-loginfunc \
 		--disable-pututline \
 		--disable-pututxline \
+		--disable-harden \
 		--enable-zlib \
 		--enable-bundled-libtom \
 		--host=$(HOST_TARGET) \

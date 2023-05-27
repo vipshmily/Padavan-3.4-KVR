@@ -1,18 +1,18 @@
 SRC_NAME=ncurses-6.4
-SRC_URL=https://github.com/mirror/ncurses/archive/v6.4.zip
+SRC_URL=https://ftp.gnu.org/pub/gnu/ncurses/$(SRC_NAME).tar.gz
 
 all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 download_test:
-	( if [ ! -f $(SRC_NAME).zip ]; then \
-		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).zip $(SRC_URL); \
+	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.gz $(SRC_URL); \
 	fi )
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		unzip -qq $(SRC_NAME).zip ; \
-	#	patch -p1 -d $(SRC_NAME) < $(SRC_NAME).patch ; \
+		tar xf $(SRC_NAME).tar.gz ; \
+		patch -p1 -d $(SRC_NAME) < $(SRC_NAME).patch ; \
 	fi )
 
 config_test:

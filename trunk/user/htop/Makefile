@@ -1,5 +1,5 @@
 SRC_NAME = htop-3.2.2
-SRC_URL = http://sources.buildroot.net/htop/$(SRC_NAME).tar.xz
+SRC_URL = https://github.com/htop-dev/htop/releases/download/3.2.2/$(SRC_NAME).tar.xz
 THISDIR = $(shell pwd)
 
 all: download_test extract_test config_test
@@ -24,7 +24,6 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	./autogen.sh ; \
 	./configure \
 		--prefix=/usr \
 		--enable-unicode \
