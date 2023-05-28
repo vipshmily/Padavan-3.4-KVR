@@ -1,3 +1,2 @@
-xray
-xray-*/
-xray-*.tar.gz
+bin/
+xray-core/
