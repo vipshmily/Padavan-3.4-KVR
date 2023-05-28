@@ -18,7 +18,7 @@ extract_test:
 
 build:
 	( cd $(SRC_NAME)/main; \
-	GOOS=linux GOARCH=mipsle CGO_ENABLED=0 go build -o $(THISDIR)/v2ray -trimpath -ldflags "-s -w -buildid="; \
+	GOOS=linux GOARCH=mipsle go build -gcflags=all="-l" -ldflags "-w -s -buildid=" -trimpath -o $(THISDIR)/bin/v2ray; \
 	)
 
 clean:
