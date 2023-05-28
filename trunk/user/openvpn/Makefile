@@ -1,7 +1,7 @@
-SRC_NAME=openvpn-2.5.8
-SRC_URL=https://github.com/OpenVPN/openvpn/archive/v2.5.8.tar.gz
+SRC_NAME=openvpn-2.5.9
+SRC_URL = https://github.com/OpenVPN/openvpn/archive/refs/tags/v2.5.9.tar.gz
 
-CFLAGS += -ffunction-sections -fdata-sections
+CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
 LDFLAGS += -Wl,--gc-sections
 
 all: download_test extract_test config_test
@@ -14,7 +14,8 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar zxf $(SRC_NAME).tar.gz; \
+		tar -xf $(SRC_NAME).tar.gz; \
+		patch -d $(SRC_NAME) -p1 < $(SRC_NAME).patch ; \
 	fi )
 
 config_test:
@@ -26,7 +27,7 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	autoreconf -vi ; \
+	autoreconf -fi ; \
 	IFCONFIG=/sbin/ifconfig \
 	ROUTE=/sbin/route \
 	NETSTAT=/bin/netstat \
