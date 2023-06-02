@@ -44,7 +44,7 @@
 			init_itoggle('ss_update_chnroute');
 			init_itoggle('ss_update_gfwlist');
 			init_itoggle('ss_turn');
-			init_itoggle('socks5_aenable');
+			init_itoggle('socks5_enable');
 			init_itoggle('ss_schedule_enable', change_on);
 			$j("#tab_ss_cfg, #tab_ss_add, #tab_ss_dlink, #tab_ss_ssl, #tab_ss_cli, #tab_ss_log, #tab_ss_help").click(
 				function () {
@@ -374,15 +374,10 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 				stext = "<#Stopped#>";
 			else if (status_code == 1)
 				stext = "<#Running#>";
-			var html = '<span class="label label-' + (status_code != 0 ? 'success' : 'warning') + '">' +
-				    stext + '</span>';
-			html += '<br />';
-			html += '<iframe src="https://myip.ipip.net" height="30" scrolling="no" frameborder="0" marginheight="0" marginwidth="0"></iframe>';
-			html += '<br />';
-			html += '<span>国外：<iframe src="https://api.myip.la" height="30" scrolling="no" frameborder="0" marginheight="0" marginwidth="0" style="display:inline;width:50%;position:relative;top:4px;"></iframe></span>';
-			//html += '<br />';
-			html += '<span><img src="https://www.google.com/favicon.ico?' + new Date().getTime() + '" /></span>';
-			$("ss_status").innerHTML = html;
+				$("ss_status").innerHTML = '<span class="label label-' + (status_code != 0 ? 'success' : 'warning') + '">' + stext + '</span>';
+			$("domestic_ip").innerHTML = '<iframe src="http://ip.3322.net" height="30" scrolling="no" frameborder="0" marginheight="0" marginwidth="0"></iframe>';
+			$("foreign_ip").innerHTML = '<iframe src="https://ifconfig.me/ip" height="30" scrolling="no" frameborder="0" marginheight="0" marginwidth="0"></iframe>';
+			$("gg_status").innerHTML = '<span><img alt="无法访问" src="https://www.google.com/favicon.ico?' + new Date().getTime() + '" /></span>';
 		}
 		function fill_dns2tcp_status(status_code) {
 			var stext = "Unknown";
@@ -1591,34 +1586,7 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 													</div>
 												</div>
 												<table width="100%" cellpadding="4" cellspacing="0" class="table">
-													<tr>
-														<th width="50%">客户端<#running_status#>
-															<br />
-															国内和国外的GeoIP和谷歌访问
-														</th>
-														<td id="ss_status"></td>
-													</tr>
-													<tr id="row_pdnsd_run">
-														<th width="50%">dns2tcp<#running_status#>
-														</th>
-														<td id="dns2tcp_status"></td>
-													</tr>
-													<tr id="row_dnsproxy_run">
-														<th width="50%">dnsproxy<#running_status#>
-														</th>
-														<td id="dnsproxy_status"></td>
-													</tr>
-													<tr>
-														<th>
-															<#InetControl#>
-														</th>
-														<td>
-															<input type="button" id="btn_reconnect" class="btn btn-info"
-																value=<#Connect#>
-															onclick="submitInternet('Reconnect');">
-														</td>
-													</tr>
-													<tr>
+													
 														<th>总开关</th>
 														<td>
 															<div class="main_itoggle">
@@ -1639,6 +1607,36 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 															</div>
 														</td>
 													</tr>
+
+													<th width="50%"><#InetControl#></th>
+														<td>
+															<input type="button" id="btn_reconnect" class="btn btn-info" value="<#Connect#>" onclick="submitInternet('Reconnect');">
+														</td>
+													</tr>
+														<th width="50%">国内IP</th>
+														<td id="domestic_ip"></td>
+													</tr>
+														<th width="50%">国外IP</th>
+														<td id="foreign_ip"></td>
+													</tr>
+														<th width="50%">谷歌访问</th>
+														<td id="gg_status"></td>
+													</tr>
+														<th width="50%">客户端<#running_status#>
+														</th>
+														<td id="ss_status"></td>
+													</tr>
+													<tr id="row_pdnsd_run">
+														<th width="50%">dns2tcp<#running_status#>
+														</th>
+														<td id="dns2tcp_status"></td>
+													</tr>
+													<tr id="row_dnsproxy_run">
+														<th width="50%">dnsproxy<#running_status#>
+														</th>
+														<td id="dnsproxy_status"></td>
+													</tr>
+													
 													<tr>
 														<th>主服务器:
 														</th>
