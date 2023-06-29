@@ -1,5 +1,5 @@
-SRC_NAME=nfs-utils-2.6.2
-SRC_URL = https://master.dl.sourceforge.net/project/nfs/nfs-utils/2.6.2/nfs-utils-2.6.2.tar.xz?viasf=1
+SRC_NAME=nfs-utils-2.6.3
+SRC_URL = https://master.dl.sourceforge.net/project/nfs/nfs-utils/2.6.3/nfs-utils-2.6.3.tar.xz?viasf=1
 THISDIR = $(shell pwd)
 
 CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden

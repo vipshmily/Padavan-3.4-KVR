@@ -1,7 +1,7 @@
 SRC_NAME = xTun-0.6.5
 SRC_URL = https://github.com/lparam/xTun/archive/v0.6.5.tar.gz
-LIBUV_SRC_NAME = libuv-1.44.2
-LIBUV_SRC_URL = https://github.com/libuv/libuv/archive/v1.44.2.tar.gz
+LIBUV_SRC_NAME = libuv-1.45.0
+LIBUV_SRC_URL = https://github.com/libuv/libuv/archive/v1.45.0.tar.gz
 LIBSODIUM__SRC_NAME = libsodium-1.0.18
 LIBSODIUM_SRC_URL = https://github.com/jedisct1/libsodium/archive/1.0.18.tar.gz
 THISDIR = $(shell pwd)

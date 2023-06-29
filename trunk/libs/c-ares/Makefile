@@ -1,5 +1,5 @@
-SRC_NAME=c-ares-1.19.0
-SRC_URL=https://github.com/c-ares/c-ares/releases/download/cares-1_19_0/c-ares-1.19.0.tar.gz
+SRC_NAME=c-ares-1.19.1
+SRC_URL=https://github.com/c-ares/c-ares/releases/download/cares-1_19_1/c-ares-1.19.1.tar.gz
 
 all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)/build

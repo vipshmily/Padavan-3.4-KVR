@@ -112,29 +112,6 @@ const char * queue = 0;
 const char * tag = 0;
 #endif
 
-#ifdef USE_NETFILTER
-/* chain names to use in the nat and filter tables. */
-
-/* iptables -t nat -N MINIUPNPD
- * iptables -t nat -A PREROUTING -i <ext_if_name> -j MINIUPNPD */
-const char * miniupnpd_nat_chain = "upnp";
-
-/* iptables -t nat -N MINIUPNPD-POSTROUTING
- * iptables -t nat -A POSTROUTING -o <ext_if_name> -j MINIUPNPD-POSTROUTING */
-const char * miniupnpd_nat_postrouting_chain = "upnp-post";
-
-/* iptables -t filter -N MINIUPNPD
- * iptables -t filter -A FORWARD -i <ext_if_name> ! -o <ext_if_name> -j MINIUPNPD */
-const char * miniupnpd_forward_chain = "upnp";
-
-#ifdef ENABLE_UPNPPINHOLE
-/* ip6tables -t filter -N MINIUPNPD
- * ip6tables -t filter -A FORWARD -i <ext_if_name> ! -o <ext_if_name> -j MINIUPNPD */
-const char * miniupnpd_v6_filter_chain = "upnp";
-#endif /* ENABLE_UPNPPINHOLE */
-
-#endif /* USE_NETFILTER */
-
 #ifdef ENABLE_NFQUEUE
 int nfqueue = -1;
 int n_nfqix = 0;

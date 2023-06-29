@@ -249,8 +249,8 @@ static struct iovec   s_iov[IOV_N];
 static struct nlnfhdr s_batch_begin;
 static struct nlnfhdr s_batch_end;
 
-static void *s_buf_req4 = (char [BUFSZ_4]){0}; /* tag:none{test} + tag:chn{test,add} | tag:gfw{test,add} */
-static void *s_buf_req6 = (char [BUFSZ_6]){0}; /* tag:none{test} + tag:chn{test,add} | tag:gfw{test,add} */
+static void *s_buf_req4 = (char [BUFSZ_4]){0}; /* tag:none{test} + tag:chn{test,add} + tag:gfw{test,add} */
+static void *s_buf_req6 = (char [BUFSZ_6]){0}; /* tag:none{test} + tag:chn{test,add} + tag:gfw{test,add} */
 static void *s_buf_res  = (char [BUFSZ_R]){0};
 
 /* tag:none */
@@ -533,14 +533,6 @@ void ipset_init(void) {
         end_add_ip = end_add_ip_ipset;
     }
 
-    /* tag:none test */
-    if (g_default_tag == NAME_TAG_NONE) {
-        log_info("tag:none test: %s", g_ipset_name4);
-        log_info("tag:none test: %s", g_ipset_name6);
-        init_req(true, g_ipset_name4, NULL);
-        init_req(false, g_ipset_name6, NULL);
-    }
-
     /* tag:chn add */
     if (g_add_tagchn_ip) {
         char name4[NAME_MAXLEN], name6[NAME_MAXLEN];
@@ -565,6 +557,14 @@ void ipset_init(void) {
         a_testmsg(ctx, false) = (void *)t_nlmsg(false) + OFFSET_GFW(false);
         init_req(true, name4, ctx);
         init_req(false, name6, ctx);
+    }
+
+    /* tag:none test */
+    if (g_default_tag == NAME_TAG_NONE) {
+        log_info("tag:none test: %s", g_ipset_name4);
+        log_info("tag:none test: %s", g_ipset_name6);
+        init_req(true, g_ipset_name4, NULL);
+        init_req(false, g_ipset_name6, NULL);
     }
 }
 

@@ -1,4 +1,4 @@
-SRC_NAME=parted-3.3
+SRC_NAME=parted-3.6
 SRC_URL=https://ftp.gnu.org/gnu/parted/$(SRC_NAME).tar.xz 
 
 CFLAGS += -ffunction-sections -fdata-sections

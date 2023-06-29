@@ -1,4 +1,4 @@
-SRC_NAME=strongswan-5.9.10
+SRC_NAME=strongswan-5.9.11
 URL_PATH=https://download.strongswan.org/$(SRC_NAME).tar.bz2
 
 CFLAGS += -ffunction-sections -fdata-sections

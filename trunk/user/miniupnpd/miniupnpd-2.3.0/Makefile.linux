@@ -45,21 +45,6 @@ DOXYGEN ?= doxygen
 DEPFLAGS = -MM -MG -MT $(patsubst %.d,%.o,$@) -MT $@
 # -M : with system headers, -MM : without
 
-CFLAGS += -ffunction-sections -fdata-sections
-LDFLAGS += -Wl,--gc-sections
-
-LDLIBS  = $(IPTABLESPATH)/libiptc/.libs/libip4tc.a
-ifeq ($(ENABLE_IPV6),1)
-LDLIBS += $(IPTABLESPATH)/libiptc/.libs/libip6tc.a
-ifndef DISABLE_NFNETLINK
-CFLAGS += -DUSE_LIBNFNETLINK
-LDLIBS += $(STAGEDIR)/lib/libnfnetlink.a
-endif
-endif
-#LDLIBS += lssl
-CFLAGS += -DIPTABLES_143 -I$(IPTABLESPATH)/include
-LDFLAGS += -L$(IPTABLESPATH)/libiptc/.libs
-
 INSTALLPREFIX ?= $(PREFIX)/usr
 SBININSTALLDIR = $(INSTALLPREFIX)/sbin
 ETCINSTALLDIR = $(PREFIX)/etc/miniupnpd
@@ -71,10 +56,6 @@ include $(SRCDIR)/objects.mk
 
 # sources in netfilter/ directory
 # NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
-LNXOBJS = linux/getifstats.o linux/ifacewatcher.o
-ifeq ($(ENABLE_IPV6),1)
-LNXOBJS += linux/getroute.o
-endif
 NETFILTEROBJS = netfilter/iptcrdr.o netfilter/iptpinhole.o netfilter/nfct_get.o
 
 ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(NETFILTEROBJS)

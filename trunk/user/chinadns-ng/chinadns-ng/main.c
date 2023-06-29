@@ -24,7 +24,7 @@
 
 #define PACKET_BUFSZ DNS_PACKET_MAXSIZE
 
-#define SOCK_LIFETIME 30 /* for upstream socket */
+#define SOCK_LIFETIME 60 /* for upstream socket */
 
 struct u16_buf {
     u16 len;
@@ -96,7 +96,7 @@ static void update_upstream_sock(int now) {
         log_verbose("create new socket, old socket is used for %d seconds", now - s_sock_create_time);
 
     if (MYHASH_CNT(s_context_list) > 0U) {
-        log_verbose("there are still unfinished queries, continue to use the old");
+        log_verbose("there are %u unfinished queries, continue to use the old", MYHASH_CNT(s_context_list));
         assert(s_sock_create_time);
         return;
     }
@@ -110,7 +110,7 @@ static void update_upstream_sock(int now) {
         if (s_upstream_sockfds[i] >= 0)
             close(s_upstream_sockfds[i]); /* fd will be auto removed from the interest-list when it is closed */
 
-        s_upstream_sockfds[i] = new_udp_socket(skaddr_family(&g_upstream_skaddrs[i]));
+        s_upstream_sockfds[i] = new_udp_socket(skaddr_family(&g_upstream_skaddrs[i]), false);
 
         struct epoll_event ev = {
             .events = EPOLLIN,
@@ -383,27 +383,28 @@ int main(int argc, char *argv[]) {
 
     log_info("local listen addr: %s#%u", g_bind_ip, (uint)g_bind_port);
 
-    if (g_upstream_addrs[CHINADNS1_IDX]) log_info("chinadns server#1: %s", g_upstream_addrs[CHINADNS1_IDX]);
-    if (g_upstream_addrs[CHINADNS2_IDX]) log_info("chinadns server#2: %s", g_upstream_addrs[CHINADNS2_IDX]);
-    if (g_upstream_addrs[TRUSTDNS1_IDX]) log_info("trustdns server#1: %s", g_upstream_addrs[TRUSTDNS1_IDX]);
-    if (g_upstream_addrs[TRUSTDNS2_IDX]) log_info("trustdns server#2: %s", g_upstream_addrs[TRUSTDNS2_IDX]);
+    if (g_upstream_addrs[CHINADNS1_IDX])
+        log_info("chinadns server#1: %s", g_upstream_addrs[CHINADNS1_IDX]);
+    if (g_upstream_addrs[CHINADNS2_IDX])
+        log_info("chinadns server#2: %s", g_upstream_addrs[CHINADNS2_IDX]);
+    if (g_upstream_addrs[TRUSTDNS1_IDX])
+        log_info("trustdns server#1: %s", g_upstream_addrs[TRUSTDNS1_IDX]);
+    if (g_upstream_addrs[TRUSTDNS2_IDX])
+        log_info("trustdns server#2: %s", g_upstream_addrs[TRUSTDNS2_IDX]);
+
+    dnl_init();
+    log_info("default domain name tag: %s", nametag_val2name(g_default_tag));
 
     bool need_ipset = g_add_tagchn_ip || g_add_taggfw_ip || g_default_tag == NAME_TAG_NONE;
     if (need_ipset) ipset_init();
 
-    dnl_init();
-
-    log_info("default domain name tag: %s", nametag_val2name(g_default_tag));
-    log_info("%s reply without ip addr", g_noip_as_chnip ? "accept" : "filter");
-    log_info("dns query timeout: %d seconds", g_upstream_timeout_sec);
-
     if (is_filter_all_v6(g_noaaaa_query))
         log_info("filter AAAA for all name");
     else if (g_noaaaa_query != 0) {
-        if (g_noaaaa_query & NOAAAA_TAG_GFW)
-            log_info("filter AAAA for tag_gfw name");
         if (g_noaaaa_query & NOAAAA_TAG_CHN)
             log_info("filter AAAA for tag_chn name");
+        if (g_noaaaa_query & NOAAAA_TAG_GFW)
+            log_info("filter AAAA for tag_gfw name");
         if (g_noaaaa_query & NOAAAA_TAG_NONE)
             log_info("filter AAAA for tag_none name");
         if (g_noaaaa_query & NOAAAA_CHINA_DNS)
@@ -416,12 +417,18 @@ int main(int argc, char *argv[]) {
             log_info("filter AAAA, check ip for trustdns");
     }
 
+    log_info("dns query timeout: %d seconds", g_upstream_timeout_sec);
+
     if (g_repeat_times > 1) log_info("enable repeat mode, times: %u", (uint)g_repeat_times);
+
+    log_info("%s no-ip reply from chinadns", g_noip_as_chnip ? "accept" : "filter");
+
     if (g_reuse_port) log_info("enable `SO_REUSEPORT` feature");
+
     log_verbose("print the verbose running log");
 
     /* create listen socket */
-    s_bind_sockfd = new_udp_socket(skaddr_family(&g_bind_skaddr));
+    s_bind_sockfd = new_udp_socket(skaddr_family(&g_bind_skaddr), true);
     if (g_reuse_port) set_reuse_port(s_bind_sockfd);
 
     /* bind address to listen socket */

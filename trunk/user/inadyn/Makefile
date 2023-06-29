@@ -1,5 +1,5 @@
-SRC_NAME = inadyn-2.10.0
-SRC_URL = https://github.com/troglobit/inadyn/releases/download/v2.10.0/inadyn-2.10.0.tar.xz
+SRC_NAME = inadyn-2.11.0
+SRC_URL = https://github.com/troglobit/inadyn/releases/download/v2.11.0/inadyn-2.11.0.tar.xz
 THISDIR = $(shell pwd)
 
 all: download_test extract_test config_test

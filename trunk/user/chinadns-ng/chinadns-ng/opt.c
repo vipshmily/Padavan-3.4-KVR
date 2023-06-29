@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CHINADNS_VERSION "ChinaDNS-NG 2023.05.08 <https://github.com/zfl9/chinadns-ng>"
+#define CHINADNS_VERSION "ChinaDNS-NG 2023.06.01 <https://github.com/zfl9/chinadns-ng>"
 
 bool    g_verbose       = false;
 bool    g_reuse_port    = false;
@@ -36,20 +36,20 @@ u8              g_repeat_times         = 1; /* used by trust-dns only */
 #define OPT_BIND_PORT 'l'
 #define OPT_CHINA_DNS 'c'
 #define OPT_TRUST_DNS 't'
-#define OPT_IPSET_NAME4 '4'
-#define OPT_IPSET_NAME6 '6'
-#define OPT_GFWLIST_FILE 'g'
 #define OPT_CHNLIST_FILE 'm'
-#define OPT_DEFAULT_TAG 'd'
-#define OPT_TIMEOUT_SEC 'o'
-#define OPT_REPEAT_TIMES 'p'
+#define OPT_GFWLIST_FILE 'g'
 #define OPT_CHNLIST_FIRST 'M'
+#define OPT_DEFAULT_TAG 'd'
 #define OPT_ADD_TAGCHN_IP 'a'
 #define OPT_ADD_TAGGFW_IP 'A'
+#define OPT_IPSET_NAME4 '4'
+#define OPT_IPSET_NAME6 '6'
 #define OPT_NO_IPV6 'N'
+#define OPT_TIMEOUT_SEC 'o'
+#define OPT_REPEAT_TIMES 'p'
+#define OPT_NOIP_AS_CHNIP 'n'
 #define OPT_FAIR_MODE 'f'
 #define OPT_REUSE_PORT 'r'
-#define OPT_NOIP_AS_CHNIP 'n'
 #define OPT_VERBOSE 'v'
 #define OPT_VERSION 'V'
 #define OPT_HELP 'h'
@@ -60,20 +60,20 @@ static const char s_shortopts[] = {
     OPT_BIND_PORT, ':', /* required_argument */
     OPT_CHINA_DNS, ':', /* required_argument */
     OPT_TRUST_DNS, ':', /* required_argument */
-    OPT_IPSET_NAME4, ':', /* required_argument */
-    OPT_IPSET_NAME6, ':', /* required_argument */
-    OPT_GFWLIST_FILE, ':', /* required_argument */
     OPT_CHNLIST_FILE, ':', /* required_argument */
-    OPT_DEFAULT_TAG, ':', /* required_argument */
-    OPT_TIMEOUT_SEC, ':', /* required_argument */
-    OPT_REPEAT_TIMES, ':', /* required_argument */
-    OPT_NO_IPV6, ':', ':', /* optional_argument */
+    OPT_GFWLIST_FILE, ':', /* required_argument */
     OPT_CHNLIST_FIRST, /* no_argument */
+    OPT_DEFAULT_TAG, ':', /* required_argument */
     OPT_ADD_TAGCHN_IP, ':', ':', /* optional_argument */
     OPT_ADD_TAGGFW_IP, ':', /* required_argument */
+    OPT_IPSET_NAME4, ':', /* required_argument */
+    OPT_IPSET_NAME6, ':', /* required_argument */
+    OPT_NO_IPV6, ':', ':', /* optional_argument */
+    OPT_TIMEOUT_SEC, ':', /* required_argument */
+    OPT_REPEAT_TIMES, ':', /* required_argument */
+    OPT_NOIP_AS_CHNIP, /* no_argument */
     OPT_FAIR_MODE, /* no_argument */
     OPT_REUSE_PORT, /* no_argument */
-    OPT_NOIP_AS_CHNIP, /* no_argument */
     OPT_VERBOSE, /* no_argument */
     OPT_VERSION, /* no_argument */
     OPT_HELP, /* no_argument */
@@ -85,20 +85,20 @@ static const struct option s_options[] = {
     {"bind-port",     required_argument, NULL, OPT_BIND_PORT},
     {"china-dns",     required_argument, NULL, OPT_CHINA_DNS},
     {"trust-dns",     required_argument, NULL, OPT_TRUST_DNS},
-    {"ipset-name4",   required_argument, NULL, OPT_IPSET_NAME4},
-    {"ipset-name6",   required_argument, NULL, OPT_IPSET_NAME6},
-    {"gfwlist-file",  required_argument, NULL, OPT_GFWLIST_FILE},
     {"chnlist-file",  required_argument, NULL, OPT_CHNLIST_FILE},
-    {"default-tag",   required_argument, NULL, OPT_DEFAULT_TAG},
-    {"timeout-sec",   required_argument, NULL, OPT_TIMEOUT_SEC},
-    {"repeat-times",  required_argument, NULL, OPT_REPEAT_TIMES},
-    {"no-ipv6",       optional_argument, NULL, OPT_NO_IPV6},
+    {"gfwlist-file",  required_argument, NULL, OPT_GFWLIST_FILE},
     {"chnlist-first", no_argument,       NULL, OPT_CHNLIST_FIRST},
+    {"default-tag",   required_argument, NULL, OPT_DEFAULT_TAG},
     {"add-tagchn-ip", optional_argument, NULL, OPT_ADD_TAGCHN_IP},
     {"add-taggfw-ip", required_argument, NULL, OPT_ADD_TAGGFW_IP},
+    {"ipset-name4",   required_argument, NULL, OPT_IPSET_NAME4},
+    {"ipset-name6",   required_argument, NULL, OPT_IPSET_NAME6},
+    {"no-ipv6",       optional_argument, NULL, OPT_NO_IPV6},
+    {"timeout-sec",   required_argument, NULL, OPT_TIMEOUT_SEC},
+    {"repeat-times",  required_argument, NULL, OPT_REPEAT_TIMES},
+    {"noip-as-chnip", no_argument,       NULL, OPT_NOIP_AS_CHNIP},
     {"fair-mode",     no_argument,       NULL, OPT_FAIR_MODE},
     {"reuse-port",    no_argument,       NULL, OPT_REUSE_PORT},
-    {"noip-as-chnip", no_argument,       NULL, OPT_NOIP_AS_CHNIP},
     {"verbose",       no_argument,       NULL, OPT_VERBOSE},
     {"version",       no_argument,       NULL, OPT_VERSION},
     {"help",          no_argument,       NULL, OPT_HELP},
@@ -111,33 +111,32 @@ static void show_help(void) {
            " -l, --bind-port <port-number>        listen port number, default: 65353\n"
            " -c, --china-dns <ip[#port],...>      china dns server, default: <114DNS>\n"
            " -t, --trust-dns <ip[#port],...>      trust dns server, default: <GoogleDNS>\n"
-           " -4, --ipset-name4 <ipv4-setname>     ipset ipv4 set name, default: chnroute\n"
-           " -6, --ipset-name6 <ipv6-setname>     ipset ipv6 set name, default: chnroute6\n"
-           "                                      if it contains @, then use nftables set\n"
-           "                                      format: family_name@table_name@set_name\n"
-           "                                      this ipset/nftset is used for tag:none\n"
-           " -g, --gfwlist-file <path,...>        path(s) of gfwlist, '-' indicate stdin\n"
            " -m, --chnlist-file <path,...>        path(s) of chnlist, '-' indicate stdin\n"
-           " -d, --default-tag <name-tag>         domain default tag: gfw,chn,none(default)\n"
-           " -o, --timeout-sec <query-timeout>    timeout of the upstream dns, default: 5\n"
-           " -p, --repeat-times <repeat-times>    only used for trustdns, default:1, max:5\n"
-           " -N, --no-ipv6=[rules]                filter AAAA query, rules can be a seq of:\n"
+           " -g, --gfwlist-file <path,...>        path(s) of gfwlist, '-' indicate stdin\n"
+           " -M, --chnlist-first                  match chnlist first, default gfwlist first\n"
+           " -d, --default-tag <name-tag>         domain default tag: chn,gfw,none(default)\n"
+           " -a, --add-tagchn-ip [set4,set6]      add the ip of name-tag:chn to ipset/nft\n"
+           "                                      use '--ipset-name4/6' set-name if no arg\n"
+           " -A, --add-taggfw-ip <set4,set6>      add the ip of name-tag:gfw to ipset/nft\n"
+           " -4, --ipset-name4 <set4>             ip test for tag:none, default: chnroute\n"
+           " -6, --ipset-name6 <set6>             ip test for tag:none, default: chnroute6\n"
+           "                                      if setname contains @, then use nft-set\n"
+           "                                      format: family_name@table_name@set_name\n"
+           " -N, --no-ipv6 [rules]                filter AAAA query, rules can be a seq of:\n"
            "                                      rule a: filter all domain name (default)\n"
-           "                                      rule g: filter the name with tag gfw\n"
            "                                      rule m: filter the name with tag chn\n"
+           "                                      rule g: filter the name with tag gfw\n"
            "                                      rule n: filter the name with tag none\n"
            "                                      rule c: do not forward to china upstream\n"
            "                                      rule t: do not forward to trust upstream\n"
            "                                      rule C: check answer ip of china upstream\n"
            "                                      rule T: check answer ip of trust upstream\n"
            "                                      if no rules is given, it defaults to 'a'\n"
-           " -M, --chnlist-first                  match chnlist first, default: <disabled>\n"
-           " -a, --add-tagchn-ip=[set4,set6]      add the ip of name-tag:chn to ipset/nft\n"
-           "                                      use '--ipset-name4/6' set-name if no arg\n"
-           " -A, --add-taggfw-ip <set4,set6>      add the ip of name-tag:gfw to ipset/nft\n"
+           " -o, --timeout-sec <query-timeout>    timeout of the upstream dns, default: 5\n"
+           " -p, --repeat-times <repeat-times>    only used for trustdns, default:1, max:5\n"
+           " -n, --noip-as-chnip                  allow no-ip reply from chinadns (tag:none)\n"
            " -f, --fair-mode                      enable fair mode (nop, only fair mode now)\n"
            " -r, --reuse-port                     enable SO_REUSEPORT, default: <disabled>\n"
-           " -n, --noip-as-chnip                  accept reply without ipaddr (A/AAAA query)\n"
            " -v, --verbose                        print the verbose log, default: <disabled>\n"
            " -V, --version                        print `chinadns-ng` version number and exit\n"
            " -h, --help                           print `chinadns-ng` help information and exit\n"
@@ -204,9 +203,6 @@ static void parse_noaaaa_rules(const char *rules) {
         return;
     }
 
-    if (*rules == '=')
-        ++rules;
-
     if (strlen(rules) <= 0)
         err_exit("'-N/--no-ipv6' requires an argument");
 
@@ -215,11 +211,11 @@ static void parse_noaaaa_rules(const char *rules) {
             case 'a':
                 g_noaaaa_query = NOAAAA_ALL;
                 break;
-            case 'g':
-                g_noaaaa_query |= NOAAAA_TAG_GFW;
-                break;
             case 'm':
                 g_noaaaa_query |= NOAAAA_TAG_CHN;
+                break;
+            case 'g':
+                g_noaaaa_query |= NOAAAA_TAG_GFW;
                 break;
             case 'n':
                 g_noaaaa_query |= NOAAAA_TAG_NONE;
@@ -253,6 +249,13 @@ static void parse_noaaaa_rules(const char *rules) {
     }
 }
 
+static void check_optional_arg(int argc, char *argv[]) {
+    if (!optarg && optind < argc && *argv[optind] != '-')
+        optarg = argv[optind++];
+    if (optarg && *optarg == '=')
+        ++optarg;
+}
+
 void opt_parse(int argc, char *argv[]) {
     opterr = 0; /* disable default error msg */
     int shortopt;
@@ -282,6 +285,41 @@ void opt_parse(int argc, char *argv[]) {
                 trustdns_optarg = optarg;
                 break;
 
+            case OPT_CHNLIST_FILE:
+                g_chnlist_fname = optarg;
+                break;
+
+            case OPT_GFWLIST_FILE:
+                g_gfwlist_fname = optarg;
+                break;
+
+            case OPT_CHNLIST_FIRST:
+                g_gfwlist_first = false;
+                break;
+
+            case OPT_DEFAULT_TAG:
+                if (strcmp(optarg, "chn") == 0)
+                    g_default_tag = NAME_TAG_CHN;
+                else if (strcmp(optarg, "gfw") == 0)
+                    g_default_tag = NAME_TAG_GFW;
+                else if (strcmp(optarg, "none") == 0)
+                    g_default_tag = NAME_TAG_NONE;
+                else
+                    err_exit("invalid default domain tag: %s", optarg);
+                break;
+
+            case OPT_ADD_TAGCHN_IP:
+                check_optional_arg(argc, argv);
+                if (!optarg)
+                    g_add_tagchn_ip = &no_arg;
+                else
+                    g_add_tagchn_ip = optarg;
+                break;
+
+            case OPT_ADD_TAGGFW_IP:
+                g_add_taggfw_ip = optarg;
+                break;
+
             case OPT_IPSET_NAME4:
                 g_ipset_name4 = optarg;
                 break;
@@ -290,23 +328,9 @@ void opt_parse(int argc, char *argv[]) {
                 g_ipset_name6 = optarg;
                 break;
 
-            case OPT_GFWLIST_FILE:
-                g_gfwlist_fname = optarg;
-                break;
-
-            case OPT_CHNLIST_FILE:
-                g_chnlist_fname = optarg;
-                break;
-
-            case OPT_DEFAULT_TAG:
-                if (strcmp(optarg, "gfw") == 0)
-                    g_default_tag = NAME_TAG_GFW;
-                else if (strcmp(optarg, "chn") == 0)
-                    g_default_tag = NAME_TAG_CHN;
-                else if (strcmp(optarg, "none") == 0)
-                    g_default_tag = NAME_TAG_NONE;
-                else
-                    err_exit("invalid default domain tag: %s", optarg);
+            case OPT_NO_IPV6:
+                check_optional_arg(argc, argv);
+                parse_noaaaa_rules(optarg);
                 break;
 
             case OPT_TIMEOUT_SEC:
@@ -320,25 +344,8 @@ void opt_parse(int argc, char *argv[]) {
                 g_repeat_times = min(g_repeat_times, MAX_REPEAT_TIMES);
                 break;
 
-            case OPT_NO_IPV6:
-                parse_noaaaa_rules(optarg);
-                break;
-
-            case OPT_CHNLIST_FIRST:
-                g_gfwlist_first = false;
-                break;
-
-            case OPT_ADD_TAGCHN_IP:
-                if (!optarg)
-                    g_add_tagchn_ip = &no_arg;
-                else if (*optarg == '=')
-                    g_add_tagchn_ip = optarg + 1;
-                else
-                    g_add_tagchn_ip = optarg;
-                break;
-
-            case OPT_ADD_TAGGFW_IP:
-                g_add_taggfw_ip = optarg;
+            case OPT_NOIP_AS_CHNIP:
+                g_noip_as_chnip = true;
                 break;
 
             case OPT_FAIR_MODE:
@@ -347,10 +354,6 @@ void opt_parse(int argc, char *argv[]) {
 
             case OPT_REUSE_PORT:
                 g_reuse_port = true;
-                break;
-
-            case OPT_NOIP_AS_CHNIP:
-                g_noip_as_chnip = true;
                 break;
 
             case OPT_VERBOSE:
