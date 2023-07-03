@@ -1,65 +1,66 @@
 #!/bin/sh
 
 change_dns() {
-if [ "$(nvram get adg_redirect)" = 1 ]; then
-sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+  if [ "$(nvram get adg_redirect)" = 1 ]; then
+    sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+    sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
+    cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
 no-resolv
 server=127.0.0.1#5335
 EOF
-/sbin/restart_dhcpd
-logger -t "AdGuardHome" "添加DNS转发到5335端口"
-fi
+    /sbin/restart_dhcpd
+    logger -t "AdGuardHome" "添加DNS转发到5335端口"
+  fi
 }
 
 del_dns() {
-sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed -i '/server=127.0.0.1#5335/d' /etc/storage/dnsmasq/dnsmasq.conf
-/sbin/restart_dhcpd
+  sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+  sed -i '/server=127.0.0.1#5335/d' /etc/storage/dnsmasq/dnsmasq.conf
+  /sbin/restart_dhcpd
 }
 
-set_iptable() {
-    if [ "$(nvram get adg_redirect)" = 2 ]; then
-  IPS="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
-  for IP in $IPS
-  do
-    iptables -t nat -A PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
-    iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
-  done
+set_iptable()
+{
+  if [ "$(nvram get adg_redirect)" = 2 ]; then
+    IPS="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
+    for IP in $IPS
+    do
+      iptables -t nat -A PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
+      iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
+    done
 
-  IPS="`ifconfig | grep "inet6 addr" | grep -v " fe80::" | grep -v " ::1" | grep "Global" | awk '{print $3}'`"
-  for IP in $IPS
-  do
-    ip6tables -t nat -A PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
-    ip6tables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
-  done
-    logger -t "AdGuardHome" "重定向53端口"
-    fi
+    IPS="`ifconfig | grep "inet6 addr" | grep -v " fe80::" | grep -v " ::1" | grep "Global" | awk '{print $3}'`"
+    for IP in $IPS
+    do
+      ip6tables -t nat -A PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
+      ip6tables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports 5335 >/dev/null 2>&1
+    done
+      logger -t "AdGuardHome" "重定向53端口"
+  fi
 }
 
-clear_iptable() {
-  OLD_PORT="5335"
-  IPS="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
-  for IP in $IPS
-  do
-    iptables -t nat -D PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
-    iptables -t nat -D PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
-  done
+clear_iptable()
+{
+	OLD_PORT="5335"
+	IPS="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
+	for IP in $IPS
+	do
+		iptables -t nat -D PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
+		iptables -t nat -D PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
+	done
 
-  IPS="`ifconfig | grep "inet6 addr" | grep -v " fe80::" | grep -v " ::1" | grep "Global" | awk '{print $3}'`"
-  for IP in $IPS
-  do
-    ip6tables -t nat -D PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
-    ip6tables -t nat -D PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
-  done
-
+	IPS="`ifconfig | grep "inet6 addr" | grep -v " fe80::" | grep -v " ::1" | grep "Global" | awk '{print $3}'`"
+	for IP in $IPS
+	do
+		ip6tables -t nat -D PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
+		ip6tables -t nat -D PREROUTING -p tcp -d $IP --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
+	done
 }
 
-getconfig() {
-adg_file="/etc/storage/adg.sh"
-if [ ! -f "$adg_file" ] || [ ! -s "$adg_file" ] ; then
-  cat > "$adg_file" <<-\EEE
+getconfig(){
+  adg_file="/etc/storage/adg.sh"
+  if [ ! -f "$adg_file" ] || [ ! -s "$adg_file" ] ; then
+	  cat > "$adg_file" <<-\EEE
 bind_host: 0.0.0.0
 bind_port: 3030
 auth_name: adguardhome
@@ -79,7 +80,6 @@ dns:
   refuse_any: true
   bootstrap_dns:
   - 223.5.5.5
-  - 119.29.29.29
   all_servers: true
   allowed_clients: []
   disallowed_clients: []
@@ -90,10 +90,7 @@ dns:
   safebrowsing_enabled: false
   resolveraddress: ""
   upstream_dns:
-  - quic://i.passcloud.xyz:784
-  - tls://i.passcloud.xyz:5432
-  - quic://a.passcloud.xyz:784
-  - tls://a.passcloud.xyz:5432
+  - 223.5.5.5
 tls:
   enabled: false
   server_name: ""
@@ -111,10 +108,6 @@ filters:
   url: https://adaway.org/hosts.txt
   name: AdAway
   id: 2
-- enabled: true
-  url: https://anti-ad.net/easylist.txt
-  name: anti-AD
-  id: 3
 user_rules: []
 dhcp:
   enabled: false
@@ -125,57 +118,41 @@ dhcp:
   range_end: ""
   lease_duration: 86400
   icmp_timeout_msec: 1000
-clients: []
 log_file: ""
 verbose: false
 schema_version: 3
 
 EEE
-  chmod 755 "$adg_file"
-fi
-}
-
-dl_adg() {
-logger -t "AdGuardHome" "下载AdGuardHome"
-curl -k -s -o /tmp/AdGuardHome/AdGuardHome --connect-timeout 10 --retry 3 https://raw.githubusercontent.com/vipshmily/OutSide/main/AdGuardHome
-if [ ! -f "/tmp/AdGuardHome/AdGuardHome" ]; then
-logger -t "AdGuardHome" "AdGuardHome下载失败，请检查是否能正常访问github!程序将退出。"
-nvram set adg_enable=0
-exit 0
-else
-logger -t "AdGuardHome" "AdGuardHome下载成功。"
-chmod +x /tmp/AdGuardHome/AdGuardHome
-fi
-}
-
-start_adg() {
-  mkdir -p /tmp/AdGuardHome
-  mkdir -p /etc/storage/AdGuardHome
-  if [ ! -f "/tmp/AdGuardHome/AdGuardHome" ]; then
-  dl_adg
+	  chmod 755 "$adg_file"
   fi
-  getconfig
-  change_dns
-  set_iptable
-  logger -t "AdGuardHome" "运行AdGuardHome"
-  eval "/tmp/AdGuardHome/AdGuardHome -c $adg_file -w /tmp/AdGuardHome -v" &
 }
 
-stop_adg() {
-rm -rf /tmp/AdGuardHome
-killall -9 AdGuardHome
-del_dns
-clear_iptable
+start_adg(){
+  mkdir -p /tmp/AdGuardHome
+	mkdir -p /etc/storage/AdGuardHome
+	getconfig
+	change_dns
+	set_iptable
+	logger -t "AdGuardHome" "启动 AdGuardHome"
+	eval "AdGuardHome -c $adg_file -w /tmp/AdGuardHome -v" &
+}
+
+stop_adg(){
+  rm -rf /tmp/AdGuardHome
+  logger -t "AdGuardHome" "停止 AdGuardHome"
+  killall -9 AdGuardHome
+  del_dns
+  clear_iptable
 }
 
 case $1 in
 start)
-  start_adg
-  ;;
+	start_adg
+	;;
 stop)
-  stop_adg
-  ;;
+	stop_adg
+	;;
 *)
-  echo "check"
-  ;;
+	echo "check"
+	;;
 esac
