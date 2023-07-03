@@ -3,8 +3,8 @@
 编译方法同其他Padavan源码，主要特点如下：  
 1.采用padavanonly源码的5.0.4.0无线驱动，支持kvr  
 2.添加了chongshengB源码的所有插件  
-3.其他部分等同于hanwckf的源码，有少量优化来自immortalwrt的padavan源码
-4.vb1980持续对代码做出的测试、改进和更新：https://github.com/vb1980/Padavan-KVR.git  
+3.其他部分等同于hanwckf的源码，有少量优化来自immortalwrt的padavan源码                                                                            
+4.vb1980持续对代码测试、改进和更新：https://github.com/vb1980/Padavan-KVR.git  
 5.添加了MSG1500的7615版本config  
   
 以下附上他们四位的源码地址供参考  
@@ -30,7 +30,7 @@ wifi密码
  - admin
  - admin
 
-**最近缝合、更新的代码都来自于以下大佬们的4.4内核代码，缝合4.4内核代码多拨（本地不支持多拨，未经测试）及其他功能**
+**最近缝合、更新的代码都来自于以下大佬们的4.4内核代码，缝合4.4多拨（本地不支持多拨，未经测试）及更新、优化其他功能**
 - https://github.com/hanwckf/padavan-4.4
 - https://github.com/MeIsReallyBa/padavan-4.4
 - https://github.com/tsl0922/padavan
