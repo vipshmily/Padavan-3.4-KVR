@@ -389,7 +389,7 @@ local function processData(szType, content)
 end
 -- wget
 local function wget(url)
-	local stdout = io.popen('curl -s --connect-timeout 15 --retry 5 "' .. url .. '"')
+	local stdout = io.popen('curl -k -s --connect-timeout 15 --retry 5 "' .. url .. '"')
 	local sresult = stdout:read("*all")
     return trim(sresult)
 end
@@ -548,5 +548,3 @@ end
 		log('新增节点数量: ' .. add, '删除节点数量: ' .. del)
 		log('订阅更新成功')
 		end
-
-
