@@ -1,5 +1,5 @@
-SRC_NAME = smartdns-42
-SRC_URL=https://github.com/pymumu/smartdns/archive/refs/tags/Release42.tar.gz
+SRC_NAME = smartdns-43
+SRC_URL=https://github.com/pymumu/smartdns/archive/refs/tags/Release43.tar.gz
 
 THISDIR = $(shell pwd)
 
