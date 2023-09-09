@@ -105,6 +105,9 @@ rules() {
 	iptables -A FORWARD -i $zt0 -j ACCEPT
 	if [ $nat_enable -eq 1 ]; then
 		iptables -t nat -A POSTROUTING -o $zt0 -j MASQUERADE
+		while [ "$(ip route | grep "dev $zt0  proto kernel" | awk '{print $1}')" = "" ]; do
+		    sleep 1
+		done
 		ip_segment="$(ip route | grep "dev $zt0  proto kernel" | awk '{print $1}')"
 		iptables -t nat -A POSTROUTING -s $ip_segment -j MASQUERADE
 		zero_route "add"
@@ -115,11 +118,13 @@ rules() {
 
 del_rules() {
 	zt0=$(ifconfig | grep zt | awk '{print $1}')
-	ip_segment=`ip route | grep "dev $zt0  proto" | awk '{print $1}'`
-	iptables -D FORWARD -i $zt0 -j ACCEPT 2>/dev/null
-	iptables -D FORWARD -o $zt0 -j ACCEPT 2>/dev/null
-	iptables -D FORWARD -i $zt0 -o $zt0 -j ACCEPT
+	ip_segment=`ip route | grep "dev $zt0  proto kernel" | awk '{print $1}'`
+#	iptables -D FORWARD -i $zt0 -j ACCEPT 2>/dev/null
+#	iptables -D FORWARD -o $zt0 -j ACCEPT 2>/dev/null
+#	iptables -D FORWARD -i $zt0 -o $zt0 -j ACCEPT
 	iptables -D INPUT -i $zt0 -j ACCEPT 2>/dev/null
+	iptables -D FORWARD -i $zt0 -o $zt0 -j ACCEPT 2>/dev/null
+	iptables -D FORWARD -i $zt0 -j ACCEPT 2>/dev/null
 	iptables -t nat -D POSTROUTING -o $zt0 -j MASQUERADE 2>/dev/null
 	iptables -t nat -D POSTROUTING -s $ip_segment -j MASQUERADE 2>/dev/null
 }
@@ -152,7 +157,7 @@ start_zero() {
 kill_z() {
 	zerotier_process=$(pidof zerotier-one)
 	if [ -n "$zerotier_process" ]; then
-		logger -t "ZEROTIER" "关闭进程..."
+		logger -t "zerotier" "关闭进程..."
 		killall zerotier-one >/dev/null 2>&1
 		kill -9 "$zerotier_process" >/dev/null 2>&1
 	fi
