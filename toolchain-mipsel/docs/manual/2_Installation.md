@@ -44,12 +44,17 @@ fingerprint is:
 
     64AA FBF2 1475 8C63 4093 45F9 7848 649B 11D6 18A4
 
+Starting with 1.25.0, releases are signature with Chris Packham's PGP key. The
+fingerprint is:
+
+    721B 0FB1 CDC8 318A EBB8  88B8 09F6 DD5F 1F30 EF2E
+
 The public keys are found on [http://pgp.surfnet.nl/](http://pgp.surfnet.nl/).
 To validate the release tarball run you need to import the keys from the keyserver
 and download the signature of the tarball, then verify the tarball with both
 the tarball and the signature in the same directory:
 
-    gpg --keyserver http://pgp.surfnet.nl --recv-keys 35B871D1 11D618A4
+    gpg --keyserver pgp.surfnet.nl --recv-keys 35B871D1 11D618A4
     wget http://crosstool-ng.org/download/crosstool-ng/crosstool-ng-VERSION.tar.bz2.sig
     gpg --verify crosstool-ng-VERSION.tar.bz2.sig
 
@@ -143,11 +148,11 @@ completion. That shell fragment is currently not installed automatically.
 
 To install the shell script fragment, you have two options:
 
--   install system-wide, most probably by copying `ct-ng.comp` into
-    `/etc/bash_completion.d/`, or
+-   install system-wide, most probably by copying `./bash-completion/ct-ng`
+    into `/etc/bash_completion.d/`, or
 
--   install for a single user, by copying `ct-ng.comp` into `${HOME}/`
-    and sourcing this file from your `${HOME}/.bashrc`.
+-   install for a single user, by copying `./bash-completion/ct-ng` into
+    `${HOME}/` and sourcing this file from your `${HOME}/.bashrc`.
 
 Contributed code <a name="contributed-code"></a>
 ----------------

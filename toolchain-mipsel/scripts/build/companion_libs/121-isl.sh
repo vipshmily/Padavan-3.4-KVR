@@ -82,16 +82,11 @@ do_isl_backend() {
         eval "${arg// /\\ }"
     done
 
+    if [ "${CT_CC_LANG_JIT}" = "y" ]; then
+        extra_config+=("--with-pic")
+    fi
+
     CT_DoLog EXTRA "Configuring ISL"
-
-    if [ "${CT_ISL_NEEDS_WITH_GMP}" != "y" ]; then
-        extra_config+=("--with-libgmp-prefix=${prefix}")
-        extra_config+=("--with-libgmpxx-prefix=${prefix}")
-    fi
-
-    if [ "${CT_ISL_HAS_WITH_PIPLIB}" != "y" ]; then
-        extra_config+=("--with-piplib=no")
-    fi
 
     CT_DoExecLog CFG                                \
     CFLAGS="${cflags}"                              \

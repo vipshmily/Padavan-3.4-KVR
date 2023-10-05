@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
+# -*- mode: bash; tab-width: 4 -*-
+# vi: ts=4:sw=4:et
+# vim: filetype=bash
 
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
     echo "Your BASH shell version (${BASH_VERSION}) is too old." >&2
     echo "Run bootstrap on a machine with BASH 4.x" >&2
     exit 1
 fi
+
+# see #849
+unset CDPATH
 
 ########################################
 # Common meta-language implementation. Syntax:
@@ -399,7 +405,7 @@ cmp_versions()
 {
     local v1="${1}"
     local v2="${2}"
-    local e1=0 e2=0 u1 u2 d1=0 d2=0
+    local e1=0 e2=0 d1=0 d2=0
 
     # Case-insensitive comparison
     v1="${v1^^}"
@@ -467,15 +473,15 @@ sort_versions()
                 #debug "${v} vs ${vx} :: `cmp_versions ${v} ${vx}`"
                 case `cmp_versions ${v} ${vx}` in
                     1)
-			    next_remains+=" ${vx}"
-			    ;;
+                        next_remains+=" ${vx}"
+                        ;;
                     0)
-			    ;;
+                        ;;
                     -1)
-			    found=no
-			    #debug "Bad: earlier than ${vx}"
-			    break
-			    ;;
+                        found=no
+                        #debug "Bad: earlier than ${vx}"
+                        break
+                        ;;
                 esac
             done
             if [ "${found}" = "yes" ]; then
@@ -571,6 +577,9 @@ enter_fork()
     info[pkg_name]=${fork}
     info[pkg_label]=${fork}
     info[mirrors]=
+    info[src_release]=
+    info[src_devel]=
+    info[src_custom]=
     info[archive_filename]='@{pkg_name}-@{version}'
     info[archive_dirname]='@{pkg_name}-@{version}'
     info[versionlocked]=
@@ -589,6 +598,8 @@ enter_fork()
         info[vcs]=${info[repository]%% *}
         info[repository_url]=${info[repository]#* }
     fi
+
+    info[mirrors]=${info[mirrors]//$\(/\\$\(}
 
     versions=`cd packages/${fork} && \
         for f in */version.desc; do [ -r "${f}" ] && echo "${f%/version.desc}"; done`
@@ -640,11 +651,14 @@ enter_version()
 enter_milestone()
 {
     local ms="${1}"
-    local cmp
 
     info[ms]=${ms}
     if [ -n "${info[ver]}" ]; then
-        info[version_cmp_milestone]=`cmp_versions ${info[ver]} ${info[ms]}`
+        if [ -n "${info[version_number]}" ]; then
+            info[version_cmp_milestone]=`cmp_versions ${info[version_number]} ${info[ms]}`
+        else
+            info[version_cmp_milestone]=`cmp_versions ${info[ver]} ${info[ms]}`
+        fi
     fi
 }
 
@@ -790,7 +804,7 @@ msg "*** Gathering the list of data files to install"
 {
     declare -A seen_files
     echo -n "verbatim_data ="
-    find COPYING config contrib licenses.d packages samples scripts -type f | LANG=C sort | while read f; do
+    find -L COPYING config contrib licenses.d packages samples scripts -type f | LANG=C sort | while read f; do
         # Implement some kind of .installignore for these files?
         case "${f}" in
             # Avoid temp files
@@ -801,7 +815,7 @@ msg "*** Gathering the list of data files to install"
             scripts/compile | scripts/missing | scripts/depcomp | scripts/ltmain.sh | scripts/install-sh)
                 continue
                 ;;
-            # 
+            #
             # will produce. FIXME: create this file at the time of 'ct-ng build'.
             config/configure.in.in | config/configure.in)
                 continue
@@ -812,12 +826,12 @@ msg "*** Gathering the list of data files to install"
             continue
         fi
         echo " \\"
-        echo -n "	${f}"
+        echo -en "\t${f}"
         seen_files[${f}]=y
     done
 } > verbatim-data.mk
 
 msg "*** Running autoreconf"
-autoreconf -Wall --force
+autoreconf -Wall --force -I m4
 
 msg "*** Done!"

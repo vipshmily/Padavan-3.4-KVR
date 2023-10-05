@@ -114,7 +114,6 @@ fi
 
 # Where will we work?
 CT_WORK_DIR="${CT_WORK_DIR:-${CT_TOP_DIR}/.build}"
-CT_BUILD_DIR="${CT_BUILD_TOP_DIR}/build"
 CT_DoExecLog ALL mkdir -p "${CT_WORK_DIR}"
 CT_DoExecLog DEBUG rm -f "${CT_WORK_DIR}/backtrace"
 
@@ -346,8 +345,8 @@ if [ -z "${CT_RESTART}" ]; then
         CT_HEADERS_DIR="${CT_SYSROOT_DIR}/usr/include"
         CT_SanitizeVarDir CT_SYSROOT_DIR CT_DEBUGROOT_DIR CT_HEADERS_DIR
         CT_BINUTILS_SYSROOT_ARG="--with-sysroot=${CT_SYSROOT_DIR}"
-        CT_CC_CORE_SYSROOT_ARG="--with-sysroot=${CT_SYSROOT_DIR}"
-        CT_CC_SYSROOT_ARG="--with-sysroot=${CT_SYSROOT_DIR}"
+        CT_CC_CORE_SYSROOT_ARG=("--with-sysroot=${CT_SYSROOT_DIR}")
+        CT_CC_SYSROOT_ARG=("--with-sysroot=${CT_SYSROOT_DIR}")
         # glibc's prefix must be exactly /usr, else --with-sysroot'd gcc will get
         # confused when $sysroot/usr/include is not present.
         # Note: --prefix=/usr is magic!
@@ -364,8 +363,8 @@ if [ -z "${CT_RESTART}" ]; then
         CT_BINUTILS_SYSROOT_ARG="--with-sysroot=${CT_SYSROOT_DIR}"
         # Use --with-headers, else final gcc will define disable_glibc while
         # building libgcc, and you'll have no profiling
-        CT_CC_CORE_SYSROOT_ARG="--without-headers"
-        CT_CC_SYSROOT_ARG="--with-headers=${CT_HEADERS_DIR}"
+        CT_CC_CORE_SYSROOT_ARG=("--without-headers")
+        CT_CC_SYSROOT_ARG=("--with-headers=${CT_HEADERS_DIR}")
     fi
     CT_DoExecLog ALL mkdir -p "${CT_SYSROOT_DIR}"
     CT_DoExecLog ALL mkdir -p "${CT_DEBUGROOT_DIR}"
@@ -438,7 +437,7 @@ if [ -z "${CT_RESTART}" ]; then
             t="${!r}-"
         fi
 
-        for tool in ar as dlltool gcc g++ gcj gnatbind gnatmake ld nm objcopy objdump ranlib strip windres; do
+        for tool in ar as dlltool gcc g++ gcj gnatbind gdc gnatmake ld libtool nm objcopy objdump ranlib strip windres; do
             # First try with prefix + suffix
             # Then try with prefix only
             # Then try with suffix only, but only for BUILD, and HOST iff REAL_BUILD == REAL_HOST
@@ -531,6 +530,7 @@ if [ -z "${CT_RESTART}" ]; then
     # package's default optimisation flags
     CT_CFLAGS_FOR_BUILD="-O2 -g -I${CT_BUILDTOOLS_PREFIX_DIR}/include"
     CT_CFLAGS_FOR_BUILD+=" ${CT_EXTRA_CFLAGS_FOR_BUILD}"
+    CT_CXXFLAGS_FOR_BUILD="${CT_EXTRA_CXXFLAGS_FOR_BUILD}"
     CT_LDFLAGS_FOR_BUILD="-L${CT_BUILDTOOLS_PREFIX_DIR}/lib"
     CT_LDFLAGS_FOR_BUILD+=" ${CT_EXTRA_LDFLAGS_FOR_BUILD}"
 
@@ -553,6 +553,7 @@ if [ -z "${CT_RESTART}" ]; then
     esac
 
     CT_DoLog DEBUG "CFLAGS for build compiler: '${CT_CFLAGS_FOR_BUILD}'"
+    CT_DoLog DEBUG "CXXFLAGS for build compiler: '${CT_CXXFLAGS_FOR_BUILD}'"
     CT_DoLog DEBUG "LDFLAGS for build compiler: '${CT_LDFLAGS_FOR_BUILD}'"
 
     # Help host gcc

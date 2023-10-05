@@ -9,7 +9,7 @@ mingw_w64_set_install_prefix()
     fi
 }
 
-mingw_w64_start_files() {
+mingw_w64_headers() {
     local -a sdk_opts
 
     CT_DoStep INFO "Installing C library headers"
@@ -23,6 +23,14 @@ mingw_w64_start_files() {
 
     if [ "${CT_MINGW_SECURE_API}" = "y" ]; then
         sdk_opts+=( "--enable-secure-api"  )
+    fi
+
+    if [ "${CT_MINGW_DEFAULT_MSVCRT_MSVCRT}" = "y" ]; then
+        sdk_opts+=( "--with-default-msvcrt=msvcrt" )
+    elif [ "${CT_MINGW_DEFAULT_MSVCRT_UCRT}" = "y" ]; then
+        sdk_opts+=( "--with-default-msvcrt=ucrt" )
+    elif [ -n "${CT_MINGW_DEFAULT_MSVCRT}" ]; then
+        sdk_opts+=( "--with-default-msvcrt=${CT_MINGW_DEFAULT_MSVCRT}" )
     fi
 
     CT_mkdir_pushd "${CT_BUILD_DIR}/build-mingw-w64-headers"
@@ -56,15 +64,13 @@ mingw_w64_start_files() {
 
 do_check_mingw_vendor_tuple()
 {
-    if [ "${CT_MINGW_W64_REQUIRES_W64_VENDOR}" = "y" ]; then
-       CT_DoStep INFO "Checking configured vendor tuple"
-       if [ ${CT_TARGET_VENDOR} = "w64" ]; then
-           CT_DoLog DEBUG "The tuple is set to '${CT_TARGET_VENDOR}', as recommended by mingw-64 developers."
-       else
-           CT_DoLog WARN "The tuple vendor is '${CT_TARGET_VENDOR}', not equal to 'w64' and might break the toolchain!"
-       fi
-       CT_EndStep
-    fi
+   CT_DoStep INFO "Checking configured vendor tuple"
+   if [ ${CT_TARGET_VENDOR} = "w64" ]; then
+       CT_DoLog DEBUG "The tuple is set to '${CT_TARGET_VENDOR}', as recommended by mingw-64 developers."
+   else
+       CT_DoLog WARN "The tuple vendor is '${CT_TARGET_VENDOR}', not equal to 'w64' and might break the toolchain!"
+   fi
+   CT_EndStep
 }
 
 do_mingw_tools()
@@ -176,6 +182,7 @@ mingw_w64_main()
 {
     # Used when iterating over libwinpthread
     local default_libprefix
+    local -a crt_opts
 
     do_check_mingw_vendor_tuple
 
@@ -185,6 +192,14 @@ mingw_w64_main()
 
     CT_mkdir_pushd "${CT_BUILD_DIR}/build-mingw-w64-crt"
 
+    if [ "${CT_MINGW_DEFAULT_MSVCRT_MSVCRT}" = "y" ]; then
+        crt_opts+=( "--with-default-msvcrt=msvcrt" )
+    elif [ "${CT_MINGW_DEFAULT_MSVCRT_UCRT}" = "y" ]; then
+        crt_opts+=( "--with-default-msvcrt=ucrt" )
+    elif [ -n "${CT_MINGW_DEFAULT_MSVCRT}" ]; then
+        crt_opts+=( "--with-default-msvcrt=${CT_MINGW_DEFAULT_MSVCRT}"  )
+    fi
+
     mingw_w64_set_install_prefix
     CT_DoExecLog CFG \
     ${CONFIG_SHELL} \
@@ -192,7 +207,8 @@ mingw_w64_main()
         --with-sysroot=${CT_SYSROOT_DIR} \
         --prefix=${MINGW_INSTALL_PREFIX} \
         --build=${CT_BUILD} \
-        --host=${CT_TARGET}
+        --host=${CT_TARGET} \
+        "${crt_opts[@]}"
 
     # mingw-w64-crt has a missing dependency occasionally breaking the
     # parallel build. See https://github.com/crosstool-ng/crosstool-ng/issues/246

@@ -1,9 +1,9 @@
 # newlib options
 
 ## depends on BARE_METAL
+## select LIBC_PROVIDES_CXA_ATEXIT
 ## select LIBC_SUPPORT_THREADS_NONE
-## select CC_CORE_PASSES_NEEDED if CANADIAN
-## select CC_CORE_PASS_2_NEEDED if ! CANADIAN
+## select CC_CORE_NEEDED
 
 ## help Newlib is a C library intended for use on embedded systems. It is a
 ## help conglomeration of several library parts, all under free software
@@ -11,21 +11,6 @@
 ## help is only available in source form. It can be compiled for a wide
 ## help array of processors, and will usually work on any architecture with
 ## help the addition of a few low-level routines.
-
-# maybe older versions of newlib will support it too, but this
-# needs to be checked
-config NEWLIB_CXA_ATEXIT
-    def_bool y
-    depends on NEWLIB_2_0_or_later
-    select LIBC_PROVIDES_CXA_ATEXIT
-
-config NEWLIB_HAS_NANO_MALLOC
-    def_bool y
-    depends on NEWLIB_2_1_or_later
-
-config NEWLIB_HAS_NANO_FORMATTED_IO
-    def_bool y
-    depends on NEWLIB_2_2_or_later
 
 config LIBC_NEWLIB_TARGET_CFLAGS
     string
@@ -70,6 +55,7 @@ config LIBC_NEWLIB_IO_LDBL
 config LIBC_NEWLIB_IO_POS_ARGS
     bool
     prompt "Enable printf-family positional arg support"
+    depends on !LIBC_NEWLIB_NANO_FORMATTED_IO
     help
         Enable printf-family positional arg support.
 
@@ -127,6 +113,7 @@ config LIBC_NEWLIB_ATEXIT_DYNAMIC_ALLOC
 config LIBC_NEWLIB_GLOBAL_ATEXIT
     bool
     prompt "Enable atexit data structure as global variable"
+    default y
     help
         Enable atexit data structure as global variable.  By doing so it is
         move out of _reent structure, and can be garbage collected if atexit
@@ -151,6 +138,13 @@ config LIBC_NEWLIB_MULTITHREAD
     default y
     help
         Enable support for multiple threads.
+
+config LIBC_NEWLIB_RETARGETABLE_LOCKING
+    bool
+    prompt "Enable retargetable locking"
+    help
+        Enable retargetable locking to allow the operating system to override
+        the dummy lock functions defined within the newlib.
 
 config LIBC_NEWLIB_EXTRA_SECTIONS
     bool
@@ -191,7 +185,6 @@ config LIBC_NEWLIB_LTO
 config LIBC_NEWLIB_NANO_MALLOC
     bool
     prompt "Enable Nano Malloc"
-    depends on NEWLIB_HAS_NANO_MALLOC
     help
       NEWLIB has two implementations of malloc family's functions, one in
       `mallocr.c' and the other one in `nano-mallocr.c'.  This options
@@ -202,12 +195,34 @@ config LIBC_NEWLIB_NANO_MALLOC
 config LIBC_NEWLIB_NANO_FORMATTED_IO
     bool
     prompt "Enable Nano Formatted I/O"
-    depends on NEWLIB_HAS_NANO_FORMATTED_IO
     help
       This builds NEWLIB with a special implementation of formatted I/O
       functions, designed to lower the size of application on small systems
       with size constraint issues.  This option does not affect wide-char
       formatted I/O functions.
+
+      Some notes about this feature:
+      1) Floating-point support is split out of the formatted I/O code into
+         weak functions which are not linked by default.  Programs that need
+         floating-point I/O support must explicitly request linking of one or
+         both of the floating-point functions: _printf_float or _scanf_float.
+         This can be done at link time using the -u option which can be passed
+         to either gcc or ld.
+
+      2) The following configuration options are ignored for non-wide-char
+         formatted I/O functions, and can be thought of as disabled.
+
+         "Enable printf-family positional arg support"
+         "Enable IOs on C99 formats"
+         "Enable IOs on long long"
+         "Enable IOs on long doubles"
+
+         Additionally, "Enable IOs on floats and doubles" is supported in this
+         specific implementation, one can disable it to further reduce code size.
+         In this case, the floating-point specifiers will not be recognized or
+         handled, and the -u option will not work either.
+
+      Learn more: https://sourceware.org/newlib/README
 
 config LIBC_NEWLIB_EXTRA_CONFIG_ARRAY
     string

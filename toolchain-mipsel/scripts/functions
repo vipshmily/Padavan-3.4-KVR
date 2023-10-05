@@ -1,6 +1,6 @@
-# -*- mode: sh; tab-width: 4 -*-
+# -*- mode: bash; tab-width: 4 -*-
 # vi: ts=4:sw=4:sts=4:et
-# vim: filetype=sh :
+# vim: filetype=bash
 # This file contains some useful common functions
 # Copyright 2007 Yann E. MORIN
 # Licensed under the GPL v2. See COPYING in the root of this package
@@ -174,8 +174,9 @@ CT_OnError() {
             CT_DoLog ERROR ">> NOTE: You configuration uses non-default patch sets. Please"
             CT_DoLog ERROR ">> select 'bundled' as the set of patches applied and attempt"
             CT_DoLog ERROR ">> to reproduce this issue. Issues reported with other patch"
-            CT_DoLog ERROR ">> set selections (none, local, bundled+local) are going to be"
-            CT_DoLog ERROR ">> closed without explanation."
+            CT_DoLog ERROR ">> set selections (none, local, bundled+local,"
+            CT_DoLog ERROR ">> bundled+bundled_exp bundled+bundled_exp+local) are going to"
+            CT_DoLog ERROR ">> be closed without explanation."
             CT_DoLog ERROR ">>"
         fi
         CT_DoLog ERROR ">>  If you feel this is a bug in crosstool-NG, report it at:"
@@ -214,23 +215,23 @@ set +o hashall
 #    FIXME: it doesn't look like anyone is overriding stdin/stderr. Do we need
 #    to save/restore them?
 CT_LogEnable() {
-	local clean=no
-	local arg
+    local clean=no
+    local arg
 
-	for arg in "$@"; do eval "$arg"; done
-	exec 6>&1 7>&2 8<&0
-	CT_BUILD_LOG="${CT_TOP_DIR}/build.log"
-	CT_LOG_ENABLED=y
+    for arg in "$@"; do eval "$arg"; done
+    exec 6>&1 7>&2 8<&0
+    CT_BUILD_LOG="${CT_TOP_DIR}/build.log"
+    CT_LOG_ENABLED=y
     if [ "$clean" = "yes" ]; then
-		rm -f "${CT_BUILD_LOG}"
-	fi
-	exec >>"${CT_BUILD_LOG}"
+        rm -f "${CT_BUILD_LOG}"
+    fi
+    exec >>"${CT_BUILD_LOG}"
 }
 
 # Restore original stdout, stderr and stdin
 CT_LogDisable() {
-	exec >&6 2>&7 <&8
-	CT_LOG_ENABLED=
+    exec >&6 2>&7 <&8
+    CT_LOG_ENABLED=
 }
 
 # The different log levels:
@@ -727,7 +728,7 @@ CT_DoGetFile()
     rm -f "${tmp}"
 
     # Replace a special value of '-1' with empty string
-    if [ ${CT_CONNECT_TIMEOUT} != -1 ]; then
+    if [ "${CT_CONNECT_TIMEOUT}" != -1 ]; then
         T="${CT_CONNECT_TIMEOUT}"
     fi
 
@@ -1040,7 +1041,8 @@ CT_GetFile()
 # TBD these should not be needed if config.sub/guess is a package
 # Two wrappers to call config.(guess|sub) either from CT_TOP_DIR or CT_LIB_DIR.
 # Those from CT_TOP_DIR, if they exist, will be be more recent than those from CT_LIB_DIR.
-CT_DoConfigGuess() {
+CT_DoConfigGuess()
+{
     if [ -r "${CT_TOP_DIR}/scripts/config.guess" ]; then
         "${CT_CONFIG_SHELL}" "${CT_TOP_DIR}/scripts/config.guess"
     else
@@ -1048,7 +1050,8 @@ CT_DoConfigGuess() {
     fi
 }
 
-CT_DoConfigSub() {
+CT_DoConfigSub()
+{
     if [ -r "${CT_TOP_DIR}/scripts/config.sub" ]; then
         "${CT_CONFIG_SHELL}" "${CT_TOP_DIR}/scripts/config.sub" "$@"
     else
@@ -1060,7 +1063,8 @@ CT_DoConfigSub() {
 # environment for the next step(s). When this is needed, it can do so by
 # invoking this function.
 # Usage: CT_EnvModify [export] VAR VALUE
-CT_EnvModify() {
+CT_EnvModify()
+{
     local e
     if [ "$1" = "export" ]; then
         shift
@@ -1075,7 +1079,10 @@ CT_EnvModify() {
 # In fact this function takes the environment variables to build the target
 # tuple. It is needed both by the normal build sequence, as well as the
 # sample saving sequence.
-CT_DoBuildTargetTuple() {
+CT_DoBuildTargetTuple()
+{
+    local tmp
+
     # Set the endianness suffix, and the default endianness gcc option
     target_endian_eb=
     target_endian_be=
@@ -1126,10 +1133,9 @@ CT_DoBuildTargetTuple() {
     # values.
     case "${CT_LIBC}" in
         glibc)       CT_TARGET_SYS=gnu;;
-        uClibc)      CT_TARGET_SYS=uclibc;;
+        uClibc-ng)   CT_TARGET_SYS=uclibc;;
         musl)        CT_TARGET_SYS=musl;;
-        bionic)      CT_TARGET_SYS=android;;
-        none|newlib) CT_TARGET_SYS=elf;;
+        none|newlib|picolibc) CT_TARGET_SYS=elf;;
         *)
             # Keep empty for the libraries like mingw or avr-libc
             CT_TARGET_SYS=
@@ -1137,13 +1143,29 @@ CT_DoBuildTargetTuple() {
     esac
 
     # Set the default values for ARCH, ABI, CPU, TUNE, FPU and FLOAT
-    unset CT_ARCH_ARCH_CFLAG CT_ARCH_ABI_CFLAG CT_ARCH_CPU_CFLAG CT_ARCH_TUNE_CFLAG CT_ARCH_FPU_CFLAG CT_ARCH_FLOAT_CFLAG
-    unset CT_ARCH_WITH_ARCH CT_ARCH_WITH_ABI CT_ARCH_WITH_CPU CT_ARCH_WITH_TUNE CT_ARCH_WITH_FPU CT_ARCH_WITH_FLOAT CT_ARCH_WITH_ENDIAN
-    [ "${CT_ARCH_ARCH}"     ] && { CT_ARCH_ARCH_CFLAG="-march=${CT_ARCH_ARCH}";  CT_ARCH_WITH_ARCH="--with-arch=${CT_ARCH_ARCH}"; }
-    [ "${CT_ARCH_ABI}"      ] && { CT_ARCH_ABI_CFLAG="-mabi=${CT_ARCH_ABI}";     CT_ARCH_WITH_ABI="--with-abi=${CT_ARCH_ABI}";    }
-    [ "${CT_ARCH_CPU}"      ] && { CT_ARCH_CPU_CFLAG="-mcpu=${CT_ARCH_CPU}";     CT_ARCH_WITH_CPU="--with-cpu=${CT_ARCH_CPU}";    }
-    [ "${CT_ARCH_TUNE}"     ] && { CT_ARCH_TUNE_CFLAG="-mtune=${CT_ARCH_TUNE}";  CT_ARCH_WITH_TUNE="--with-tune=${CT_ARCH_TUNE}"; }
-    [ "${CT_ARCH_FPU}"      ] && { CT_ARCH_FPU_CFLAG="-mfpu=${CT_ARCH_FPU}";     CT_ARCH_WITH_FPU="--with-fpu=${CT_ARCH_FPU}";    }
+    for tmp in ARCH ABI CPU TUNE FPU FLOAT ENDIAN; do
+        eval "unset CT_ARCH_${tmp}_CFLAG CT_ARCH_WITH_${tmp} CT_ARCH_WITH_${tmp}_32 CT_ARCH_WITH_${tmp}_64"
+    done
+
+    [ -n "${CT_ARCH_ABI}" ] && { CT_ARCH_ABI_CFLAG="-mabi=${CT_ARCH_ABI}"; CT_ARCH_WITH_ABI="--with-abi=${CT_ARCH_ABI}"; }
+    [ -n "${CT_ARCH_FPU}" ] && { CT_ARCH_FPU_CFLAG="-mfpu=${CT_ARCH_FPU}"; CT_ARCH_WITH_FPU="--with-fpu=${CT_ARCH_FPU}"; }
+
+    # The options below have distinct variants for multilib-enabled toolchain.
+    # At this time, we just always have them equal to the "main" setting; it
+    # seems that most example configurations are built for a specific CPU.
+    # If there's demand for it, we can turn them into separate knobs in
+    # Kconfig later.
+    for tmp in ARCH CPU TUNE; do
+        eval "val=\${CT_ARCH_${tmp}}"
+        if [ -n "${val}" ]; then
+            eval "CT_ARCH_${tmp}_CFLAG=-m${tmp,,}=${val}"
+            eval "CT_ARCH_WITH_${tmp}=--with-${tmp,,}=${val}"
+            if [ -n "${CT_ARCH_SUPPORTS_WITH_32_64}" -a -n "${CT_MULTILIB}" ]; then
+                eval "CT_ARCH_WITH_${tmp}_32=--with-${tmp,,}-32=${val}"
+                eval "CT_ARCH_WITH_${tmp}_64=--with-${tmp,,}-64=${val}"
+            fi
+        fi
+    done
 
     case "${CT_ARCH_FLOAT}" in
         hard)
@@ -1331,7 +1353,7 @@ CT_DoExtractTarballIfExists() {
 # at any one point
 # Usage: CT_DoSaveState <next_step_name>
 CT_DoSaveState() {
-	[ "${CT_DEBUG_CT_SAVE_STEPS}" = "y" ] || return 0
+    [ "${CT_DEBUG_CT_SAVE_STEPS}" = "y" ] || return 0
     local state_name="$1"
     local state_dir="${CT_STATE_DIR}/${state_name}"
     local v
@@ -1778,7 +1800,6 @@ CT_Mirrors()
         echo "https://releases.linaro.org/archive/${yymm}/components/toolchain/${project}-linaro"
         ;;
     kernel.org)
-        # TBD move to linux.sh and dtc.sh?
         case "${project}" in
         linux)
             local version="${CT_LINUX_VERSION}"
@@ -1786,15 +1807,15 @@ CT_Mirrors()
             '')
                 # Ignore, this happens before .config is fully evaluated
                 ;;
-            [34].*)
-                echo "http://www.kernel.org/pub/linux/kernel/v${version%%.*}.x"
+            [3456].*)
+                echo "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x"
                 ;;
             2.6.*)
-                echo "http://www.kernel.org/pub/linux/kernel/v2.6"
+                echo "https://cdn.kernel.org/pub/linux/kernel/v2.6"
                 case "${version}" in
                 2.6.*.*)
-                    echo "http://www.kernel.org/pub/linux/kernel/v2.6/longterm"
-                    echo "http://www.kernel.org/pub/linux/kernel/v2.6/longterm/v${version%.*}"
+                    echo "https://cdn.kernel.org/pub/linux/kernel/v2.6/longterm"
+                    echo "https://cdn.kernel.org/pub/linux/kernel/v2.6/longterm/v${version%.*}"
                     ;;
                 esac
                 ;;
@@ -1804,7 +1825,7 @@ CT_Mirrors()
             esac
             ;;
         dtc)
-            echo "https://mirrors.edge.kernel.org/pub/software/utils/dtc"
+            echo "https://cdn.kernel.org/pub/software/utils/dtc"
             ;;
         *)
             echo "-unknown-"
@@ -1929,8 +1950,14 @@ CT_GetVersion_git()
     local branch="${devel_branch:-master}"
 
     if [ -z "${devel_revision}" ]; then
-        local matches=`git ls-remote --exit-code "${devel_url}" --refs "${branch}" \
+        # First try to dereference an annotated tag.
+        local matches=`git ls-remote --exit-code "${devel_url}" --refs "${branch}^{}" \
             || echo "not found"`
+        # If we don't have an annotated tag, let's take the reference as is.
+        if [ "${matches}" = "not found" ]; then
+            matches=`git ls-remote --exit-code "${devel_url}" --refs "${branch}" \
+                || echo "not found"`
+        fi
         local best using ref
 
         # Cannot test $?, setting a trap on ERR prevents bash from returning the
@@ -2211,7 +2238,10 @@ CT_DoExtractPatch()
     local archive ext
     local -a patch_dirs
     local bundled_patch_dir
+    local bundled_exp_patch_dir
+    local bundled_common_patch_dir
     local local_patch_dir
+    local local_common_patch_dir
     local overlay
 
     # Inherit global value if requested
@@ -2237,9 +2267,9 @@ CT_DoExtractPatch()
     # Can use common location only if using non-custom source, only bundled patches
     # and no overlays. Otherwise, this source directory is custom-tailored for this
     # particular configuration and cannot be reused by different configurations.
-    if [ "${src_custom}" != "y" -a \
-            "${patch_order}" = "bundled" -a \
-            ! -d "${CT_BUILD_DIR}/overlay/${dir_name}" ]; then
+    if test "${src_custom}" != "y" -a \
+            \( "${patch_order}" = 'bundled' -o "${patch_order}" = 'bundled,bundled_exp' \) -a \
+            ! -d "${CT_BUILD_DIR}/overlay/${dir_name}"; then
         src_dir="${CT_COMMON_SRC_DIR}"
     else
         src_dir="${CT_SRC_DIR}"
@@ -2255,10 +2285,11 @@ CT_DoExtractPatch()
             CT_DoExecLog ALL rm -f "${src_dir}/.${basename}".*
         fi
 
-        if [ -f "${src_dir}/.${basename}.extracted" ]; then
+        if [ -f "${src_dir}/.${basename}.extracted" -a -d "${src_dir}/${basename}" ]; then
             CT_DoLog DEBUG "Already extracted ${basename}"
         else
             CT_DoLog EXTRA "Extracting ${basename}"
+            CT_DoExecLog ALL rm -f "${src_dir}/.${basename}".*
             CT_DoExecLog ALL touch "${src_dir}/.${basename}.extracting"
             if [ "${src_release}" = "y" ]; then
                 archive="${archive_filename}"
@@ -2285,14 +2316,20 @@ CT_DoExtractPatch()
             CT_DoExecLog ALL touch "${src_dir}/.${basename}.patching"
 
             bundled_patch_dir="${CT_LIB_DIR}/packages/${pkg_dir}"
+            bundled_exp_patch_dir="${CT_LIB_DIR}/packages/${pkg_dir}/experimental"
+            bundled_common_patch_dir="${CT_LIB_DIR}/packages/${pkg_name}"
             local_patch_dir="${CT_LOCAL_PATCH_DIR}/${pkg_dir}"
+            local_common_patch_dir="${CT_LOCAL_PATCH_DIR}/${pkg_name}"
 
             case "${patch_order}" in
-                bundled)        patch_dirs=("${bundled_patch_dir}");;
-                local)          patch_dirs=("${local_patch_dir}");;
-                bundled,local)  patch_dirs=("${bundled_patch_dir}" "${local_patch_dir}");;
-                local,bundled)  patch_dirs=("${local_patch_dir}" "${bundled_patch_dir}");;
-                none)           patch_dirs=;;
+                bundled)                    patch_dirs=("${bundled_patch_dir}" "${bundled_common_patch_dir}");;
+                local)                      patch_dirs=("${local_patch_dir}" "${local_common_patch_dir}");;
+                bundled,local)              patch_dirs=("${bundled_patch_dir}" "${bundled_common_patch_dir}" "${local_patch_dir}" "${local_common_patch_dir}");;
+                local,bundled)              patch_dirs=("${local_patch_dir}" "${local_common_patch_dir}" "${bundled_patch_dir}" "${bundled_common_patch_dir}");;
+                bundled,bundled_exp)        patch_dirs=("${bundled_patch_dir}" "${bundled_common_patch_dir}" "${bundled_exp_patch_dir}");;
+                bundled,bundled_exp,local)  patch_dirs=("${bundled_patch_dir}" "${bundled_common_patch_dir}" "${bundled_exp_patch_dir}" "${local_patch_dir}" "${local_common_patch_dir}");;
+                local,bundled,bundled_exp)  patch_dirs=("${local_patch_dir}" "${local_common_patch_dir}" "${bundled_patch_dir}" "${bundled_common_patch_dir}" "${bundled_exp_patch_dir}");;
+                none)                       patch_dirs=;;
             esac
 
             CT_Pushd "${src_dir}/${basename}"
@@ -2477,7 +2514,7 @@ CT_InstallCopyingInformation()
     CT_DoLog EXTRA "Collect license information from: ${CT_SRC_DIR}"
     CT_DoLog EXTRA "Put the license information to: ${CT_PREFIX_DIR}/share/licenses"
 
-    for licfile in $( find "${CT_SRC_DIR}" -follow -type f -a \( -name "COPYING*" -o -name "LICENSE*" \) ); do
+    for licfile in $( find "${CT_SRC_DIR}" -follow -type f -a \( -name "COPYING*" -o -name "LICENSE*" -o -name "COPYRIGHT*" \) ); do
         dstdir="${licfile%/*}"
         dstdir="${CT_PREFIX_DIR}/share/licenses${dstdir#${CT_SRC_DIR}}"
         mkdir -p "${dstdir}"

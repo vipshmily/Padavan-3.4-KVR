@@ -1,3 +1,8 @@
+# Backup files
+*.bak
+*~
+*.swp
+
 # Generated files
 configure
 autom4te.cache
@@ -15,6 +20,8 @@ config/configure.in
 config/gen/
 config/versions/
 .config
+.config.*
+include/
 verbatim-data.mk
 maintainer/package-versions
 
@@ -23,7 +30,6 @@ maintainer/package-versions
 *.zip
 *.xz
 *.7zip
-!.tarball-version
 
 # Temporaries
 .*.swp
@@ -32,17 +38,19 @@ build.log
 temp.*
 stamp-h1
 
+# MacOS
+.DS_Store
+
 # Testing
 testing/docker/*/build
 testing/docker/*/install
 testing/docker/*/xtools
 
+# This is the place where toolchains are built
 .build/
+# .. and log for 'build-all'
 .build-all/
+# .. and release creation
+release/
 
 toolchain-3.4.x/
-dl/
-
-mipsel-linux-uclibc.tar.xz
-
-docs/ct-ng.1

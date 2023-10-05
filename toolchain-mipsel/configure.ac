@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.67])
+AC_PREREQ([2.69])
 
 AC_INIT(
     [crosstool-NG],
@@ -18,6 +18,7 @@ AC_CONFIG_MACRO_DIR([m4])
 # - Object files are generated in a subdirectory (new default in automake)
 # - Request new tar format (old, tar-v7, breaks on long paths we have)
 AM_INIT_AUTOMAKE([-Wall -Werror foreign no-dist-gzip dist-xz dist-bzip2 subdir-objects tar-pax])
+AM_SILENT_RULES([yes])
 
 # To avoid stubbing autotools with missing script
 AM_MAINTAINER_MODE([enable])
@@ -92,8 +93,8 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX
 AC_PROG_CPP
-AC_PROG_LEX
-AC_PROG_YACC
+AC_PROG_LEX([noyywrap])
+AX_PROG_BISON
 AS_IF([test -z "$CC" -o -z "$CXX"],
       [AC_MSG_ERROR([no suitable compiler found])])
 
@@ -152,9 +153,27 @@ AC_CHECK_PROGS([curl], [curl])
 CTNG_SET_KCONFIG_OPTION([curl])
 AC_SUBST([curl])
 
+AC_CHECK_PROGS([meson], [meson])
+CTNG_SET_KCONFIG_OPTION([meson])
+AC_SUBST([meson])
+
+AC_CHECK_PROGS([ninja], [ninja])
+CTNG_SET_KCONFIG_OPTION([ninja])
+AC_SUBST([ninja])
+
+AC_CHECK_PROGS([rsync], [rsync])
+CTNG_SET_KCONFIG_OPTION([rsync])
+AC_SUBST([rsync])
+
 CTNG_CPU_COUNT
 
 CTNG_PATH_TOOL_REQ([PATCH], [gpatch patch], [patch])
+
+# Ensure the detected patch supports --no-backup-if-mismatch (BSD patch does not)
+AC_MSG_CHECKING([whether patch supports --no-backup-if-mismatch])
+AS_IF([$PATCH --no-backup-if-mismatch </dev/null >/dev/null 2>&1],
+      AC_MSG_RESULT([yes]),
+      AC_MSG_ERROR([$PATCH does not support --no-backup-if-mismatch]))
 
 # We need a bash that is >= 3.1
 CTNG_PROG_VERSION_REQ_STRICT([BASH_SHELL],
@@ -190,6 +209,13 @@ CTNG_PROG_VERSION_REQ_ANY([MAKE],
     [gmake make],
     [^GNU Make [4-9]\.],
     [make_4_0_or_newer])
+
+CTNG_PROG_VERSION_REQ_ANY([MAKE],
+    [GNU make >= 4.4],
+    [make],
+    [gmake make],
+    [^GNU Make (4\.[4-9]|[5-9]\.)],
+    [make_4_4_or_newer])
 
 # Check other companion tools that we may or may not build.
 CTNG_PROG_VERSION_REQ_ANY([LIBTOOL],
@@ -234,26 +260,25 @@ CTNG_PROG_VERSION([M4],
     [\(GNU M4\) ([2-9]\.|1\.[5-9]|1\.[1-4][0-9]|1\.4\.[2-9][0-9]|1\.4\.1[2-9])],
     [gnu_m4_1_4_12_or_newer])
 
-CTNG_PROG_VERSION([PYTHON],
-    [Python],
-    [python],
-    [python37 python3.7 python36 python3.6 python35 python3.5 python34 python3.4 python33 python3.3 python32 python3.2 python31 python3.1 python3 python27 python2.7 python26 python2.6 python2 python],
-    [^Python [23]\.],
-    [python])
+# Check for Python
+CTNG_PYTHON
 
-CTNG_PROG_VERSION([PYTHON],
-    [Python >= 3.4],
-    [python],
-    [python37 python3.7 python36 python3.6 python35 python3.5 python34 python3.4 python3 python],
-    [^Python 3\.([4-9]|[1-9][0-9]+)\.],
-    [python_3_4_or_newer])
+# Check for Python 3.4 or newer
+CTNG_PYTHON_VERSION([3],[4])
 
-CTNG_PROG_VERSION([BISON],
+CTNG_PROG_VERSION_REQ_ANY([BISON],
     [bison >= 2.7],
     [bison],
     [bison],
     [\(GNU Bison\) (2\.[7-9]|2\.[1-9][0-9]|[3-9]\.)],
     [bison_2_7_or_newer])
+
+CTNG_PROG_VERSION_REQ_ANY([BISON],
+    [bison >= 3.0.4],
+    [bison],
+    [bison],
+    [\(GNU Bison\) (3\.0\.[4-9]|3\.[1-9]|[4-9]\.)],
+    [bison_3_0_4_or_newer])
 
 AC_SUBST([kconfig_options])
 
@@ -281,13 +306,12 @@ CTNG_SET_KCONFIG_OPTION([sha512sum])
 
 # FIXME why checking if not using the result? We don't provide replacemant malloc/alloca/...
 AC_C_INLINE
-AC_HEADER_STDC
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_ALLOCA
 
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.19.8])
+AM_GNU_GETTEXT_VERSION([0.19.7])
 
 # For now, curses are needed to build kconfig. We may support a command-line
 # only configuration without curses later. For now, fail in configure but

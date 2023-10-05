@@ -7,7 +7,7 @@ your `PATH`, such as:
 Depending on the project being compiled, there may be different ways
 to specify the toolchain.
 
-If the software uses GNU autotools or a similar configure script, you shoul
+If the software uses GNU autotools or a similar configure script, you should
 use the `--host` tuple to tell the build system to use your toolchain
 (if the software package uses the autotools system you should also
 pass `--build`, for completeness):
@@ -101,7 +101,7 @@ There are four schools of thought here:
               /path/to/staging
         $ ./configure --build=<build tuple> --host=<host tuple>          \
                       --prefix=/usr --enable-foo-bar...                  \
-                      CC="<host tuple>-gcc --syroot=/path/to/staging"    \
+                      CC="<host tuple>-gcc --sysroot=/path/to/staging"    \
                       CXX="<host tuple>-g++ --sysroot=/path/to/staging"  \
                       LD="<host tuple>-ld --sysroot=/path/to/staging"    \
                       AND_SO_ON="tuple-andsoon --sysroot=/path/to/staging"

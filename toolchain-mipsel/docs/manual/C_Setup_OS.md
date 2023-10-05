@@ -10,10 +10,10 @@ be checked out from a Git repository).
 Linux
 -----
 
-Sample configurations for supported Linux distributions are available as Docker
-configuration files in the `testing` directory. You can use the contents of
-these files as a list of the packages that need to be installed on a particular
-distribution.
+Sample configurations for supported Linux distributions are available as [Docker
+configuration files](https://github.com/crosstool-ng/crosstool-ng/tree/master/testing/docker) in the 
+`testing` directory. You can use the contents of these files as a list of the packages 
+that need to be installed on a particular distribution.
 
 If on the other hand you encounter a dependency not listed there, please let us
 know over the mailing list or via a pull request!
