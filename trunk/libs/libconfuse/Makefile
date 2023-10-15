@@ -11,7 +11,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar -xf $(SRC_NAME).tar.xz ; \
+		tar xf $(SRC_NAME).tar.xz ; \
 	fi )
 
 config_test:
