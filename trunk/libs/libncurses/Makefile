@@ -26,7 +26,8 @@ configure:
 	( cd $(SRC_NAME) ; \
 	./configure \
 		--prefix=$(STAGEDIR) \
-		--with-install-prefix=$(STAGEDIR) \
+		--with-terminfo-dirs=/usr/share/terminfo \
+	        --with-default-terminfo-dir=/usr/share/terminfo \
 		--without-ada \
 		--without-termlib \
 		--without-progs \
@@ -39,7 +40,7 @@ configure:
 		--without-profile \
 		--enable-overwrite \
 		--enable-pc-files \
-		--with-pkg-config-libdir="$(STAGEDIR)/lib/pkgconfig/" \
+		--with-pkg-config-libdir=/lib/pkgconfig \
 		--host=$(HOST_TARGET) \
 		--build=$(HOST_BUILD) ; \
 	)
