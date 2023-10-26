@@ -66,7 +66,7 @@ add_rules()
 	rm -f /tmp/adbyby/data/*.bak
 
 	touch /tmp/local-md5.json && md5sum /tmp/adbyby/data/lazy.txt /tmp/adbyby/data/video.txt > /tmp/local-md5.json
-	touch /tmp/md5.json && curl -k -s -o /tmp/md5.json --connect-timeout 5 --retry 3 https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/md5.json
+	touch /tmp/md5.json && curl -k -s -o /tmp/md5.json --connect-timeout 5 --retry 3 https://fastly.jsdelivr.net/gh/kongfl888/ad-rules/md5.json
 
 	lazy_local=$(grep 'lazy' /tmp/local-md5.json | awk -F' ' '{print $1}')
 	video_local=$(grep 'video' /tmp/local-md5.json | awk -F' ' '{print $1}')  
@@ -76,8 +76,8 @@ add_rules()
 	if [ "$lazy_online"x != "$lazy_local"x -o "$video_online"x != "$video_local"x ]; then
 	echo "MD5 not match! Need update!"
 	logger -t "adbyby" "发现更新的规则,下载规则！"
-	touch /tmp/lazy.txt && curl -k -s -o /tmp/lazy.txt --connect-timeout 5 --retry 3 https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt
-	touch /tmp/video.txt && curl -k -s -o /tmp/video.txt --connect-timeout 5 --retry 3 https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt
+	touch /tmp/lazy.txt && curl -k -s -o /tmp/lazy.txt --connect-timeout 5 --retry 3 https://fastly.jsdelivr.net/gh/kongfl888/ad-rules/lazy.txt
+	touch /tmp/video.txt && curl -k -s -o /tmp/video.txt --connect-timeout 5 --retry 3 https://fastly.jsdelivr.net/gh/kongfl888/ad-rules/video.txt
 	touch /tmp/local-md5.json && md5sum /tmp/lazy.txt /tmp/video.txt > /tmp/local-md5.json
 	lazy_local=$(grep 'lazy' /tmp/local-md5.json | awk -F' ' '{print $1}')
 	video_local=$(grep 'video' /tmp/local-md5.json | awk -F' ' '{print $1}')
