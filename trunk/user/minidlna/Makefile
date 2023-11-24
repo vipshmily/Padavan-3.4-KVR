@@ -1,20 +1,14 @@
 SRC_NAME=minidlna-1.3.3
-SRC_URL=https://udomain.dl.sourceforge.net/project/minidlna/minidlna/1.3.3/minidlna-1.3.3.tar.gz
+SRC_URL=https://sourceforge.net/projects/minidlna/files/minidlna/1.3.3/minidlna-1.3.3.tar.gz 
 
-DLNA_CFLAGS  += -ffunction-sections -fdata-sections
-DLNA_CFLAGS  += -Os -Wall -g -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
-DLNA_CFLAGS  += -I$(STAGEDIR)/include
-
-DLNA_LDFLAGS += -Wl,--gc-sections
-DLNA_LDFLAGS += -L$(STAGEDIR)/lib
-
-DLNA_LIBS += -ldl -lm -lpthread -lz -lexif -ljpeg -lsqlite3 -lid3tag -lFLAC -lvorbis -logg -lavformat -lavcodec -lavutil
+CFLAGS  += -ffunction-sections -fdata-sections
+CFLAGS  += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+LDFLAGS += -Wl,--gc-sections
 
 THISDIR = $(shell pwd)
 
 all: download_test extract_test config_test
-#all: config_test
-	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) LIBICONV_STANDALONE=true
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
@@ -24,7 +18,7 @@ download_test:
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
 		tar xzf $(SRC_NAME).tar.gz; \
-		patch -d $(SRC_NAME) -p1 -i ../minidlna-orig.patch; \
+		patch -d $(SRC_NAME) -p1 -i ../libav-codec-id.diff; \
 	fi )
 
 config_test:
@@ -36,9 +30,8 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	./autogen.sh ; \
-	ac_cv_lib_avformat_av_open_input_file=yes \
-	CFLAGS="$(DLNA_CFLAGS)" LDFLAGS="$(DLNA_LDFLAGS)" LIBS="$(DLNA_LIBS)" \
+	./autogen.sh; \
+	PKG_CONFIG_PATH=$(STAGEDIR)/lib/pkgconfig \
 	./configure \
 		--prefix=/usr \
 		--disable-nls \
@@ -55,11 +48,8 @@ configure:
 	)
 
 clean:
-	if [ -f $(SRC_NAME)/Makefile ] ; then \
-		$(MAKE) -C $(SRC_NAME) distclean ; \
-	fi ; \
 	rm -f config_done
+	rm -rf $(SRC_NAME)
 
 romfs:
 	$(ROMFSINST) $(THISDIR)/$(SRC_NAME)/minidlnad /usr/bin/minidlnad
-

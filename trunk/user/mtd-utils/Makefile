@@ -1,5 +1,5 @@
-SRC_NAME=mtd-utils-2.1.5
-SRC_URL = ftp://ftp.infradead.org/pub/mtd-utils/$(SRC_NAME).tar.bz2
+SRC_NAME=mtd-utils-2.1.6
+SRC_URL = https://codeload.github.com/sigma-star/mtd-utils/tar.gz/refs/tags/v2.1.6
 
 THISDIR = $(shell pwd)
 
@@ -7,13 +7,13 @@ all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 download_test:
-	( if [ ! -f $(SRC_NAME).tar.bz2 ]; then \
-		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.bz2 $(SRC_URL); \
+	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.gz $(SRC_URL); \
 	fi )
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xjf $(SRC_NAME).tar.bz2; \
+		tar xzf $(SRC_NAME).tar.gz; \
 	fi )
 
 config_test:

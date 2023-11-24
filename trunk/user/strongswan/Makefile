@@ -1,4 +1,4 @@
-SRC_NAME=strongswan-5.9.11
+SRC_NAME=strongswan-5.9.12
 URL_PATH=https://download.strongswan.org/$(SRC_NAME).tar.bz2
 
 CFLAGS += -ffunction-sections -fdata-sections
@@ -18,7 +18,6 @@ download_test:
 extract_test:
 	( if [ ! -d $(THISDIR)/$(SRC_NAME) ]; then \
 		tar xjf $(SRC_NAME).tar.bz2; \
-		patch -d $(SRC_NAME) -p1 -i ../strongswan_ipsec_stack_detection_revert.patch; \
 	fi )
 
 config_test:
@@ -30,7 +29,6 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	autoreconf -fi ; \
 	PKG_CONFIG_PATH=$(STAGEDIR)/lib/pkgconfig \
 	./configure \
 		--with-sysroot=$(STAGEDIR) \

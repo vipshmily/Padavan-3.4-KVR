@@ -31,7 +31,7 @@ echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=y" >> .config #simple-obfs混淆插件
 ##科学上网##
 
 ##广告管理##
-echo "CONFIG_FIRMWARE_INCLUDE_ADBYBY=n" >> .config #adbyby plus+
+echo "CONFIG_FIRMWARE_INCLUDE_ADBYBY=y" >> .config #adbyby plus+
 echo "CONFIG_FIRMWARE_INCLUDE_KOOLPROXY=n" >> .config #KP广告过滤
 ##广告管理##
 
@@ -57,9 +57,10 @@ echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=n" >> .config #aliddns
 echo "CONFIG_FIRMWARE_INCLUDE_FRPC=n" >> .config #frpc
 echo "CONFIG_FIRMWARE_INCLUDE_FRPS=n" >> .config #frps
 echo "CONFIG_FIRMWARE_INCLUDE_DDNSTO=n" >> .config #ddnsto
-#echo "CONFIG_FIRMWARE_INCLUDE_NPC=n" >> .config #npc
+echo "CONFIG_FIRMWARE_INCLUDE_WIREGUARD=n" >> .config #wireguard 10k
 ##内网穿透服务##
-echo "CONFIG_FIRMWARE_INCLUDE_ALDRIVER=y" >> .config
+echo "CONFIG_FIRMWARE_INCLUDE_ALDRIVER=n" >> .config
+echo "CONFIG_FIRMWARE_INCLUDE_MSD_LITE=y" >> .config #MSD_LITE
 sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' .config
 
 fi

@@ -1,5 +1,5 @@
 SRC_NAME=ntfs-3g-2022.10.3
-SRC_URL=https://tuxera.com/opensource/$(SRC_NAME).tar.gz
+SRC_URL=https://codeload.github.com/tuxera/ntfs-3g/tar.gz/refs/tags/2022.10.3
 
 CFLAGS += -O2 -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections

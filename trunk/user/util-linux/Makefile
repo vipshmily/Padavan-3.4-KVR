@@ -1,5 +1,5 @@
-SRC_NAME=util-linux-2.38.1
-SRC_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.38/$(SRC_NAME).tar.xz
+SRC_NAME=util-linux-2.39.2
+SRC_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.39/$(SRC_NAME).tar.xz
 
 THISDIR = $(shell pwd)
 
