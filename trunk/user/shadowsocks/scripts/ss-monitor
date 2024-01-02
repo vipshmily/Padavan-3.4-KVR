@@ -1,0 +1,168 @@
+#!/bin/sh 
+#
+# Copyright (C) 2017 openwrt-ssr
+# Copyright (C) 2017 yushi studio <ywb94@qq.com>
+#
+# This is free software, licensed under the GNU General Public License v3.
+# See /LICENSE for more information.
+#
+# changed by simonchen 2023
+
+NAME=shadowsocksr
+server_process_count=$1
+redir_tcp_process=$2
+redir_udp_process=$3
+tunnel_process=$4
+v2ray_process=$5
+local_process=$6
+pdnsd_process=$7
+chinadnsng_process=$8
+i=0
+sock5_port=$(nvram get socks5_proxy_port)
+if echo $server|grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$">/dev/null; then         
+	server=${server}
+else
+	server=`cat /etc/storage/ssr_ip`
+fi
+
+log() {
+	logger -t "$NAME" "$@"
+	echo "$(date "+%Y-%m-%d %H:%M:%S") $@" >> "/tmp/ssrplus.log"
+}
+
+run_bin() {
+	(if [ "$(nvram get ss_cgroups)" = "1" ]; then
+	 	echo 0 > /sys/fs/cgroup/cpu/$NAME/tasks
+	 	echo 0 > /sys/fs/cgroup/memory/$NAME/tasks
+	 fi
+	 "$@" > /dev/null 2>&1
+	) &
+}
+
+stop_dns_proxy() {
+	pgrep dns2tcp | args kill
+	pgrep dnsproxy | args kill	
+}
+
+start_dns_proxy() {
+	pdnsd_enable=$(nvram get pdnsd_enable) # 0: dnsproxy , 1: dns2tcp
+	pdnsd_enable_flag=$pdnsd_enable
+	if [ $pdnsd_enable = 1 ]; then
+	    log "启动 dns2tcp：5353 端口..."
+		dns2tcp -L"127.0.0.1#5353" -R"$(nvram get tunnel_forward)" >/dev/null 2>&1 &
+	elif [ $pdnsd_enable = 0 ]; then
+		remote_ip=`echo "$(nvram get tunnel_forward)" | awk -F '#' '{print $1}'`
+		log "启动 dnsproxy：5353 端口..."
+		dnsproxy -d -p 5353 -R $remote_ip >/dev/null 2>&1 &
+	else
+		log "DNS解析方式不支持该选项: $pdnsd_enable , 建议选择dnsproxy"
+	fi
+}
+
+#TODO 这个监控还可以优化！
+while [ "1" = "1" ]  #死循环
+do 
+	sleep 10
+	#redir tcp
+	if [ $redir_tcp_process -gt 0 ] ;then
+		icount=`ps -w | grep ssr-retcp | grep -v grep | wc -l`
+		if [ $icount = 0 ] ;then
+			log "检测到SS进程挂掉，重新启动!"
+			/usr/bin/shadowsocks.sh restart 
+			exit 0
+		fi
+	fi
+	#redir udp
+	if [ $redir_udp_process -gt 0 ] ;then
+		icount=`ps -w | grep ssr-reudp | grep -v grep | wc -l`
+		if [ $icount = 0 ] ;then
+			log "检测到SS进程挂掉，重新启动!"
+			/usr/bin/shadowsocks.sh restart  
+			exit 0
+		fi
+	fi
+	#server
+	if [ $server_process_count -gt 0 ] ;then
+		icount=`ps -w | grep ssr-server | grep -v grep | wc -l`
+		if [ $icount -lt $server_process_count ]  #如果进程挂掉就重启它
+		then
+			log "ssr server error.restart!"
+			killall -q -9 ssr-server 
+			for i in `seq $server_process_count`
+			do
+				run_bin /usr/bin/ssr-server -c /tmp/shadowsocksr_$i.json -u -f /tmp/ssr-server$i.pid   
+			done
+		fi
+	fi
+	#V2RAY/XRAY/TROJAN
+	if [ $v2ray_process -gt 0 ] ;then
+		bin="$(nvram get d_type)"
+		conf="/tmp/v2-redir.json"
+		[ ! -f "/usr/bin/$bin" ] && bin=$(echo -e "v2ray\nxray" | grep -v $bin)
+		[ $bin = "trojan" ] && conf="/tmp/tj-redir.json"
+		icount=`ps -w | grep $bin | grep -v grep| wc -l`
+		if [ $icount -lt $v2ray_process ]  #如果进程挂掉就重启它
+		then
+			log "检测到 $bin 进程挂掉，重新启动!"
+			killall -q -9 $bin
+			run_bin /usr/bin/$bin --config $conf
+		fi   
+	fi
+	#local
+	if [ $local_process -gt 0 ] ;then
+		icount=`ps -w | grep ssr-local | grep -v grep | wc -l`
+		if [ $icount -lt $local_process ]  #如果进程挂掉就重启它
+		then
+			log "ssr local error.restart!"
+			/usr/bin/shadowsocks.sh restart
+			exit 0
+		fi   
+	fi
+	#dnsproxy
+	if [ $pdnsd_process = 0 ] ;then
+		icount=`ps -w | grep dnsproxy | grep -v grep | wc -l`
+		if [ $icount = 0 ]  #如果进程挂掉就重启它
+		then
+			log "dnsproxy is restarted!"
+			stop_dns_proxy
+			start_dns_proxy
+		fi   
+	fi
+	#dns2tcp
+	if [ $pdnsd_process = 1 ] ;then
+		icount=`ps -w | grep dns2tcp | grep -v grep | wc -l`
+		if [ $icount = 0 ]  #如果进程挂掉就重启它
+		then
+			log "dns2tcp is restarted!"
+			stop_dns_proxy
+			start_dns_proxy
+		fi   
+	fi      
+	#chinadns-ng
+	if [ $chinadnsng_process -gt 0 ] ;then
+		icount=`ps -w | grep chinadns-ng | grep -v grep | wc -l`
+		if [ $icount -lt $chinadnsng_process ]  #如果进程挂掉就重启它
+		then
+			log "chinadns-ng tunnel error.restart!"
+			kill -9 chinadns-ng
+			#kill -9 dns2tcp
+			#dns2tcp -L"127.0.0.1#5353" -R"$(nvram get tunnel_forward)" >/dev/null 2>&1 &
+			stop_dns_proxy
+			start_dns_proxy
+			local_chnlist_file='/etc/storage/chinadns/chnlist_mini.txt'
+			if [ -f "$local_chnlist_file" ]; then
+			  log "启动chinadns分流，仅国外域名走DNS代理..."
+			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china -M -m $local_chnlist_file >/dev/null 2>&1 &
+			else
+			  log "启动chinadns分流，全部域名走DNS代理...本次不使用本地cdn域名文件$local_chnlist_file, 下次你自已可以创建它，文件中每行表示一个域名（不用要子域名）"
+			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china >/dev/null 2>&1 &
+			fi
+			sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+			sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
+			cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+no-resolv
+server=127.0.0.1#65353
+EOF
+		fi   
+	fi
+done
