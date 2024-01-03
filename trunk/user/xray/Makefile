@@ -1,4 +1,4 @@
-XRAY_VERSION := 1.8.6
+XRAY_VERSION := 1.8.4
 XRAY_URL := https://codeload.github.com/XTLS/Xray-core/tar.gz/v$(XRAY_VERSION)
 XRAY_DIR = xray-core/Xray-core-$(XRAY_VERSION)/main
 
@@ -21,7 +21,7 @@ build_extract:
 
 build:
 	( cd $(THISDIR)/$(XRAY_DIR); \
-	GOOS=linux GOARCH=mipsle CGO_ENABLED=0 go build -o $(THISDIR)/bin/xray -trimpath -ldflags "-s -w -buildid="; \
+	GOOS=linux GOARCH=mipsle go build -gcflags=all="-l" -ldflags "-w -s -buildid=" -trimpath -o $(THISDIR)/bin/xray; \
 	)
 
 clean:
