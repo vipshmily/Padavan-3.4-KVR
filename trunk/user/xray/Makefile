@@ -29,12 +29,10 @@ build:
 	fi ; \
 	GOOS=linux GOARCH=mipsle go build -gcflags=all="-l" -ldflags "-w -s -buildid=" -trimpath -o $(THISDIR)/bin/xray; \
 	)
-else
-all:
 endif
 clean:
 	rm -rf $(THISDIR)/xray-core
 	rm -rf $(THISDIR)/bin
 
 romfs:
-	$(ROMFSINST) -p +x $(THISDIR)/bin/xray /usr/bin/xray
+	$(ROMFSINST) -p +x $(THISDIR)/xray /usr/bin/xray
