@@ -1,10 +1,12 @@
 include $(ROOTDIR)/coustom
+#export GO111MODULE=on
+#export GOPROXY=https://goproxy.bj.bcebos.com/
 XRAY_VERSION := 1.8.6
 XRAY_URL := https://codeload.github.com/XTLS/Xray-core/tar.gz/v$(XRAY_VERSION)
 XRAY_DIR = xray-core/Xray-core-$(XRAY_VERSION)/main
 
 THISDIR = $(shell pwd)
-
+ifeq ($(GITHUB_ACTION),n)
 all: download build_extract build
 
 download:
@@ -27,10 +29,13 @@ build:
 	fi ; \
 	GOOS=linux GOARCH=mipsle go build -gcflags=all="-l" -ldflags "-w -s -buildid=" -trimpath -o $(THISDIR)/bin/xray; \
 	)
+endif
 
 clean:
 	rm -rf $(THISDIR)/xray-core
 	rm -rf $(THISDIR)/bin
 
 romfs:
+ifeq ($(GITHUB_ACTION),n)
 	$(ROMFSINST) -p +x $(THISDIR)/bin/xray /usr/bin/xray
+endif
