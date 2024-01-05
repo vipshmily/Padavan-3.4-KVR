@@ -6,7 +6,7 @@ XRAY_URL := https://codeload.github.com/XTLS/Xray-core/tar.gz/v$(XRAY_VERSION)
 XRAY_DIR = xray-core/Xray-core-$(XRAY_VERSION)/main
 
 THISDIR = $(shell pwd)
-ifeq ($(GITHUB_ACTION),n)
+
 all: download build_extract build
 
 download:
@@ -29,7 +29,6 @@ build:
 	fi ; \
 	GOOS=linux GOARCH=mipsle go build -gcflags=all="-l" -ldflags "-w -s -buildid=" -trimpath -o $(THISDIR)/bin/xray; \
 	)
-endif
 
 clean:
 	rm -rf $(THISDIR)/xray-core
