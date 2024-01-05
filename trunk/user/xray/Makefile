@@ -39,6 +39,4 @@ clean:
 romfs:
 ifeq ($(GITHUB_ACTION),n)	
 	$(ROMFSINST) -p +x $(THISDIR)/bin/xray /usr/bin/xray
-else
-	$(ROMFSINST) -p +x $(THISDIR)/xray /usr/bin/xray
 endif
