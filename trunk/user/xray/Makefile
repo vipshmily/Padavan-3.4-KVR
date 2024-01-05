@@ -1,5 +1,5 @@
 include $(ROOTDIR)/coustom
-XRAY_VERSION := 1.8.4
+XRAY_VERSION := 1.8.6
 XRAY_URL := https://codeload.github.com/XTLS/Xray-core/tar.gz/v$(XRAY_VERSION)
 XRAY_DIR = xray-core/Xray-core-$(XRAY_VERSION)/main
 
