@@ -36,6 +36,7 @@ ppp_ip=$(ifconfig ppp"$count" | grep "inet addr" | cut -d":" -f3 | cut -d" " -f1
 
 if echo $ppp_ip | grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" >/dev/null; then
 
+iptables -t mangle -D PREROUTING -s "$lanip"/24 -m conntrack --ctstate NEW -m statistic --mode nth --every $PPP_NUM --packet "$count" -j CONNMARK --set-mark 2"$i"
 iptables -t mangle -A PREROUTING -s "$lanip"/24 -m conntrack --ctstate NEW -m statistic --mode nth --every $PPP_NUM --packet "$count" -j CONNMARK --set-mark 2"$i"
 let last=$i
 fi
@@ -43,6 +44,8 @@ done
 
 webrule="$(nvram get pppoemwan_443 )"
 if [ "$webrule" -ne 0 ]; then
+iptables -t mangle -D PREROUTING -p tcp --dport 443 -m conntrack --ctstate NEW -j CONNMARK --set-mark 2"$last"
+iptables -t mangle -D PREROUTING -p udp --dport 443 -m conntrack --ctstate NEW -j CONNMARK --set-mark 2"$last"
 iptables -t mangle -A PREROUTING -p tcp --dport 443 -m conntrack --ctstate NEW -j CONNMARK --set-mark 2"$last"
 iptables -t mangle -A PREROUTING -p udp --dport 443 -m conntrack --ctstate NEW -j CONNMARK --set-mark 2"$last"
 fi
@@ -59,6 +62,7 @@ do
         interfacename="pppoemwan_interface_x"$j""
         ip="$(nvram get "$ipname")"
 	interface="$(nvram get "$interfacename")"
+iptables -t mangle -D PREROUTING  -s "$ip"/32 -m conntrack --ctstate NEW -j CONNMARK --set-mark 2"$interface"
 iptables -t mangle -A PREROUTING  -s "$ip"/32 -m conntrack --ctstate NEW -j CONNMARK --set-mark 2"$interface"
 done
 fi
@@ -71,7 +75,12 @@ ppp_ip=$(ifconfig ppp"$count" | grep "inet addr" | cut -d":" -f3 | cut -d" " -f1
 
 if echo $ppp_ip | grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" >/dev/null; then
 
+iptables -t mangle -D PREROUTING -i br0 -m connmark --mark 2"$i" -j MARK --set-mark 2"$i"
 iptables -t mangle -A PREROUTING -i br0 -m connmark --mark 2"$i" -j MARK --set-mark 2"$i"
+iptables -t mangle -D PREROUTING -i br0 -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
+iptables -t mangle -A PREROUTING -i br0 -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
+iptables -t mangle -D POSTROUTING -m conntrack --ctstate NEW -j CONNMARK --save-mark
+iptables -t mangle -A POSTROUTING -m conntrack --ctstate NEW -j CONNMARK --save-mark
 iptables -t nat -A POSTROUTING -o ppp"$count" -s "$lanip"/24  -j FULLCONENAT 
 iptables -t nat -A PREROUTING  -i ppp"$count" -j FULLCONENAT
 ip rule add fwmark 2"$i" table 2"$i"0

@@ -578,7 +578,7 @@ clear_iptable() {
 kill_process() {
 	v2ray_process=$(pidof v2ray || pidof xray)
 	if [ -n "$v2ray_process" ]; then
-		log "关闭 V2Ray 进程..."
+		log "关闭 v2ray xray 进程..."
 		killall v2ray xray >/dev/null 2>&1
 		kill -9 "$v2ray_process" >/dev/null 2>&1
 	fi

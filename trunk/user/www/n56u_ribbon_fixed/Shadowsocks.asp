@@ -1607,36 +1607,39 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 															</div>
 														</td>
 													</tr>
-
-													<th width="50%"><#InetControl#></th>
-														<td>
-															<input type="button" id="btn_reconnect" class="btn btn-info" value="<#Connect#>" onclick="submitInternet('Reconnect');">
-														</td>
-													</tr>
-														<th width="50%">国内IP</th>
-														<td id="domestic_ip"></td>
-													</tr>
-														<th width="50%">国外IP</th>
-														<td id="foreign_ip"></td>
-													</tr>
-														<th width="50%">谷歌访问</th>
-														<td id="gg_status"></td>
-													</tr>
-														<th width="50%">客户端<#running_status#>
-														</th>
-														<td id="ss_status"></td>
-													</tr>
-													<tr id="row_pdnsd_run">
-														<th width="50%">dns2tcp<#running_status#>
-														</th>
-														<td id="dns2tcp_status"></td>
-													</tr>
-													<tr id="row_dnsproxy_run">
-														<th width="50%">dnsproxy<#running_status#>
-														</th>
-														<td id="dnsproxy_status"></td>
-													</tr>
-													
+													        <tr>
+														<th width="50%"><#InetControl#></th>
+															<td>
+																<input type="button" id="btn_reconnect" class="btn btn-info" value="<#Connect#>" onclick="submitInternet('Reconnect');">
+															</td>
+														</tr>
+														<tr>
+															<th width="50%">国内IP状态:</th>
+															<td id="domestic_ip"></td>
+														</tr>
+														<tr>
+															<th width="50%">国外IP状态:</th>
+															<td id="foreign_ip"></td>
+														</tr>
+														<tr>
+															<th width="50%">谷歌访问状态:</th>
+															<td id="gg_status"></td>
+														</tr>
+														<tr>
+															<th width="50%">客户端<#running_status#>
+															</th>
+															<td id="ss_status"></td>
+														</tr>
+														<tr id="row_pdnsd_run">
+															<th width="50%">dns2tcp<#running_status#>
+															</th>
+															<td id="dns2tcp_status"></td>
+														</tr>
+														<tr id="row_dnsproxy_run">
+															<th width="50%">dnsproxy<#running_status#>
+															</th>
+															<td id="dnsproxy_status"></td>
+														</tr>
 													<tr>
 														<th>主服务器:
 														</th>
