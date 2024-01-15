@@ -11,13 +11,12 @@ ENABLE_IPV6:=0
 IPTABLESPATH=$(ROOTDIR)/user/iptables/$(IPT_VERSION)
 
 all: extract_test
-#	cd $(SRC_NAME) && ./genconfig.sh
+	cd $(SRC_NAME) && ./genconfig.sh
 	$(MAKE) -f Makefile.linux -j$(HOST_NCPU) -C $(SRC_NAME) IPTABLESPATH=$(IPTABLESPATH) ENABLE_IPV6=$(ENABLE_IPV6)
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-	    tar -xf $(SRC_NAME).tar.xz; \
-		cd $(SRC_NAME) && ./genconfig.sh ; \
+	    tar xf $(SRC_NAME).tar.xz; \
 	fi )
 
 clean:
