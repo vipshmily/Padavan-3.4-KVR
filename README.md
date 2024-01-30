@@ -36,3 +36,9 @@ wifi密码
 - https://github.com/tsl0922/padavan
 - https://github.com/TurBoTse/padavan
 - https://github.com/vb1980/padavan-4.4.git
+- 优化 Makefile 和构建脚本，添加顶级 Makefile
+- 添加了 ccache 支持，可节省高达 50% 以上的构建时间
+- 将 udpxy 替换为 msd_lite
+- 将 Web 控制台替换为 ttyd
+- 升级的库和用户包
+- 许多与包相关的修复以及插件的优化、更新和增加新功能等

@@ -61,7 +61,6 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 ifneq ($(findstring linux-3.4,$(LINUXDIR)),)
 FIRMWARE_KERNEL_VER="3.4"
-CONFIG_CROSS_COMPILER_ROOT = $(CONFIG_TOOLCHAIN_DIR)/toolchain-3.4.x
 CONFIG_CROSS_COMPILER_PATH = $(CONFIG_CROSS_COMPILER_ROOT)/bin
 CONFIG_CMAKE_TOOLCHAIN_FILE = $(ROOTDIR)/vendors/cmake/cross-mipsel-linux.cmake
 KERNEL_HEADERS_PATH = $(CONFIG_CROSS_COMPILER_ROOT)/mipsel-linux-uclibc/sysroot/usr/include
@@ -165,21 +164,6 @@ sparseall:
 subdirs: libs
 	for dir in $(DIRS) ; do [ ! -d $$dir ] || $(MAKEARCH) -C $$dir || exit 1 ; done
 
-.PHONY: $(PRODUCTS)
-$(PRODUCTS):
-	cp -f $(TEMPLATE_DIR)/$(@).config $(CONFIG)
-	@echo "CONFIG_CROSS_COMPILER_ROOT=$(TOOLCHAIN_ROOT)" >> $(CONFIG)
-	@echo "CONFIG_CCACHE=y" >> $(CONFIG)
-	@echo "CONFIG_CCACHE=y" >> ${CURDIR}/trunk/.config
-	
-ifeq ($(CONFIG_CCACHE),y)
-	@mkdir -p $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache
-	@for bin in gcc g++ cc c++; do \
-		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/$$bin; \
-		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/mipsel-linux-uclibc-$$bin; \
-	done
-endif
-
 dep:
 	@if [ ! -f $(LINUXDIR)/.config ] ; then \
 		echo "ERROR: you need to do a 'make config' first" ; \
@@ -187,6 +171,14 @@ dep:
 	fi
 	$(MAKEARCH_KERNEL) -C $(LINUXDIR) modules_prepare
 	$(MAKEARCH_KERNEL) -C $(LINUXDIR) dep
+
+ifeq ($(CONFIG_CCACHE),y)
+	@mkdir -p $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache
+	@for bin in gcc g++ cc c++; do \
+		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/$$bin; \
+		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/mipsel-linux-uclibc-$$bin; \
+	done
+endif
 
 .PHONY: tools
 tools:
