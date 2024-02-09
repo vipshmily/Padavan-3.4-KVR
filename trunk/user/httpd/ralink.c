@@ -893,7 +893,7 @@ get_apcli_wds_entry(const char *ifname, RT_802_11_MAC_ENTRY *pme)
 	wrq.u.data.flags = 0;
 
 	if (wl_ioctl(ifname, RTPRIV_IOCTL_GET_MAC_TABLE_STRUCT, &wrq) >= 0 &&
-	    wrq.u.data.length == sizeof(RT_802_11_MAC_ENTRY)) {
+	    wrq.u.data.length == sizeof(RT_802_11_MAC_ENTRY)) { //bug with mt7615 driver
 		return 1;
 	}
 
@@ -1073,7 +1073,7 @@ print_sta_list(webs_t wp, RT_802_11_MAC_TABLE *mp, int num_ss_rx, int ap_idx)
 		bzero(&RxRate, sizeof(RxRate));
 		RxRate.word = mp->Entry[i].LastRxRate;
 
-		ret += websWrite(wp, "%02X:%02X:%02X:%02X:%02X:%02X  %-7s %3s %3d %3s %4s %4s %5dM %5dM %4d %3s %02d:%02d:%02d\n",
+		ret += websWrite(wp, "%02X:%02X:%02X:%02X:%02X:%02X %-7s %3s %3d %3s %4s %4s %5dM %5dM %4d %3s %02d:%02d:%02d\n",
 				mp->Entry[i].Addr[0], mp->Entry[i].Addr[1], mp->Entry[i].Addr[2],
 				mp->Entry[i].Addr[3], mp->Entry[i].Addr[4], mp->Entry[i].Addr[5],
 				GetPhyMode(mp->Entry[i].TxRate.field.MODE),
