@@ -739,7 +739,7 @@ struct nvram_pair router_defaults[] = {
 	{ "sdns_ttl_min", "60" },
 	{ "sdns_ttl_max", "86400" },
 	{ "sdns_coredump", "0" },
-	{ "sdnss_staticnum_x", "0" },
+	{ "sdns_staticnum_x", "0" },
 	{ "sdnse_enable", "0" },
 	{ "sdnse_port", "7053" },
 	{ "sdnse_tcp", "0" },
