@@ -1,5 +1,5 @@
 SRC_NAME=json-c-json-c-0.17-20230812
-SRC_URL=https://github.com/json-c/json-c/archive/refs/tags/json-c-json-c-0.17-20230812.tar.gz
+SRC_URL=https://codeload.github.com/json-c/json-c/tar.gz/refs/tags/json-c-0.17-20230812
 ARCHIVE_NAME=json-c-json-c-0.17-20230812
 
 all: download_test extract_test config_test

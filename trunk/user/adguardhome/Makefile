@@ -1,4 +1,4 @@
-VERSION := 0.107.41
+VERSION := 0.107.44
 VERSION_PKG := github.com/AdguardTeam/AdGuardHome/internal/version
 
 SRC_NAME := AdGuardHome-$(VERSION)
