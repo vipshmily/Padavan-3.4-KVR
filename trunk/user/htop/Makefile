@@ -1,5 +1,5 @@
-SRC_NAME = htop-3.2.2
-SRC_URL = https://github.com/htop-dev/htop/releases/download/3.2.2/$(SRC_NAME).tar.xz
+SRC_NAME = htop-3.3.0
+SRC_URL = https://github.com/htop-dev/htop/releases/download/3.3.0/$(SRC_NAME).tar.xz
 THISDIR = $(shell pwd)
 
 all: download_test extract_test config_test
@@ -12,7 +12,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar -xf $(SRC_NAME).tar.xz; \
+		tar xf $(SRC_NAME).tar.xz; \
 	fi )
 
 config_test:

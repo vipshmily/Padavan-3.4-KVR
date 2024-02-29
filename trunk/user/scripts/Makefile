@@ -4,7 +4,7 @@ all:
 clean:
 
 romfs:
-	fakeroot ./makedevlinks $(ROMFSDIR)
+	./makedevlinks $(ROMFSDIR)
 	$(ROMFSINST) /sbin/dev_init.sh
 	$(ROMFSINST) /sbin/reset_ss.sh
 	$(ROMFSINST) /sbin/mtd_storage.sh

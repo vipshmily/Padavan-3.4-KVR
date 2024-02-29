@@ -756,7 +756,7 @@
 			{"ddns2_hname", "", NULL, EVM_RESTART_DDNS },
 			{"ddns2_user", "", NULL, EVM_RESTART_DDNS },
 			{"ddns2_pass", "", NULL, EVM_RESTART_DDNS },
-			#if defined(APP_ALIDDNS)
+#if defined(APP_ALIDDNS)
            		 {"aliddns_enable", "", NULL, EVM_RESTART_ALIDDNS },
 			{"aliddns_interval", "", NULL, EVM_RESTART_ALIDDNS },
            		 {"aliddns_ttl", "", NULL, EVM_RESTART_ALIDDNS },
@@ -769,7 +769,7 @@
 			{"aliddns_domain2", "", NULL, EVM_RESTART_ALIDDNS },
 			{"aliddns_domain6", "", NULL, EVM_RESTART_ALIDDNS },
 			{"scripts.ddns_script.sh", "File", NULL, EVM_RESTART_ALIDDNS},
-			#endif
+#endif
 			{"ManualDHCPList", "Group", ARGV((char*)variables_LANHostConfig_ManualDHCPList, "8", "55", "dhcp_staticnum_x"), EVM_RESTART_DHCPD},
 			{"VPNSACLList", "Group", ARGV((char*)variables_LANHostConfig_VPNSACLList, "8", "107", "vpns_num_x"), EVM_RESTART_VPNSVR},
 			{0,0,0,0}
@@ -864,6 +864,7 @@
 			{"wl_VgaClamp", "", NULL, EVM_RESTART_WIFI5},
 #endif
 #if defined (USE_WID_5G) && (USE_WID_5G==7615 || USE_WID_5G==7915)
+                        {"wl_band_steering", "", NULL, EVM_RESTART_WIFI5},
 			{"wl_mumimo", "", NULL, EVM_RESTART_WIFI5},
 #endif
 			{"wl_country_code", "", NULL, EVM_RESTART_WIFI5},
@@ -1166,50 +1167,63 @@
 
 #if defined(APP_SMARTDNS)
     struct variable variables_SmartdnsConf[] = {
-	        {"sdns_enable", "", NULL, EVM_RESTART_SMARTDNS},
-			{"snds_name", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_enable", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_name", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdns_port", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdns_tcp_server", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdns_ipv6_server", "", NULL, EVM_RESTART_SMARTDNS},
-			{"snds_ip_change", "", NULL, EVM_RESTART_SMARTDNS},
-			{"snds_ip_change_time", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_ipv6", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_www", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_redirect", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_cache", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_cache_persist", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_tcp_idle_time", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_rr_ttl", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_rr_ttl_min", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_rr_ttl_max", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_rr_ttl_reply_max", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_max_reply_ip_num", "", NULL, EVM_RESTART_SMARTDNS},
+
+			{"sdns_speed", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_speed_mode", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_address", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_ns", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_as", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_ipset", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_ipset_timeout", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_ip_change", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_ip_change_time", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_force_aaaa_soa", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_force_qtype_soa", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_prefetch_domain", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdns_exp", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdns_exp_ttl", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdns_exp_ttl_max", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_cache_persist", "", NULL, EVM_RESTART_SMARTDNS},
-			{"snds_redirect", "", NULL, EVM_RESTART_SMARTDNS},
-			{"snds_cache", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_ttl", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_ttl_min", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_ttl_max", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_coredump", "", NULL, EVM_RESTART_SMARTDNS},	
-			{"sdnss_staticnum_x", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_speed", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_address", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_as", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_ipset", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdns_ns", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_exp_prefetch_time", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_dualstack_ip_allow_force_AAAA", "", NULL, EVM_RESTART_SMARTDNS},
+
 			{"sdnse_enable", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_port", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_tcp", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdnse_speed", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_name", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdnse_speed", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdnse_ipset", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_address", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_ns", "", NULL, EVM_RESTART_SMARTDNS},
-			{"sdnse_ipset", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_as", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdnse_ipv6_server", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_ipc", "", NULL, EVM_RESTART_SMARTDNS},
 			{"sdnse_cache", "", NULL, EVM_RESTART_SMARTDNS},
-			{"ss_white", "", NULL, EVM_RESTART_SMARTDNS},
-			{"ss_black", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_adblock", "", NULL, EVM_RESTART_SMARTDNS},	
+			{"sdns_adblock_url","",NULL, FALSE},
+			{"sdns_white", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_black", "", NULL, EVM_RESTART_SMARTDNS},
+			{"sdns_coredump", "", NULL, EVM_RESTART_SMARTDNS},	
+			{"sdns_staticnum_x", "", NULL, EVM_RESTART_SMARTDNS},
 			{"scripts.smartdns_address.conf", "File", NULL, EVM_RESTART_SMARTDNS},
 			{"scripts.smartdns_blacklist-ip.conf", "File", NULL, EVM_RESTART_SMARTDNS},
 			{"scripts.smartdns_whitelist-ip.conf", "File", NULL, EVM_RESTART_SMARTDNS},
 			{"scripts.smartdns_custom.conf", "File", NULL, EVM_RESTART_SMARTDNS},
-			{"SdnsList", "Group", ARGV((char*)variables_SmartdnsConf_SdnsList, "8", "55", "sdnss_staticnum_x"), EVM_RESTART_SMARTDNS},
-	};
+			{"SdnsList", "Group", ARGV((char*)variables_SmartdnsConf_SdnsList, "8", "55", "sdns_staticnum_x"), EVM_RESTART_SMARTDNS},
+		};
 #endif
 	struct variable variables_WLANConfig11b[] = {
 			{"rt_ssid", "", NULL, EVM_RESTART_WIFI2},
@@ -1267,6 +1281,7 @@
 #endif
 #if defined (USE_WID_2G) && (USE_WID_2G==7615 || USE_WID_2G==7915)
 			{"rt_turbo_qam", "", NULL, EVM_RESTART_WIFI2},
+			{"rt_airtimefairness", "", NULL, EVM_RESTART_WIFI2},
 #endif
 			{"rt_country_code", "", NULL, EVM_RESTART_WIFI2},
 			{"rt_stream_tx", "", NULL, EVM_RESTART_WIFI2},
@@ -1299,6 +1314,7 @@
 			{"rt_guest_mcs_mode", "", NULL, EVM_RESTART_WIFI2},
 			{"rt_KickStaRssiLow", "", NULL, EVM_RESTART_WIFI2},
 			{"rt_AssocReqRssiThres", "", NULL, EVM_RESTART_WIFI2},
+			{"rt_band_steering", "", NULL, EVM_RESTART_WIFI2},
 			{"scripts.ap_script.sh", "File", NULL, EVM_RESTART_WIFI2},
 			{"rt_RBRList", "Group", ARGV((char*)variables_WLANConfig11b_rt_RBRList, "16", "32", "rt_wdsnum_x"), EVM_RESTART_WIFI2},
 			{0,0,0,0}

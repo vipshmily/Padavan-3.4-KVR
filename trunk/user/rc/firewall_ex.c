@@ -678,20 +678,19 @@ include_masquerade(FILE *fp, char *wan_if, char *wan_ip, char *lan_net, int is_f
 	char *dtype = "POSTROUTING";
 
 	if (is_fullcone) {
-		fprintf(fp, "-A POSTROUTING -o %s -s %s -j FULLCONENAT\n", wan_if, lan_net);
-		fprintf(fp, "-A PREROUTING -i %s -j FULLCONENAT\n", wan_if);
-	} else {
-		if (wan_ip)
-			fprintf(fp, "-A %s -o %s -s %s -j SNAT --to-source %s\n", dtype, wan_if, lan_net, wan_ip);
-		else
-			fprintf(fp, "-A %s -o %s -s %s -j MASQUERADE\n", dtype, wan_if, lan_net);
-	}
+		fprintf(fp, "-A %s -o %s -s %s -j MASQUERADE --mode fullcone\n", dtype, wan_if, lan_net);
+ 	} else {
+ 		if (wan_ip)
+ 			fprintf(fp, "-A %s -o %s -s %s -j SNAT --to-source %s\n", dtype, wan_if, lan_net, wan_ip);
+ 		else
+ 			fprintf(fp, "-A %s -o %s -s %s -j MASQUERADE\n", dtype, wan_if, lan_net);
+ 	}
 }
 
 static int
 is_need_tcp_mss_wan(int unit, int wan_proto, char *man_if)
 {
-	if (get_usb_modem_wan(unit) ) {
+	/*if (get_usb_modem_wan(unit) ) {
 		int modem_mtu = nvram_safe_get_int("modem_mtu", 1500, 1000, 1500);
 		if (modem_mtu != 1500)
 			return 1;
@@ -703,9 +702,9 @@ is_need_tcp_mss_wan(int unit, int wan_proto, char *man_if)
 		
 		if (get_interface_mtu(man_if) != 1500)
 			return 1;
-	}
+	}*/
 
-	return 0;
+	return 1;
 }
 
 static char *
@@ -1711,6 +1710,26 @@ ip6t_mangle_rules(char *man_if)
 	fclose(fp);
 
 	if (is_module_loaded("ip6table_mangle"))
+		doSystem("ip6tables-restore %s", ipt_file);
+}
+
+static void
+ip6t_nat_rules(char *man_if)
+{
+	FILE *fp;
+	const char *ipt_file = "/tmp/ip6t_nat.rules";
+
+	if (!(fp=fopen(ipt_file, "w")))
+		return;
+
+	fprintf(fp, "*%s\n", "nat");
+	fprintf(fp, ":%s %s [0:0]\n", "PREROUTING", "ACCEPT");
+	fprintf(fp, ":%s %s [0:0]\n", "INPUT", "ACCEPT");
+	fprintf(fp, ":%s %s [0:0]\n", "OUTPUT", "ACCEPT");
+	fprintf(fp, ":%s %s [0:0]\n", "POSTROUTING", "ACCEPT");
+	fprintf(fp, "-A POSTROUTING -s fc00:101:101::1/64 -j FULLCONENAT\n");
+	fprintf(fp, "COMMIT\n\n");
+	fclose(fp);
 		doSystem("ip6tables-restore %s", ipt_file);
 }
 
