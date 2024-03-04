@@ -39,10 +39,16 @@ build: toolchain/download
 		echo "Supported products: $(PRODUCTS)"; \
 		exit 1; \
 	fi
-	@(cd $(SOURCE_DIR); fakeroot ./build_firmware_ci)
+	$(MAKE) -C $(SOURCE_DIR)
 
 clean:
-	@(cd $(SOURCE_DIR); ./clear_tree; rm -f $(CONFIG))
+	@if [ ! -f $(CONFIG) ]; then \
+		echo "Project config file .config not found! Terminate."; \
+		exit 1; \
+	fi
+	$(MAKE) -C $(SOURCE_DIR) clean
+	@rm -f $(CONFIG)
+	@(cd $(SOURCE_DIR); ./clear_tree; ./clear_tree_simple)
 
 .PHONY: $(PRODUCTS)
 $(PRODUCTS):

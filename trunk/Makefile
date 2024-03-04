@@ -17,13 +17,9 @@ include .config
 include versions.inc
 
 ifeq ($(CONFIG_WITHOUT_KERNEL),y)
-all: tools unpack_trx libc_only libs_only user_only romfs image
+all: dep tools unpack_trx libc_only libs_only user_only romfs image
 else
-ifeq ($(CONFIG_FIRMWARE_TYPE_ROOTFS_IN_RAM),y)
-all: tools modules libc_only libs_only user_only romfs linux image
-else
-all: tools linux libc_only libs_only user_only romfs image
-endif
+all: dep tools linux libc_only libs_only user_only romfs image
 endif
 ############################################################################
 #
@@ -59,12 +55,10 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-ifneq ($(findstring linux-3.4,$(LINUXDIR)),)
 FIRMWARE_KERNEL_VER="3.4"
 CONFIG_CROSS_COMPILER_PATH = $(CONFIG_CROSS_COMPILER_ROOT)/bin
 CONFIG_CMAKE_TOOLCHAIN_FILE = $(ROOTDIR)/vendors/cmake/cross-mipsel-linux.cmake
 KERNEL_HEADERS_PATH = $(CONFIG_CROSS_COMPILER_ROOT)/mipsel-linux-uclibc/sysroot/usr/include
-endif
 
 ifeq (config.arch,$(wildcard config.arch))
 ifeq ($(filter %_default, $(MAKECMDGOALS)),)
@@ -164,14 +158,9 @@ sparseall:
 subdirs: libs
 	for dir in $(DIRS) ; do [ ! -d $$dir ] || $(MAKEARCH) -C $$dir || exit 1 ; done
 
-dep:
-	@if [ ! -f $(LINUXDIR)/.config ] ; then \
-		echo "ERROR: you need to do a 'make config' first" ; \
-		exit 1 ; \
-	fi
-	$(MAKEARCH_KERNEL) -C $(LINUXDIR) modules_prepare
-	$(MAKEARCH_KERNEL) -C $(LINUXDIR) dep
-
+.PHONY: config dep
+config:
+	@./configure
 ifeq ($(CONFIG_CCACHE),y)
 	@mkdir -p $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache
 	@for bin in gcc g++ cc c++; do \
@@ -179,6 +168,10 @@ ifeq ($(CONFIG_CCACHE),y)
 		ln -sf /usr/bin/ccache $(CONFIG_CROSS_COMPILER_ROOT)/lib/ccache/mipsel-linux-uclibc-$$bin; \
 	done
 endif
+
+dep: config
+	$(MAKEARCH_KERNEL) -C $(LINUXDIR) modules_prepare
+	$(MAKEARCH_KERNEL) -C $(LINUXDIR) dep
 
 .PHONY: tools
 tools:
@@ -197,6 +190,14 @@ clean:
 	rm -rf $(IMAGEDIR)
 	rm -rf $(LINUXDIR)/net/ipsec/alg/libaes $(LINUXDIR)/net/ipsec/alg/perlasm
 	rm -f $(LINUXDIR)/arch/mips/ramdisk/*.gz
+
+.PHONY: tools_clean
+tools_clean:
+	$(MAKE) -C tools clean
+
+.PHONY: kernel_clean
+kernel_clean:
+	$(MAKEARCH_KERNEL) -C $(LINUXDIR) distclean
 
 %_romfs:
 	@case "$(@)" in \
