@@ -97,7 +97,6 @@ mkdir -p $ROOTDIR/images
 # load source kernel config
 . "$kernel_cf"
 
-echo --------------------------COPY-CONFIG-----------------------------
 ######################### FOR-ALL-DEVICES #############################
 ln -sf vendors/Ralink/config.arch config.arch
 cp -fL "$kernel_cf" "$kernel_tf"
@@ -456,11 +455,3 @@ fi
 # 	func_disable_kernel_param "CONFIG_SOUND"
 # fi
 #######################################################################
-if [ "$CONFIG_WITHOUT_KERNEL" != "y" ] ; then
-echo --------------------------MAKE-DEP--------------------------------
-make dep
-fi
-if [ "$2" != "kmod" ] ; then
-echo --------------------------MAKE-ALL--------------------------------
-make
-fi
