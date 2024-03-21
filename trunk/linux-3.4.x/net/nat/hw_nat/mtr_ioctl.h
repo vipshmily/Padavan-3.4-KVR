@@ -37,8 +37,13 @@
 #define MTR_GET_ALL_ENTRIES               (18)
 
 #define MTR_DEVNAME                     "mtr0"
-#define MTR_MAJOR                       (250)
 
+
+#if defined (CONFIG_ARCH_MT7622)
+#define MTR_MAJOR                       (265) //harry
+#else
+#define MTR_MAJOR                       (250)
+#endif
 enum MtrInterval {
 	_1MS = 0,
 	_10MS = 1,

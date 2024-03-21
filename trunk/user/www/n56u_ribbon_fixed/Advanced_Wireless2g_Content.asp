@@ -395,8 +395,8 @@ function validate_wlphrase(s, v, obj){
                                                     <option value="6" <% nvram_match_x("","rt_gmode", "6","selected"); %>>b/g/n/ax Mixed</option>
                                                     <option value="2" <% nvram_match_x("","rt_gmode", "2","selected"); %>>b/g/n Mixed</option>
                                                     <option value="1" <% nvram_match_x("","rt_gmode", "1","selected"); %>>b/g Mixed</option>
-                                                    <option value="5" <% nvram_match_x("","rt_gmode", "5","selected"); %>>g/n Mixed (*)</option>
-                                                    <option value="3" <% nvram_match_x("","rt_gmode", "3","selected"); %>>n Only</option>
+                                                    <option value="5" <% nvram_match_x("","rt_gmode", "5","selected"); %>>g/n Mixed</option>
+                                                    <option value="3" <% nvram_match_x("","rt_gmode", "3","selected"); %>>n Only (*)</option>
                                                     <option value="4" <% nvram_match_x("","rt_gmode", "4","selected"); %>>g Only</option>
                                                     <option value="0" <% nvram_match_x("","rt_gmode", "0","selected"); %>>b Only</option>
                                                 </select>

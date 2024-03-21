@@ -266,7 +266,7 @@ function showMRULESList(){
                 <div class="row-fluid">
                     <div class="span12">
                         <div class="box well grad_colour_dark_blue">
-                            <h2 class="box_head round_top"><#menu5_24#> - <#menu5_29#></h2>
+                            <h2 class="box_head round_top"><#menu5_21#> - <#menu5_24#></h2>
                             <div class="round_bottom">
 		    <div>
                             <ul class="nav nav-tabs" style="margin-bottom: 10px;">

@@ -539,99 +539,29 @@ is_ftp_conntrack_loaded(int ftp_port0, int ftp_port1)
 static int
 is_hwnat_loaded(void)
 {
-	int result = 0;
-	char offload_val[32] = {0};
-
 	if (!is_module_loaded("hw_nat"))
-		return result;
+		return 0;
 
-	result |= 0x1;
-
-	if (module_param_get("hw_nat", "wifi_offload", offload_val, sizeof(offload_val)) == 0) {
-		if (offload_val[0] == '1' || offload_val[0] == 'Y')
-			result |= 0x2;
-	}
-
-	if (module_param_get("hw_nat", "udp_offload", offload_val, sizeof(offload_val)) == 0) {
-		if (offload_val[0] == '1' || offload_val[0] == 'Y')
-			result |= 0x4;
-	}
-
-#if defined(USE_IPV6_HW_NAT)
-	if (module_param_get("hw_nat", "ipv6_offload", offload_val, sizeof(offload_val)) == 0) {
-		if (offload_val[0] == '1' || offload_val[0] == 'Y')
-			result |= 0x8;
-	}
-#endif
-
-	return result;
-}
-
-static int
-is_hwnat_allow_ipv6(void)
-{
-#if defined(USE_IPV6_HW_NAT)
-	int ipv6_type = get_ipv6_type();
-
-#if defined(USE_HW_NAT_V2)
-	if (nvram_get_int("ip6_ppe_on") && (ipv6_type != IPV6_DISABLED))
-		return 1;
-#else
-	if (nvram_get_int("ip6_ppe_on") && (ipv6_type == IPV6_NATIVE_STATIC || ipv6_type == IPV6_NATIVE_DHCP6))
-		return 1;
-#endif
-#endif
-	return 0;
+	return 1;
 }
 
 static int
 is_hwnat_allow(void)
 {
-	int result = 0;
 	int sw_mode = nvram_get_int("sw_mode");
-
 	int hw_nat_mode = nvram_get_int("hw_nat_mode");
 
 	if (sw_mode != 1 && sw_mode != 4)
-		return result;
+		return 0;
 
-	if (hw_nat_mode == 2)
-		return result;
+	if (hw_nat_mode == 0)
+		return 0;
 
-	result |= 0x1;
-
-	if (hw_nat_mode == 1 || hw_nat_mode == 4)
-		result |= 0x2;	// wifi_offload=1
-
-	if (hw_nat_mode == 3 || hw_nat_mode == 4)
-		result |= 0x4;	// udp_offload=1
-
-	if (is_hwnat_allow_ipv6())
-		result |= 0x8;	// ipv6_offload=1
-
-	return result;
+	return 1;
 }
 
 static void
-hwnat_load(int allow_mask)
-{
-	char hnat_param[80];
-	int wifi_offload, udp_offload, wan_vid;
-
-	wifi_offload = (allow_mask & 0x2) ? 1 : 0;
-	udp_offload  = (allow_mask & 0x4) ? 1 : 0;
-	wan_vid = get_vlan_vid_wan();
-
-	snprintf(hnat_param, sizeof(hnat_param), "wifi_offload=%d udp_offload=%d wan_vid=%d", wifi_offload, udp_offload, wan_vid);
-#if defined(USE_IPV6_HW_NAT)
-	if (allow_mask & 0x8)
-		strcat(hnat_param, " ipv6_offload=1");
-#endif
-	module_smart_load("hw_nat", hnat_param);
-}
-
-static void
-hwnat_configure(int allow_mask)
+hwnat_configure(void)
 {
 	const char *hwnat_status = "Disabled";
 
@@ -640,36 +570,10 @@ hwnat_configure(int allow_mask)
 		return;
 	}
 
-	module_param_set_int("hw_nat", "wan_vid", get_vlan_vid_wan());
-	module_param_set_int("hw_nat", "ttl_regen", (nvram_get_int("wan_ttl_fix") == 1) ? 0 : 1);
-
-	if (allow_mask & 0x2)
-#if defined(USE_WWAN_HW_NAT)
-		hwnat_status = "Enabled, IPoE/PPPoE offload [WAN/WWAN]<->[LAN/WLAN]";
-#else
-		hwnat_status = "Enabled, IPoE/PPPoE offload [WAN]<->[LAN/WLAN]";
-#endif
-	else
-		hwnat_status = "Enabled, IPoE/PPPoE offload [WAN]<->[LAN]";
-
+	hwnat_status = "Enabled, IPoE/PPPoE offload [WAN]<->[LAN/WLAN]";
 	logmessage(LOGNAME, "%s: %s", "Hardware NAT/Routing", hwnat_status);
-	logmessage(LOGNAME, "%s: IPv4 UDP flow offload - %s", "Hardware NAT/Routing", (allow_mask & 0x4) ? "ON" : "OFF");
-#if defined(USE_IPV6_HW_NAT)
-	logmessage(LOGNAME, "%s: IPv6 routes offload - %s", "Hardware NAT/Routing", (allow_mask & 0x8) ? "ON" : "OFF");
-#endif
 }
 #endif /* USE_HW_NAT */
-
-#if 0
-static int
-is_fastnat_allow(void)
-{
-	if ( nvram_match("sw_nat_mode", "1") && nvram_match("sw_mode", "1") )
-		return 1;
-
-	return 0;
-}
-#endif
 
 void
 hw_vlan_tx_map(int idx, int vid)
@@ -699,13 +603,13 @@ reload_nat_modules(void)
 	int needed_ftp1 = 0;
 	int needed_sip = 0;
 	int needed_h323 = 0;
-	int needed_rtsp = 0;
 	int needed_pptp = 0;
 	int wan_nat_x = nvram_get_int("wan_nat_x");
 #if defined (USE_HW_NAT)
+	char hnat_param[80];
 	int hwnat_allow = is_hwnat_allow();
 	int hwnat_loaded = is_hwnat_loaded();
-	int ipv6_nat = nvram_get_int("ip6_lan_auto");
+	int hw_nat_mode = nvram_get_int("hw_nat_mode");
 #endif
 
 	if (!get_ap_mode())
@@ -720,9 +624,6 @@ reload_nat_modules(void)
 		
 		if (nvram_match("nf_alg_h323", "1"))
 			needed_h323 = 1;
-		
-		if (nvram_match("nf_alg_rtsp", "1"))
-			needed_rtsp = 1;
 		
 		if (nvram_match("nf_alg_sip", "1"))
 			needed_sip = 1;
@@ -746,15 +647,6 @@ reload_nat_modules(void)
 	}
 	else
 		module_smart_unload("nf_nat_pptp", 1);
-
-	if (needed_rtsp)
-	{
-		module_smart_load("nf_conntrack_rtsp", "ports=554,8554");
-		if (wan_nat_x != 0)
-			module_smart_load("nf_nat_rtsp", NULL);
-	}
-	else
-		module_smart_unload("nf_nat_rtsp", 1);
 
 	if (needed_h323)
 	{
@@ -798,14 +690,21 @@ reload_nat_modules(void)
 	}
 
 #if defined (USE_HW_NAT)
-	if (hwnat_allow && !hwnat_loaded)
-		hwnat_load(hwnat_allow);
-	if (ipv6_nat==1)
-	    {doSystem("echo 7 1 > /sys/kernel/debug/hnat/hnat_setting");}
-	    else
-	    {doSystem("echo 7 0 > /sys/kernel/debug/hnat/hnat_setting");}
+	if (hwnat_allow)
+	{	if(!hwnat_loaded)
+		{module_smart_load("hw_nat", NULL);
+#if defined (USE_MT7615_AP) || defined (USE_MT7915_AP) || defined (USE_MT76X2_AP)
+		if (hw_nat_mode == 1)
+		{doSystem("iwpriv %s set hw_nat_register=%d", IFNAME_2G_MAIN, 1);
+		doSystem("iwpriv %s set hw_nat_register=%d", IFNAME_5G_MAIN, 1);}
+		else
+		{doSystem("iwpriv %s set hw_nat_register=%d", IFNAME_2G_MAIN, 0);
+		doSystem("iwpriv %s set hw_nat_register=%d", IFNAME_5G_MAIN, 0);}
+#endif
+	}
+	}
 
-	hwnat_configure(hwnat_allow);
+	hwnat_configure();
 #endif
 #if defined (USE_SFE)
 	int sfe_enable = nvram_get_int("sfe_enable");
@@ -976,4 +875,3 @@ set_libc_gai(int ipv4_first)
 		unlink("/etc/gai.conf");
 	}
 }
-
