@@ -1,0 +1,173 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      production:
+        description: 设置编译的固件型号,空格分隔.
+        default: "MI-R4A"
+        required: false
+      release:
+        description: "是否需要发布到Release? (不发布也可以到Artifacts下载)"
+        default: 'yes'
+        required: false
+        
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+          key: "${{ github.event.inputs.production }}"
+    - uses: actions/setup-go@v5
+      with:
+          go-version: '1.22'
+          check-latest: true
+          cache: false
+    - uses: actions/setup-node@v3
+      with:
+          node-version: 20
+          check-latest: true                     
+    - name: Prepare environment
+      run: |
+          sudo apt update
+          sudo apt install libtool-bin gperf python3-docutils autopoint gettext ccache
+    - name: Download toolchain
+      run: |
+        cd toolchain-mipsel
+        sh dl_toolchain.sh
+        mkdir -p /opt/images/
+    - name: Build firmware
+      env:
+        TNAME: "${{ github.event.inputs.production }}"
+        MHZ: 1200               # CPU超频频率 必须为20的倍数
+      run: |
+        cd trunk
+        echo "CPU超频到$MHZ"mhz
+        echo "修改CPU频率"
+        clock=`echo "obase=16 ; ibase=10 ; (((($MHZ/20)-1)*16+2))" | bc`
+        echo "16进制$clock"
+        sed -i "554,555s:0xff:0x7ff:g" linux-3.4.x/arch/mips/rt2880/init.c
+        sed -i "554,556s:0xc2:0x$clock:g" linux-3.4.x/arch/mips/rt2880/init.c
+        for m in $TNAME;
+        do
+        if [ ! -f configs/templates/$m.config ] ; then
+        echo "configs/templates/$m.config not found "
+        exit 0
+        fi
+        cp -f configs/templates/$m.config .config
+        sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' .config
+        ############################################################################################
+        #因不同型号配置功能不一样，所以先把配置项删除，如果你自己要添加其他的，也要写上删除这一条，切记！！！
+        ############################################################################################
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_MENTOHUST/d' .config #删除配置项MENTOHUST
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_SERVER/d' .config #删除配置项SOFTETHERVPN
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CLIENT/d' .config #删除配置项SOFTETHERVPN
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CMD/d' .config #删除配置项SOFTETHERVPN
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT/d' .config #删除配置项SCUTCLIENT
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS/d' .config #删除配置项SS plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SSSERVER/d' .config #删除配置项SS server
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER/d' .config #删除配置项DNSFORWARDER
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ADBYBY/d' .config #删除配置项adbyby plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPC/d' .config #删除配置项FRPC
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPS/d' .config #删除配置项FRPS
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_TUNSAFE/d' .config #删除配置项TUNSAFE
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ALIDDNS/d' .config #删除配置项阿里DDNS
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SMARTDNS/d' .config #删除配置项SMARTDNS
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SRELAY/d' .config #删除配置项SRELAY
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_KUMASOCKS/d' .config #删除配置项KUMASOCKS
+        sed -i '/CONFIG_FIRMWARE_CPU_900MHZ/d' .config #删除配置项超频900MHz
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SSOBFS/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_V2RAY/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_XRAY/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_TROJAN/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_KOOLPROXY/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SMARTDNSBIN/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_CADDY/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_CADDYBIN/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_WYY/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_WYYBIN/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ZEROTIER/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_DDNSTO/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_WIREGUARD/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ALDRIVER/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_MSD_LITE/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_MTR/d' .config
+        sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' .config
+        ######################################################################
+        #以下选项是定义你需要的功能（y=集成,n=忽略），重新写入到.config文件
+        ######################################################################
+        echo "CONFIG_FIRMWARE_INCLUDE_MENTOHUST=n" >> .config #MENTOHUST
+        echo "CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT=n" >> .config #SCUTCLIENT
+        echo "CONFIG_FIRMWARE_INCLUDE_SSSERVER=n" >> .config #SS server
+        echo "CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER=n" >> .config #DNSFORWARDER
+        echo "CONFIG_FIRMWARE_INCLUDE_TUNSAFE=n" >> .config #TUNSAFE
+        echo "CONFIG_FIRMWARE_INCLUDE_SRELAY=n" >> .config #可以不集成
+        echo "CONFIG_FIRMWARE_CPU_900MHZ=y" >> .config #开启超频，仅MT7621可用
+        ##科学上网## 
+        echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=y" >> .config #科学上网插件，选择n后全部有关插件都不集成
+        echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=n" >> .config # simple-obfs混淆插件
+        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config #集成v2ray执行文件（3.6M左右)
+        echo "CONFIG_FIRMWARE_INCLUDE_XRAY=y" >> .config #集成xray执行文件（3.6M左右)
+        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=y" >> .config #集成trojan执行文件(1.1M左右)
+        echo "CONFIG_FIRMWARE_INCLUDE_KUMASOCKS=n" >> .config #socks5服务端
+        ##科学上网##
+        
+        ##广告管理##
+        echo "CONFIG_FIRMWARE_INCLUDE_ADBYBY=y" >> .config #adbyby plus+
+        echo "CONFIG_FIRMWARE_INCLUDE_KOOLPROXY=n" >> .config #KP广告过滤
+        ##广告管理##
+        
+        ##DNS服务##
+        echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNS=y" >> .config #smartdns
+        echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNSBIN=n" >> .config #smartdns二进制文件
+        echo "CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME=n" >> .config #adg DNS去AD
+        ##DNS服务##
+        
+        ##文件管理##
+        echo "CONFIG_FIRMWARE_INCLUDE_CADDY=n" >> .config #在线文件管理服务
+        echo "CONFIG_FIRMWARE_INCLUDE_CADDYBIN=n" >> .config #集成caddu执行文件，此文件有13M,请注意固件大小。如果不集成，会从网上下载下来执行，不影响正常使用
+        ##文件管理##
+        
+        ##音乐解锁##
+        echo "CONFIG_FIRMWARE_INCLUDE_WYY=n" >> .config #网易云解锁
+        echo "CONFIG_FIRMWARE_INCLUDE_WYYBIN=n" >> .config #网易云解锁GO版本执行文件（4M多）注意固件超大小,不集成会自动下载
+        ##音乐解锁##
+        
+        ##内网穿透服务##
+        echo "CONFIG_FIRMWARE_INCLUDE_ZEROTIER=y" >> .config #zerotier ~1.3M
+        echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=n" >> .config #阿里DDNS
+        echo "CONFIG_FIRMWARE_INCLUDE_FRPC=n" >> .config #内网穿透FRPC
+        echo "CONFIG_FIRMWARE_INCLUDE_FRPS=n" >> .config #内网穿透FRPS
+        echo "CONFIG_FIRMWARE_INCLUDE_DDNSTO=n" >> .config #ddnsto  ~0.5M
+        echo "CONFIG_FIRMWARE_INCLUDE_WIREGUARD=n" >>.config #wireguard 10k
+        ##内网穿透服务##
+        echo "CONFIG_FIRMWARE_INCLUDE_ALDRIVER=n" >> .config #ALDRIVER  ~3m
+        echo "CONFIG_FIRMWARE_INCLUDE_MSD_LITE=y" >> .config #MSD_LITE
+        echo "CONFIG_FIRMWARE_INCLUDE_MTR=n" >> .config #MTR
+        #########################################################################################
+        # 自定义添加其它功能请参考源码configs/templates/目录下的config文件。按照上面的格式添加即可
+        # 格式如下：
+        # sed -i '/自定义项/d' .config
+        # echo "自定义项=y" >> .config
+        #########################################################################################
+        sudo ./clear_tree_simple
+        sudo ./build_firmware_modify $m 0
+        sudo mv -f images/*.trx /opt/images/
+        echo "TAG_ANME=$(TZ='Asia/Shanghai' date +%Y.%m.%d-%H%M)" >> $GITHUB_ENV
+        done                     
+    - name : Upload images to Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.inputs.production }}-${{ env.TAG_ANME }}
+        path: /opt/images/*.trx        
+    - name: Upload images to Releases
+      uses: ncipollo/release-action@v1
+      if: ${{ github.event.inputs.release == 'yes' }}
+      with:
+        commit: ${{ github.sha }}
+        tag: ${{ env.TAG_ANME }}
+        artifacts: /opt/images/*.trx
+        allowUpdates: true

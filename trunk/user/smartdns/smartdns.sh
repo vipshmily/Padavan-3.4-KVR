@@ -14,17 +14,17 @@ dnsmasq_Conf="$storage_Path/dnsmasq/dnsmasq.conf"
 chn_Route="$storage_Path/chinadns/chnroute.txt"
 
 sdns_enable=$(nvram get sdns_enable)
-snds_name=$(nvram get snds_name)
+sdns_name=$(nvram get sdns_name)
 sdns_port=$(nvram get sdns_port)
 sdns_tcp_server=$(nvram get sdns_tcp_server)
 sdns_ipv6_server=$(nvram get sdns_ipv6_server)
-snds_ip_change=$(nvram get snds_ip_change)
+sdns_ip_change=$(nvram get sdns_ip_change)
 sdns_ipv6=$(nvram get sdns_ipv6)
 sdns_www=$(nvram get sdns_www)
 sdns_exp=$(nvram get sdns_exp)
-snds_redirect=$(nvram get snds_redirect)
+sdns_redirect=$(nvram get sdns_redirect)
 sdns_cache_persist=$(nvram get sdns_cache_persist)
-snds_cache=$(nvram get snds_cache)
+sdns_cache=$(nvram get sdns_cache)
 sdns_ttl=$(nvram get sdns_ttl)
 sdns_ttl_min=$(nvram get sdns_ttl_min)
 sdns_ttl_max=$(nvram get sdns_ttl_max)
@@ -44,6 +44,7 @@ sdnse_as=$(nvram get sdnse_as)
 sdns_as=$(nvram get sdns_as)
 sdnse_ipc=$(nvram get sdnse_ipc)
 sdnse_cache=$(nvram get sdnse_cache)
+sdns_adblock=$(nvram get sdns_adblock)
 ss_white=$(nvram get ss_white)
 ss_black=$(nvram get ss_black)
 sdns_coredump=$(nvram get sdns_coredump)
@@ -61,11 +62,11 @@ Read_ini () {
 # 【读取上次成功启动时的端口等】
     if [ -s "$smartdns_Ini" ] ; then
         hosts_type=$(sed -n '1p' $smartdns_Ini)
-        snds_redirected=$(sed -n '2p' $smartdns_Ini)
+        sdns_redirected=$(sed -n '2p' $smartdns_Ini)
         sdns_ported=$(sed -n '3p' $smartdns_Ini)
     else
         hosts_type=0
-        snds_redirected=0
+        sdns_redirected=0
         sdns_ported="$sdns_port"
     fi
 }
@@ -108,7 +109,7 @@ Check_ss(){
 Get_sdns_conf () {
     # 【】
     :>"$smartdns_tmp_Conf"
-    echo "server-name $snds_name" >> "$smartdns_tmp_Conf"
+    echo "server-name $sdns_name" >> "$smartdns_tmp_Conf"
     ARGS_1=""
     if [ "$sdns_address" = "1" ] ; then
      ARGS_1="$ARGS_1 -no-rule-addr"
@@ -139,32 +140,35 @@ Get_sdns_conf () {
     fi
     # 读取 第二服务器 配置
     Get_sdnse_conf
-    echo "cache-size $snds_cache" >> "$smartdns_tmp_Conf"
+    echo "cache-size $sdns_cache" >> "$smartdns_tmp_Conf"
     echo "rr-ttl $sdns_ttl" >> "$smartdns_tmp_Conf"
     echo "rr-ttl-min $sdns_ttl_min" >> "$smartdns_tmp_Conf"
     echo "rr-ttl-max $sdns_ttl_max" >> "$smartdns_tmp_Conf"
     echo "tcp-idle-time 120" >> "$smartdns_tmp_Conf"
-    if [ "$snds_ip_change" -eq 1 ] ;then
+    if [ "$sdns_ip_change" -eq 1 ] ;then
         echo "dualstack-ip-selection yes" >> "$smartdns_tmp_Conf"
-        echo "dualstack-ip-selection-threshold $(nvram get snds_ip_change_time)" >> "$smartdns_tmp_Conf"
+        echo "dualstack-ip-selection-threshold $(nvram get sdns_ip_change_time)" >> "$smartdns_tmp_Conf"
     elif [ "$sdns_ipv6" -eq 1 ] ;then
         echo "force-AAAA-SOA yes" >> "$smartdns_tmp_Conf"
     fi
-    if [ "$sdns_cache_persist" -eq 1 ] && [ "$snds_cache" -gt 0 ] ;then
+    if [ "$sdns_cache_persist" -eq 1 ] && [ "$sdns_cache" -gt 0 ] ;then
         echo "cache-persist yes" >> "$smartdns_tmp_Conf"
         echo "cache-file /etc/storage/smartdns.cache" >> "$smartdns_tmp_Conf"    
     else
         echo "cache-persist no" >> "$smartdns_tmp_Conf"
     fi
-    if [ "$sdns_www" -eq 1 ] && [ " $snds_cache" -gt 0 ] ;then
+    if [ "$sdns_www" -eq 1 ] && [ " $sdns_cache" -gt 0 ] ;then
         echo "prefetch-domain yes" >> "$smartdns_tmp_Conf"
     else
         echo "prefetch-domain no" >> "$smartdns_tmp_Conf"
     fi
-    if [ "$sdns_exp" -eq 1 ] && [ "$snds_cache" -gt 0 ] ;then
+    if [ "$sdns_exp" -eq 1 ] && [ "$sdns_cache" -gt 0 ] ;then
         echo "serve-expired yes" >> "$smartdns_tmp_Conf"
     else
         echo "serve-expired no" >> "$smartdns_tmp_Conf"
+    fi
+    if [ "$sdns_adblock" -eq 1 ] && [ "$sdns_cache" -gt 0 ] ;then
+        echo "conf-file /tmp/anti-ad-for-smartdns.conf" >> "$smartdns_tmp_Conf"
     fi
     echo "log-level warn" >> "$smartdns_tmp_Conf"
     listnum=$(nvram get sdnss_staticnum_x)
@@ -184,7 +188,7 @@ Get_sdns_conf () {
             ipc=""
             named=""
             non=""
-            sipset=""
+            ipset=""
             if [ "$sdnss_ipc" = "whitelist" ] ; then
                 ipc="-whitelist-ip"
             elif [ "$sdnss_ipc" = "blacklist" ] ; then
@@ -309,6 +313,24 @@ Check_ip_addr () {
     return 0
 }
 
+Start_AD () {
+# 【下载广告过滤文件】
+    curl -s -o /tmp/sdnsadnew.conf --connect-timeout 10 --retry 3 $(nvram get sdns_adblock_url)
+    if [ ! -f "/tmp/sdnsadnew.conf" ]; then
+        logger -t "SmartDNS" "广告过滤文件下载失败，可能是地址失效或网络异常等！"
+    else
+        logger -t "SmartDNS" "广告过滤文件下载成功已启用！"
+        if [ -f "/tmp/sdnsadnew.conf" ]; then
+            check = `grep -wq "address=" /tmp/sdnsadnew.conf`
+            if [ ! -n "$check" ] ; then
+                cp /tmp/sdnsadnew.conf /tmp/anti-ad-for-smartdns.conf
+            else
+                cat /tmp/sdnsadnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/anti-ad-for-smartdns.conf
+            fi
+        fi
+    fi
+    rm -f /tmp/sdnsadnew.conf
+}
 
 Change_adbyby () {
 # 【】
@@ -324,7 +346,7 @@ Change_adbyby () {
         ;;
     1)
         if [ "$hosts_type" != "SmartDNS" ] && [ "$action" = "start" ] ; then
-            if [ "$sdns_port" = "53" ] || [ $(nvram get adbyby_add) = 1 ] || [ "$snds_redirect" = "2" ] ; then
+            if [ "$sdns_port" = "53" ] || [ $(nvram get adbyby_add) = 1 ] || [ "$sdns_redirect" = "2" ] ; then
                 nvram set adbyby_add=1
                 /usr/bin/adbyby.sh switch
                 logger -t "SmartDNS" "DNS 去广告规则: Dnsmasq ⇒ SmartDNS"
@@ -346,7 +368,7 @@ Change_dnsmasq () {
         sed -i '/port=0/d' "$dnsmasq_Conf"
         if [ "$sdns_enable" = 0 ] ; then
             [ "$sdns_ported" = "53" ] && logger -t "SmartDNS" "已启用 dnsmasq 域名解析（DNS）功能" 
-            [ "$snds_redirected" = "1" ] && logger -t "SmartDNS" "删除 dnsmasq 上游服务器：127.0.0.1:$sdns_ported" 
+            [ "$sdns_redirected" = "1" ] && logger -t "SmartDNS" "删除 dnsmasq 上游服务器：127.0.0.1:$sdns_ported" 
         fi
         ;;
     start)
@@ -354,13 +376,13 @@ Change_dnsmasq () {
         if [ "$sdns_port" = "53" ] ; then
             echo "port=0" >> "$dnsmasq_Conf"
             logger -t "SmartDNS" "已关闭 dnsmasq 域名解析（DNS）功能"
-            if [ "$snds_redirect" = "1" ] ; then
-                nvram set snds_redirect=0
-                snds_redirect=0
+            if [ "$sdns_redirect" = "1" ] ; then
+                nvram set sdns_redirect=0
+                sdns_redirect=0
                 logger -t "SmartDNS" "因此，自动修改 重定向为：无" 
             fi
         fi
-        if [ "$snds_redirect" = "1" ] ; then
+        if [ "$sdns_redirect" = "1" ] ; then
             echo "no-resolv" >> "$dnsmasq_Conf"
             echo "server=127.0.0.1#$sdns_port" >> "$dnsmasq_Conf"
             logger -t "SmartDNS" "作为 dnsmasq 上游服务器：127.0.0.1:$sdns_port"
@@ -376,28 +398,28 @@ Change_iptable () {
     local statu=0
     case $action in
     stop)
-        if [ "$snds_redirected" = 2 ] ; then
+        if [ "$sdns_redirected" = 2 ] ; then
             iptables -t nat -D PREROUTING -p tcp -d "$IPS4" --dport 53 -j REDIRECT --to-ports "$sdns_ported" >/dev/null 2>&1
             iptables -t nat -D PREROUTING -p udp -d "$IPS4" --dport 53 -j REDIRECT --to-ports "$sdns_ported" >/dev/null 2>&1
             ip6tables -t nat -D PREROUTING -p tcp -d "$IPS6" --dport 53 -j REDIRECT --to-ports "$sdns_ported" >/dev/null 2>&1
             ip6tables -t nat -D PREROUTING -p udp -d "$IPS6" --dport 53 -j REDIRECT --to-ports "$sdns_ported" >/dev/null 2>&1
             [ "$sdns_enable" = 0 ] && logger -t "SmartDNS" "恢复重定向 $IPS4:$sdns_ported 至 xxx.xxx.xxx:53"
         fi
-        if [ "$snds_redirected" = 1 ] ; then
+        if [ "$sdns_redirected" = 1 ] ; then
             iptables -t nat -D PREROUTING -p udp -d "$IPS4" --dport 53 -j REDIRECT --to-ports 53 >/dev/null 2>&1
         fi
         ;;
     start)
-        if [ "$snds_redirected" != 2 ] && [ "$snds_redirect" = 2 ] ; then
+        if [ "$sdns_redirected" != 2 ] && [ "$sdns_redirect" = 2 ] ; then
             statu=1
             logger -t "SmartDNS" "重定向 xxx.xxx.xxx:53 至 $IPS4:$sdns_port"
         fi
         ;;
     reset)
-        if [ "$snds_redirect" = 2 ] ; then
+        if [ "$sdns_redirect" = 2 ] ; then
             statu=1
         fi
-        if [ "$snds_redirect" = 1 ] ; then
+        if [ "$sdns_redirect" = 1 ] ; then
             iptables -t nat -A PREROUTING -p udp -d "$IPS4" --dport 53 -j REDIRECT --to-ports 53 >/dev/null 2>&1
         fi
         ;;
@@ -420,10 +442,10 @@ Start_smartdns () {
     Change_dnsmasq
     Change_adbyby
     echo "$hosts_type" >> "$smartdns_Ini"
-    [ "$snds_redirect" = 0 ] && logger -t "SmartDNS" "SmartDNS 使用 $sdns_port 端口"
+    [ "$sdns_redirect" = 0 ] && logger -t "SmartDNS" "SmartDNS 使用 $sdns_port 端口"
     Change_iptable
-    snds_redirected="$snds_redirect"
-    echo "$snds_redirected" >> "$smartdns_Ini"
+    sdns_redirected="$sdns_redirect"
+    echo "$sdns_redirected" >> "$smartdns_Ini"
     echo "$sdns_port" >> "$smartdns_Ini"
     #存疑
     rm -f /tmp/sdnsipset.conf
@@ -506,6 +528,9 @@ Main () {
             logger -t "SmartDNS" "启动．．．"
         fi
         Check_ss
+        if [ $(nvram get sdns_adblock) = "1" ]; then
+                Start_AD
+        fi
         Start_smartdns
         logger -t "SmartDNS" "已成功启动"
         ;;

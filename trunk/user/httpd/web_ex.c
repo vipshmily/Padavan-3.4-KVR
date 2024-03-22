@@ -2698,7 +2698,7 @@ ej_firmware_caps_hook(int eid, webs_t wp, int argc, char **argv)
 #else
 	int has_5g_vht = 0;
 #endif
-#if defined (USE_WID_5G) && (USE_WID_5G==7615 || USE_WID_5G==7915)
+#if defined (USE_WID_5G) && (USE_WID_5G==7612 || USE_WID_5G==7615 || USE_WID_5G==7915)
 	int has_5g_mumimo = 1;
 	int has_5g_txbf = 1;
 #if defined (BOARD_MT7615_DBDC) || defined (BOARD_MT7915_DBDC)
@@ -4555,4 +4555,3 @@ struct ej_handler ej_handlers[] =
 	{ "openvpn_cli_cert_hook", openvpn_cli_cert_hook},
 	{ NULL, NULL }
 };
-

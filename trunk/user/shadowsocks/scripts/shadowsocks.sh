@@ -31,7 +31,6 @@ wan_fw_ips="/tmp/blackip.txt"
 lan_fp_ips="/tmp/lan_ip.txt"
 lan_gm_ips="/tmp/lan_gmip.txt"
 run_mode=`nvram get ss_run_mode`
-ss_turn=`nvram get ss_turn`
 lan_con=`nvram get lan_con`
 GLOBAL_SERVER=`nvram get global_server`
 socks=""
@@ -197,12 +196,12 @@ start_rules() {
 	if [ "$lan_con" = "0" ]; then
 		rm -f $lan_fp_ips
 		lancon="all"
-		lancons="全部IP走代理"
+		lancons="全部IP走代理！"
 		cat /etc/storage/ss_lan_ip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
 	elif [ "$lan_con" = "1" ]; then
 		rm -f $lan_fp_ips
 		lancon="bip"
-		lancons="指定IP走代理,请到规则管理页面添加需要走代理的IP。"
+		lancons="指定IP走代理,请到规则管理页面添加需要走代理的IP！"
 		cat /etc/storage/ss_lan_bip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
 	fi
 	rm -f $lan_gm_ips
@@ -282,7 +281,7 @@ start_redir_udp() {
 	if [ "$UDP_RELAY_SERVER" != "nil" ]; then
 		redir_udp=1
 		utype=$(nvram get ud_type)
-		log "启动 $utype 游戏 UDP 中继服务器"
+		log "启动 $utype 游戏 UDP 中继服务器..."
 		local bin=$(find_bin $utype)
 		[ ! -f "$bin" ] && log "UDP TPROXY Relay:Can't find $bin program, can't start!" && return 1
 		case "$utype" in
@@ -417,15 +416,15 @@ start_AD() {
 	mkdir -p /tmp/dnsmasq.dom
 	curl -s -o /tmp/adnew.conf --connect-timeout 10 --retry 3 $(nvram get ss_adblock_url)
 	if [ ! -f "/tmp/adnew.conf" ]; then
-		log "AD文件下载失败，可能是地址失效或者网络异常！"
+		log "广告过滤文件下载失败，可能是地址失效或网络异常等！"
 	else
-		log "AD文件下载成功"
+		log "广告过滤文件下载成功已启用！"
 		if [ -f "/tmp/adnew.conf" ]; then
 			check = `grep -wq "address=" /tmp/adnew.conf`
 	  		if [ ! -n "$check" ] ; then
-	    		cp /tmp/adnew.conf /tmp/dnsmasq.dom/ad.conf
+	    		cp /tmp/adnew.conf /tmp/dnsmasq.dom/anti-ad-for-dnsmasq.conf
 	  		else
-			    cat /tmp/adnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/dnsmasq.dom/ad.conf
+			    cat /tmp/adnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/dnsmasq.dom/anti-ad-for-dnsmasq.conf
 			fi
 		fi
 	fi
@@ -497,7 +496,7 @@ start_watchcat() {
 		let total_count=server_count+redir_tcp+redir_udp+tunnel_enable+v2ray_enable+local_enable+pdnsd_enable_flag+chinadnsng_enable_flag
 		if [ $total_count -gt 0 ]; then
 			#param:server(count) redir_tcp(0:no,1:yes)  redir_udp tunnel kcp local gfw
-			/usr/bin/ssr-monitor $server_count $redir_tcp $redir_udp $tunnel_enable $v2ray_enable $local_enable $pdnsd_enable_flag $chinadnsng_enable_flag >/dev/null 2>&1 &
+			/usr/bin/ss-monitor $server_count $redir_tcp $redir_udp $tunnel_enable $v2ray_enable $local_enable $pdnsd_enable_flag $chinadnsng_enable_flag >/dev/null 2>&1 &
 		fi
 	fi
 }
@@ -534,7 +533,7 @@ ssp_start() {
 	auto_update
 	ENABLE_SERVER=$(nvram get global_server)
 	[ "$ENABLE_SERVER" = "nil" ] && return 1
-	log "启动成功。"
+	log "科学上网启动成功！"
 	log "内网IP控制为: $lancons"
 	nvram set check_mode=0
     if [ "$pppoemwan" = 0 ]; then
@@ -547,8 +546,7 @@ ssp_start() {
 ssp_close() {
 	rm -rf /tmp/cdn
 	/usr/bin/ss-rules -f
-	kill -9 $(ps | grep ssr-switch | grep -v grep | awk '{print $1}') >/dev/null 2>&1
-	kill -9 $(ps | grep ssr-monitor | grep -v grep | awk '{print $1}') >/dev/null 2>&1
+	kill -9 $(ps | grep ss-monitor | grep -v grep | awk '{print $1}') >/dev/null 2>&1
 	kill_process
 	cgroups_cleanup
 	sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -566,7 +564,6 @@ ssp_close() {
     fi
 }
 
-
 clear_iptable() {
 	s5_port=$(nvram get socks5_port)
 	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
@@ -578,7 +575,7 @@ clear_iptable() {
 kill_process() {
 	v2ray_process=$(pidof v2ray || pidof xray)
 	if [ -n "$v2ray_process" ]; then
-		log "关闭 v2ray xray 进程..."
+		log "关闭 xray 进程..."
 		killall v2ray xray >/dev/null 2>&1
 		kill -9 "$v2ray_process" >/dev/null 2>&1
 	fi
@@ -676,10 +673,13 @@ ressp() {
 
 case $1 in
 start)
+    ss_adblock=$(nvram get ss_adblock)
+        if [ $(nvram get ss_adblock) = "1" ]; then
+            Start_AD
+    fi
 	ssp_start
 	;;
 stop)
-	killall -q -9 ssr-switch
 	ssp_close
 	;;
 restart)
@@ -695,5 +695,3 @@ reserver)
 	#exit 0
 	;;
 esac
-
-

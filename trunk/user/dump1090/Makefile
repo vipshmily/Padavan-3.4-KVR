@@ -1,15 +1,19 @@
 SRC_NAME = dump1090-master
-ARCHIVE_NAME = dump1090-master-0041922
-#SRC_URL = https://github.com/hanwckf/dump1090/archive/master.zip
+SRC_URL = https://github.com/antirez/dump1090/archive/master.zip
 
 THISDIR = $(shell pwd)
 
-all: extract_test
+all: download_test extract_test
 	    $(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+
+download_test:
+	( if [ ! -f $(SRC_NAME).zip ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).zip $(SRC_URL); \
+	fi )
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		unzip -qq $(ARCHIVE_NAME).zip; \
+		unzip -qq $(SRC_NAME).zip; \
 	fi )
 
 clean:

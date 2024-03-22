@@ -28,7 +28,7 @@ $j(document).ready(function(){
 	init_itoggle('sdns_enable');
 	init_itoggle('sdns_tcp_server');
 	init_itoggle('sdns_ipv6_server');
-	init_itoggle('snds_ip_change');
+	init_itoggle('sdns_ip_change');
 	init_itoggle('sdns_cache_persist');
 	init_itoggle('sdns_www');
 	init_itoggle('sdns_ipv6');
@@ -48,6 +48,8 @@ $j(document).ready(function(){
 	init_itoggle('sdns_ipset');
 	init_itoggle('sdnse_cache');
 	init_itoggle('sdns_coredump');
+        init_itoggle('sdns_adblock');
+	init_itoggle('sdns_adblock_url');
 	init_itoggle('ss_black');
 	init_itoggle('ss_white');
 	init_itoggle('sdnss_enable_x_0');
@@ -316,7 +318,7 @@ function showMRULESList(){
 
                                         <tr> <th>服务器名称</th>
                                             <td>
-                                                <input type="text" maxlength="15" class="input" size="15" name="snds_name" style="width: 200px" value="<% nvram_get_x("","snds_name"); %>" />
+                                                <input type="text" maxlength="15" class="input" size="15" name="sdns_name" style="width: 200px" value="<% nvram_get_x("","sdns_name"); %>" />
                                             </td>
                                         </tr>
 
@@ -354,19 +356,19 @@ function showMRULESList(){
 										<tr> <th>双栈IP优选</th>
                                             <td>
                                                 <div class="main_itoggle">
-                                                <div id="snds_ip_change_on_of">
-                                                    <input type="checkbox" id="snds_ip_change_fake" <% nvram_match_x("", "snds_ip_change", "1", "value=1 checked"); %><% nvram_match_x("", "snds_ip_change", "0", "value=0"); %>>
+                                                <div id="sdns_ip_change_on_of">
+                                                    <input type="checkbox" id="sdns_ip_change_fake" <% nvram_match_x("", "sdns_ip_change", "1", "value=1 checked"); %><% nvram_match_x("", "sdns_ip_change", "0", "value=0"); %>>
                                                 </div>
                                                 </div>
                                                 <div style="position: absolute; margin-left: -10000px;">
-                                                    <input type="radio" value="1" name="snds_ip_change" id="snds_ip_change_1" <% nvram_match_x("", "snds_ip_change", "1", "checked"); %>><#checkbox_Yes#>
-                                                    <input type="radio" value="0" name="snds_ip_change" id="snds_ip_change_0" <% nvram_match_x("", "snds_ip_change", "0", "checked"); %>><#checkbox_No#>
+                                                    <input type="radio" value="1" name="sdns_ip_change" id="sdns_ip_change_1" <% nvram_match_x("", "sdns_ip_change", "1", "checked"); %>><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="sdns_ip_change" id="sdns_ip_change_0" <% nvram_match_x("", "sdns_ip_change", "0", "checked"); %>><#checkbox_No#>
                                                 </div>
                                             </td>
                                         </tr>
 										<tr> <th width="50%">双栈IP优选阈值</th>
                                             <td>
-                                                <input type="text" maxlength="64" class="input" size="64" name="snds_ip_change_time" style="width: 50px" value="<% nvram_get_x("", "snds_ip_change_time"); %>"> 毫秒（0-100）
+                                                <input type="text" maxlength="64" class="input" size="64" name="sdns_ip_change_time" style="width: 50px" value="<% nvram_get_x("", "sdns_ip_change_time"); %>"> 毫秒（0-100）
                                             </td>
                                         </tr>
 										<tr> <th>禁用IPV6解析</th>
@@ -384,16 +386,16 @@ function showMRULESList(){
                                         </tr>
 											<th>重定向</th>
 											<td>
-												<select name="snds_redirect" class="input" style="width: 200px">
-													<option value="0" <% nvram_match_x("","snds_redirect", "0","selected"); %>>无</option>
-													<option value="1" <% nvram_match_x("","snds_redirect", "1","selected"); %>>作为dnsmasq的上游服务器</option>
-													<option value="2" <% nvram_match_x("","snds_redirect", "2","selected"); %>>重定向53端口到SmartDns</option>
+												<select name="sdns_redirect" class="input" style="width: 200px">
+													<option value="0" <% nvram_match_x("","sdns_redirect", "0","selected"); %>>无</option>
+													<option value="1" <% nvram_match_x("","sdns_redirect", "1","selected"); %>>作为dnsmasq的上游服务器</option>
+													<option value="2" <% nvram_match_x("","sdns_redirect", "2","selected"); %>>重定向53端口到SmartDns</option>
 												</select>
 											</td>
 										</tr>
                                         <tr> <th>域名查询结果缓存个数</th>
                                             <td>
-                                                <input type="text" maxlength="64" class="input" size="15" name="snds_cache" style="width: 200px" value="<% nvram_get_x("", "snds_cache"); %>">
+                                                <input type="text" maxlength="64" class="input" size="15" name="sdns_cache" style="width: 200px" value="<% nvram_get_x("", "sdns_cache"); %>">
                                                 <div><span style="color:#888;">0为禁用缓存功能</span></div>
                                             </td>
                                         </tr>
@@ -852,9 +854,29 @@ function showMRULESList(){
 										<tr>
 											<td colspan="6" >
 												<i class="icon-hand-right"></i> <a href="javascript:spoiler_toggle('script11')"><span>自定义设置:</span></a>
-												<div id="script11">
+												<div id="script11" style="display:none;">
 													<textarea rows="8" wrap="off" spellcheck="false" class="span12" name="scripts.smartdns_custom.conf" style="font-family:'Courier New'; font-size:12px;"><% nvram_dump("scripts.smartdns_custom.conf",""); %></textarea>
 												</div>
+											</td>
+										</tr>
+                                        <tr>
+											<th width="50%">广告过滤</th>
+											<td>
+												<div class="main_itoggle">
+													<div id="sdns_adblock_on_of">
+														<input type="checkbox" id="sdns_adblock_fake"<% nvram_match_x("", "sdns_adblock", "1", "value=1 checked"); %><% nvram_match_x("", "sdns_adblock", "0", "value=0"); %>>
+													</div>
+												</div>
+												<div style="position: absolute; margin-left: -10000px;">
+													<input type="radio" value="1" name="sdns_adblock" id="sdns_adblock_1"<% nvram_match_x("", "sdns_adblock", "1", "checked"); %>><#checkbox_Yes#>
+													<input type="radio" value="0" name="sdns_adblock" id="sdns_adblock_0"<% nvram_match_x("", "sdns_adblock", "0", "checked"); %>><#checkbox_No#>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<th width="50%">过滤文件地址:</th>
+											<td>
+												<input type="text" class="input" size="15" name="sdns_adblock_url" style="width: 280px"  value="<% nvram_get_x("","sdns_adblock_url"); %>" />
 											</td>
 										</tr>
 										<tr> <th>生成coredump
