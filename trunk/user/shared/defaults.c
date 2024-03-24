@@ -551,6 +551,11 @@ struct nvram_pair router_defaults[] = {
 	{ "vlmcsd_enable", "0" },
 #endif
 
+#if defined (APP_NAPT66)
+	/* NAPT66 */
+	{ "napt66_enable", "0" },
+#endif
+
 #if defined(APP_DNSFORWARDER)
 	/* dns-forwarder */
 	{ "dns_forwarder_enable", "0" },
@@ -744,8 +749,8 @@ struct nvram_pair router_defaults[] = {
 	{ "sdns_cache_persist", "1" },
 	{ "sdns_tcp_idle_time","120"},
 	{ "sdns_rr_ttl", "300" },
-	{ "sdns_rr_ttl_min", "600" },
-	{ "sdns_rr_ttl_max", "3600" },
+	{ "sdns_rr_ttl_min", "60" },
+	{ "sdns_rr_ttl_max", "86400" },
 	{ "sdns_rr_ttl_reply_max", "60" },
 	{ "sdns_max_reply_ip_num", "3" },
 
