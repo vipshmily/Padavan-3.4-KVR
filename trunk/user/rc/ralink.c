@@ -162,7 +162,7 @@ static const struct cc_t {
 inline int
 get_wired_mac_is_single(void)
 {
-#if defined (BOARD_N14U) || defined (BOARD_N11P) || defined (BOARD_MZ_R13) || defined (BOARD_MZ_R13P) || defined (BOARD_CR660x) || defined (BOARD_Q20) || defined (BOARD_RM2100) || defined (BOARD_RE_CP_02)
+#if defined (BOARD_N14U) || defined (BOARD_N11P) || defined (BOARD_MZ_R13) || defined (BOARD_MZ_R13P) || defined (BOARD_CR660x) || defined (BOARD_Q20) || defined (BOARD_RM2100)
 	return 1;
 #else
 	return 0;
@@ -178,7 +178,7 @@ get_wired_mac_e2p_offset(int is_wan)
 	return 0xe000;
 #elif defined (BOARD_RM2100) || defined (BOARD_NEWIFI) 
 	return 0xe006;	
-#elif defined (BOARD_CR660x) || defined (BOARD_Q20) || defined (BOARD_RE_CP_02)
+#elif defined (BOARD_CR660x) || defined (BOARD_Q20)
 	return 0x3FFFA;
 #else
 	return (is_wan) ? OFFSET_MAC_GMAC2 : OFFSET_MAC_GMAC0;
@@ -1297,8 +1297,6 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 	i_val = nvram_wlan_get_int(is_aband, "HT_AMSDU");
 	fprintf(fp, "HT_AMSDU=%d;%d\n", i_val, i_val);
 
-    //MFPC
-	fprintf(fp, "PMFMFPC=1;1\n");
 	//HT_BAWinSize
 	i_val = nvram_wlan_get_int(is_aband, "HT_BAWinSize");
 	if (i_val < 1 || i_val > 256) i_val = 256;
@@ -1741,5 +1739,3 @@ get_apcli_connected(const char *ifname)
 
 	return 0;
 }
-
-

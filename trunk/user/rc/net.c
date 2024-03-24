@@ -595,7 +595,7 @@ is_hwnat_allow(void)
 	if (sw_mode != 1 && sw_mode != 4)
 		return result;
 
-	if (hw_nat_mode == 2)
+	if (hw_nat_mode == 0)
 		return result;
 
 	result |= 0x1;
@@ -705,7 +705,6 @@ reload_nat_modules(void)
 #if defined (USE_HW_NAT)
 	int hwnat_allow = is_hwnat_allow();
 	int hwnat_loaded = is_hwnat_loaded();
-	int ipv6_nat = nvram_get_int("ip6_lan_auto");
 #endif
 
 	if (!get_ap_mode())
@@ -800,10 +799,6 @@ reload_nat_modules(void)
 #if defined (USE_HW_NAT)
 	if (hwnat_allow && !hwnat_loaded)
 		hwnat_load(hwnat_allow);
-	if (ipv6_nat==1)
-	    {doSystem("echo 7 1 > /sys/kernel/debug/hnat/hnat_setting");}
-	    else
-	    {doSystem("echo 7 0 > /sys/kernel/debug/hnat/hnat_setting");}
 
 	hwnat_configure(hwnat_allow);
 #endif
@@ -976,4 +971,3 @@ set_libc_gai(int ipv4_first)
 		unlink("/etc/gai.conf");
 	}
 }
-

@@ -678,13 +678,14 @@ include_masquerade(FILE *fp, char *wan_if, char *wan_ip, char *lan_net, int is_f
 	char *dtype = "POSTROUTING";
 
 	if (is_fullcone) {
-		fprintf(fp, "-A %s -o %s -s %s -j MASQUERADE --mode fullcone\n", dtype, wan_if, lan_net);
- 	} else {
- 		if (wan_ip)
- 			fprintf(fp, "-A %s -o %s -s %s -j SNAT --to-source %s\n", dtype, wan_if, lan_net, wan_ip);
- 		else
- 			fprintf(fp, "-A %s -o %s -s %s -j MASQUERADE\n", dtype, wan_if, lan_net);
- 	}
+		fprintf(fp, "-A POSTROUTING -o %s -s %s -j FULLCONENAT\n", wan_if, lan_net);
+		fprintf(fp, "-A PREROUTING -i %s -j FULLCONENAT\n", wan_if);
+	} else {
+		if (wan_ip)
+			fprintf(fp, "-A %s -o %s -s %s -j SNAT --to-source %s\n", dtype, wan_if, lan_net, wan_ip);
+		else
+			fprintf(fp, "-A %s -o %s -s %s -j MASQUERADE\n", dtype, wan_if, lan_net);
+	}
 }
 
 static int
@@ -1713,26 +1714,14 @@ ip6t_mangle_rules(char *man_if)
 		doSystem("ip6tables-restore %s", ipt_file);
 }
 
+#if defined (APP_NAPT66)
 static void
-ip6t_nat_rules(char *man_if)
+ip6t_disable_filter(void)
 {
-	FILE *fp;
-	const char *ipt_file = "/tmp/ip6t_nat.rules";
-
-	if (!(fp=fopen(ipt_file, "w")))
-		return;
-
-	fprintf(fp, "*%s\n", "nat");
-	fprintf(fp, ":%s %s [0:0]\n", "PREROUTING", "ACCEPT");
-	fprintf(fp, ":%s %s [0:0]\n", "INPUT", "ACCEPT");
-	fprintf(fp, ":%s %s [0:0]\n", "OUTPUT", "ACCEPT");
-	fprintf(fp, ":%s %s [0:0]\n", "POSTROUTING", "ACCEPT");
-	fprintf(fp, "-A POSTROUTING -s fc00:101:101::1/64 -j FULLCONENAT\n");
-	fprintf(fp, "COMMIT\n\n");
-	fclose(fp);
-		doSystem("ip6tables-restore %s", ipt_file);
+	doSystem("ip6tables -P FORWARD ACCEPT");
+	doSystem("ip6tables -F FORWARD");
 }
-
+#endif
 #endif
 
 static int
@@ -2208,6 +2197,10 @@ start_firewall_ex(void)
 
 	/* IPv6 Filter rules */
 	ip6t_filter_rules(man_if, wan_if, lan_if, logaccept, logdrop, i_tcp_mss);
+#if defined (APP_NAPT66)
+	if (nvram_match("napt66_enable", "1"))
+		ip6t_disable_filter();
+#endif
 #endif
 
 #if defined (APP_SHADOWSOCKS)
