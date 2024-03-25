@@ -430,7 +430,7 @@ function hideClients_Block(){
                                                     <button style="margin-left: -5px;" class="btn" type="button" onclick="passwordShowHide('rt_sta_wpa_psk')"><i class="icon-eye-close"></i></button>
                                                 </div>
                                             </td>
-										</tr>
+                                        </tr>
 										<tr>
                                             <td colspan="3">
                                                 <i class="icon-hand-right"></i> <a href="javascript:spoiler_toggle('ap_script')"><span>ap_script【点击打开配置脚本】</span>

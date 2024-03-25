@@ -36,11 +36,10 @@ void MacReverse(uint8_t * Mac)
 	}
 }
 
-#if defined (CONFIG_RA_HW_NAT_DEBUG)
 int GetNext(char *src, int separator, char *dest)
 {
 	char *c;
-	int len;
+	int len = 0;
 
 	if ((src == NULL) || (dest == NULL)) {
 		return -1;
@@ -48,7 +47,7 @@ int GetNext(char *src, int separator, char *dest)
 
 	c = strchr(src, separator);
 	if (c == NULL) {
-		strcpy(dest, src);
+		strncpy(dest, src, len);
 		return -1;
 	}
 	len = c - src;
@@ -67,7 +66,7 @@ static inline int atoi(char *s)
 }
 
 /* Convert IP address from Hex to string */
-uint8_t *Ip2Str(IN uint32_t Ip)
+uint8_t *ip_to_str(IN uint32_t Ip)
 {
 	static uint8_t Buf[32];
 	uint8_t *ptr = (char *)&Ip;
@@ -98,7 +97,6 @@ unsigned int Str2Ip(IN char *str)
 	c[3] = atoi(ptr);
 	return ((c[0] << 24) + (c[1] << 16) + (c[2] << 8) + c[3]);
 }
-#endif
 
 /* calculate ip address range */
 /* start_ip <= x < end_ip */
@@ -123,7 +121,24 @@ void CalIpRange(uint32_t StartIp, uint32_t EndIp, uint8_t * M, uint8_t * E)
 
 }
 
-void RegModifyBits(uint32_t Addr, uint32_t Data, uint32_t Offset, uint32_t Len)
+#if defined (CONFIG_ARCH_MT7622) || defined (CONFIG_MACH_MT7623)
+void reg_modify_bits(unsigned int *Addr, uint32_t Data, uint32_t Offset, uint32_t Len)
+{
+	unsigned int Mask = 0;
+	unsigned int Value;
+	unsigned int i;
+
+	for (i = 0; i < Len; i++) {
+		Mask |= 1 << (Offset + i);
+	}
+
+	Value = sysRegRead(Addr);
+	Value &= ~Mask;
+	Value |= (Data << Offset) & Mask;;
+	sysRegWrite(Addr, Value); 
+}
+#else
+void reg_modify_bits(uint32_t Addr, uint32_t Data, uint32_t Offset, uint32_t Len)
 {
 	uint32_t Mask = 0;
 	uint32_t Value;
@@ -133,13 +148,14 @@ void RegModifyBits(uint32_t Addr, uint32_t Data, uint32_t Offset, uint32_t Len)
 		Mask |= 1 << (Offset + i);
 	}
 
-	Value = RegRead(Addr);
+	Value = reg_read(Addr);
 	Value &= ~Mask;
-	Value |= (Data << Offset) & Mask;
+	Value |= (Data << Offset) & Mask;;
 
-	RegWrite(Addr, Value);
+	reg_write(Addr, Value);
 }
 
+#endif
 static inline uint16_t CsumPart(uint32_t o, uint32_t n, uint16_t old)
 {
 	uint32_t d[] = { o, n };
@@ -155,59 +171,67 @@ static inline uint16_t CsumPart(uint32_t o, uint32_t n, uint16_t old)
  * Recover TCP Src/Dst Port and recalculate tcp checksum
  */
 void
-FoeToOrgTcpHdr(IN struct FoeEntry *foe_entry, IN struct iphdr *iph,
+foe_to_org_tcphdr(IN struct foe_entry *entry, IN struct iphdr *iph,
 	       OUT struct tcphdr *th)
 {
 	/* TODO: how to recovery 6rd/dslite packet */
 	th->check =
 	    CsumPart((th->source) ^ 0xffff,
-		     htons(foe_entry->ipv4_hnapt.sport), th->check);
+		     htons(entry->ipv4_hnapt.sport), th->check);
 	th->check =
 	    CsumPart((th->dest) ^ 0xffff,
-		     htons(foe_entry->ipv4_hnapt.dport), th->check);
+		     htons(entry->ipv4_hnapt.dport), th->check);
 	th->check =
-	    CsumPart(~(iph->saddr), htonl(foe_entry->ipv4_hnapt.sip),
+	    CsumPart(~(iph->saddr), htonl(entry->ipv4_hnapt.sip),
 		     th->check);
 	th->check =
-	    CsumPart(~(iph->daddr), htonl(foe_entry->ipv4_hnapt.dip),
+	    CsumPart(~(iph->daddr), htonl(entry->ipv4_hnapt.dip),
 		     th->check);
-	th->source = htons(foe_entry->ipv4_hnapt.sport);
-	th->dest = htons(foe_entry->ipv4_hnapt.dport);
+	th->source = htons(entry->ipv4_hnapt.sport);
+	th->dest = htons(entry->ipv4_hnapt.dport);
 }
 
 /*
  * Recover UDP Src/Dst Port and recalculate udp checksum
  */
 void
-FoeToOrgUdpHdr(IN struct FoeEntry *foe_entry, IN struct iphdr *iph,
+foe_to_org_udphdr(IN struct foe_entry *entry, IN struct iphdr *iph,
 	       OUT struct udphdr *uh)
 {
 	/* TODO: how to recovery 6rd/dslite packet */
 
 	uh->check =
 	    CsumPart((uh->source) ^ 0xffff,
-		     htons(foe_entry->ipv4_hnapt.sport), uh->check);
+		     htons(entry->ipv4_hnapt.sport), uh->check);
 	uh->check =
 	    CsumPart((uh->dest) ^ 0xffff,
-		     htons(foe_entry->ipv4_hnapt.dport), uh->check);
+		     htons(entry->ipv4_hnapt.dport), uh->check);
 	uh->check =
-	    CsumPart(~(iph->saddr), htonl(foe_entry->ipv4_hnapt.sip),
+	    CsumPart(~(iph->saddr), htonl(entry->ipv4_hnapt.sip),
 		     uh->check);
 	uh->check =
-	    CsumPart(~(iph->daddr), htonl(foe_entry->ipv4_hnapt.dip),
+	    CsumPart(~(iph->daddr), htonl(entry->ipv4_hnapt.dip),
 		     uh->check);
-	uh->source = htons(foe_entry->ipv4_hnapt.sport);
-	uh->dest = htons(foe_entry->ipv4_hnapt.dport);
+	uh->source = htons(entry->ipv4_hnapt.sport);
+	uh->dest = htons(entry->ipv4_hnapt.dport);
 }
 
 /*
  * Recover Src/Dst IP and recalculate ip checksum
  */
-void FoeToOrgIpHdr(IN struct FoeEntry *foe_entry, OUT struct iphdr *iph)
+void foe_to_org_iphdr(IN struct foe_entry *entry, OUT struct iphdr *iph)
 {
 	/* TODO: how to recovery 6rd/dslite packet */
-	iph->saddr = htonl(foe_entry->ipv4_hnapt.sip);
-	iph->daddr = htonl(foe_entry->ipv4_hnapt.dip);
+	iph->saddr = htonl(entry->ipv4_hnapt.sip);
+	iph->daddr = htonl(entry->ipv4_hnapt.dip);
 	iph->check = 0;
 	iph->check = ip_fast_csum((unsigned char *)(iph), iph->ihl);
+}
+
+void hwnat_memcpy(void *dest, void *src, u32 n) {
+#if defined(CONFIG_ARCH_MT7622) || defined(CONFIG_MACH_MT7622)
+	ether_addr_copy(dest, src);
+#else
+	memcpy(dest, src, n);
+#endif
 }

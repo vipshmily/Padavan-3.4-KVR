@@ -151,9 +151,9 @@ int MtrIoctl(struct inode *inode, struct file *filp,
 
 struct file_operations mtr_fops = {
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,35)
-	unlocked_ioctl: MtrIoctl,
+      unlocked_ioctl:MtrIoctl,
 #else
-	ioctl: MtrIoctl,
+      ioctl:MtrIoctl,
 #endif
 };
 
@@ -162,7 +162,7 @@ int MtrRegIoctlHandler(void)
 	int result = 0;
 	result = register_chrdev(mtr_major, MTR_DEVNAME, &mtr_fops);
 	if (result < 0) {
-		printk(KERN_WARNING "mtr: can't get major %d\n", mtr_major);
+		NAT_PRINT(KERN_WARNING "mtr: can't get major %d\n", mtr_major);
 		return result;
 	}
 

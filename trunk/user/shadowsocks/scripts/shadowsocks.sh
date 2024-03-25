@@ -196,12 +196,12 @@ start_rules() {
 	if [ "$lan_con" = "0" ]; then
 		rm -f $lan_fp_ips
 		lancon="all"
-		lancons="全部IP走代理"
+		lancons="全部IP走代理！"
 		cat /etc/storage/ss_lan_ip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
 	elif [ "$lan_con" = "1" ]; then
 		rm -f $lan_fp_ips
 		lancon="bip"
-		lancons="指定IP走代理,请到规则管理页面添加需要走代理的IP。"
+		lancons="指定IP走代理,请到规则管理页面添加需要走代理的IP！"
 		cat /etc/storage/ss_lan_bip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
 	fi
 	rm -f $lan_gm_ips
@@ -281,7 +281,7 @@ start_redir_udp() {
 	if [ "$UDP_RELAY_SERVER" != "nil" ]; then
 		redir_udp=1
 		utype=$(nvram get ud_type)
-		log "启动 $utype 游戏 UDP 中继服务器"
+		log "启动 $utype 游戏 UDP 中继服务器..."
 		local bin=$(find_bin $utype)
 		[ ! -f "$bin" ] && log "UDP TPROXY Relay:Can't find $bin program, can't start!" && return 1
 		case "$utype" in
@@ -416,15 +416,15 @@ start_AD() {
 	mkdir -p /tmp/dnsmasq.dom
 	curl -s -o /tmp/adnew.conf --connect-timeout 10 --retry 3 $(nvram get ss_adblock_url)
 	if [ ! -f "/tmp/adnew.conf" ]; then
-		log "AD文件下载失败，可能是地址失效或者网络异常！"
+		log "广告过滤文件下载失败，可能是地址失效或网络异常等！"
 	else
-		log "AD文件下载成功"
+		log "广告过滤文件下载成功已启用！"
 		if [ -f "/tmp/adnew.conf" ]; then
 			check = `grep -wq "address=" /tmp/adnew.conf`
 	  		if [ ! -n "$check" ] ; then
-	    		cp /tmp/adnew.conf /tmp/dnsmasq.dom/ad.conf
+	    		cp /tmp/adnew.conf /tmp/dnsmasq.dom/anti-ad-for-dnsmasq.conf
 	  		else
-			    cat /tmp/adnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/dnsmasq.dom/ad.conf
+			    cat /tmp/adnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/dnsmasq.dom/anti-ad-for-dnsmasq.conf
 			fi
 		fi
 	fi
@@ -533,7 +533,7 @@ ssp_start() {
 	auto_update
 	ENABLE_SERVER=$(nvram get global_server)
 	[ "$ENABLE_SERVER" = "nil" ] && return 1
-	log "启动成功。"
+	log "科学上网启动成功！"
 	log "内网IP控制为: $lancons"
 	nvram set check_mode=0
     if [ "$pppoemwan" = 0 ]; then
@@ -563,7 +563,6 @@ ssp_close() {
         /usr/bin/detect.sh
     fi
 }
-
 
 clear_iptable() {
 	s5_port=$(nvram get socks5_port)
@@ -674,6 +673,10 @@ ressp() {
 
 case $1 in
 start)
+    ss_adblock=$(nvram get ss_adblock)
+        if [ $(nvram get ss_adblock) = "1" ]; then
+            Start_AD
+    fi
 	ssp_start
 	;;
 stop)
@@ -692,5 +695,3 @@ reserver)
 	#exit 0
 	;;
 esac
-
-

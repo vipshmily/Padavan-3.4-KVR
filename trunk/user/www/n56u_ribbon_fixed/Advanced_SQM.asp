@@ -157,10 +157,7 @@ function getHash(){
                                     <div class="row-fluid">
                                         <div id="tabMenu" class="submenuBlock"></div>
                                         <div class="alert alert-info" style="margin: 10px;">
-                          注意:SQM会自动设置相应的HWNAT规则，请勿自行调整WAN页面的HWNAT选项造成流控失效</br>
-				因7621性能所限,大于500M宽带谨慎开启QOS！</br>
-            通过SQM_QoS您可以：对指定接口流量整形,例如自定义5G访客网络。其他接口如5G主接口不会受到影响。</br>
-                                       访客网络接口名称视机型而定，5G访客：ra1(或rai1） 2.4G访客rax1(或ra1)。
+											因7621性能所限,大于500M宽带开启硬件QOS，并不要手动关闭硬件加速！
                                         </div>
                                    </div>
 
@@ -189,25 +186,15 @@ function getHash(){
                                                     </div>
                                                 </td>
                                             </tr>
-                                              <tr>
-                                            <th>流控对象</th>
-                                            <td>
-                                                <select name="sqm_flag" class="input">
-                                                    <option value="1" <% nvram_match_x("", "sqm_flag", "1", "selected"); %>>仅有线到外网</option>
-                                                    <option value="2" <% nvram_match_x("", "sqm_flag", "2", "selected"); %>>仅无线到外网</option>
-                                                    <option value="3" <% nvram_match_x("", "sqm_flag", "3", "selected"); %>>有线到外网+无线到外网</option>
-                                                    <option value="4" <% nvram_match_x("", "sqm_flag", "4", "selected"); %>>自定义接口</option>
-                                                </select>
-                                            </td>
-                                        </tr>
                                             <tr>
-                                                <th>自定义接口</th>
-                                                <td>
-                                                    <input type="text" maxlength="10" class="input" size="10" name="sqm_active" value="<% nvram_get_x("","sqm_active"); %>"/>
-                                                </td>
-                                                <td>
-                                                    &nbsp;<span style="color:#888;">上项菜单需选择“自定义接口“ 可填写例如:ra0</span>
-                                                </td>
+                                              <th>硬件QOS</th>
+                                              <td>
+                                                <select name="sqm_flag" class="input">
+                                                    <option value="3" <% nvram_match_x("", "sqm_flag", "3", "selected"); %>>严格P2P模式</option>
+                                                    <option value="1" <% nvram_match_x("", "sqm_flag", "1", "selected"); %>>普通模式</option>
+                                                    <option value="2" <% nvram_match_x("", "sqm_flag", "2", "selected"); %>>取消</option>
+                                                </select>
+                                              </td>
                                             </tr>
                                             <tr>
                                                 <th>队列规则</th>
@@ -285,17 +272,17 @@ function getHash(){
                                                     &nbsp;<span style="color:#888;">仅调试时启用debug/trace</span>
                                                 </td>
                                             </tr>
-                </table>
+                		   		   </table>
                                    <table class="table">
-                                            <tr>
-                                                <td colspan="3" style="border-top: 0 none;">
+                                        <tr>
+                                        	<td colspan="3" style="border-top: 0 none;">
                                                     <br/>
                                                     <center>
                                                         <input class="btn btn-primary" style="width: 219px" type="button" value="<#CTL_apply#>" onclick="applyRule()"/>
                                                     </center>
                                             </td>
                                         </tr>
-                                    </table>
+                                   </table>
                             </div>
                         </div>
                     </div>
