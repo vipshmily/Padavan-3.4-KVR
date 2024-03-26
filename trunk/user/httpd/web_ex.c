@@ -2531,6 +2531,11 @@ ej_firmware_caps_hook(int eid, webs_t wp, int argc, char **argv)
 #else
 	int found_app_vlmcsd = 0;
 #endif
+#if defined(APP_NAPT66)
+	int found_app_napt66 = 1;
+#else
+	int found_app_napt66 = 0;
+#endif
 #if defined(APP_SHADOWSOCKS)
 	int found_app_shadowsocks = 1;
 #else
@@ -2765,6 +2770,7 @@ ej_firmware_caps_hook(int eid, webs_t wp, int argc, char **argv)
 		"function found_app_scutclient() { return %d;}\n"
 		"function found_app_ttyd() { return %d;}\n"
 		"function found_app_vlmcsd() { return %d;}\n"
+		"function found_app_napt66() { return %d;}\n"
 		"function found_app_dnsforwarder() { return %d;}\n"
 		"function found_app_shadowsocks() { return %d;}\n"
 		"function found_app_sqm() { return %d;}\n"
@@ -2798,6 +2804,7 @@ ej_firmware_caps_hook(int eid, webs_t wp, int argc, char **argv)
 		found_app_scutclient,
 		found_app_ttyd,
 		found_app_vlmcsd,
+		found_app_napt66,
 		found_app_dnsforwarder,
 		found_app_shadowsocks,
 		found_app_sqm,
