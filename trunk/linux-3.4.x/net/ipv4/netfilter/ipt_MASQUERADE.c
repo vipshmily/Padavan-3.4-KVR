@@ -85,7 +85,7 @@ masquerade_tg(struct sk_buff *skb, const struct xt_action_param *par)
 		  mr->range[0].min, mr->range[0].max });
 
 	/* Hand modified range to generic setup. */
-	return nf_nat_masquerade_ipv4(skb, par->hooknum, &range, par->out);
+	return nf_nat_setup_info(ct, &newrange, NF_NAT_MANIP_SRC);
 }
 
 static int
@@ -152,8 +152,12 @@ static int __init masquerade_tg_init(void)
 
 	ret = xt_register_target(&masquerade_tg_reg);
 
-	if (ret == 0)
-		nf_nat_masquerade_ipv4_register_notifier();
+	if (ret == 0) {
+		/* Register for device down reports */
+		register_netdevice_notifier(&masq_dev_notifier);
+		/* Register IP address change reports */
+		register_inetaddr_notifier(&masq_inet_notifier);
+	}
 
 	return ret;
 }
@@ -161,7 +165,12 @@ static int __init masquerade_tg_init(void)
 static void __exit masquerade_tg_exit(void)
 {
 	xt_unregister_target(&masquerade_tg_reg);
-	nf_nat_masquerade_ipv4_unregister_notifier();
+	unregister_netdevice_notifier(&masq_dev_notifier);
+	unregister_inetaddr_notifier(&masq_inet_notifier);
+}
+
+module_init(masquerade_tg_init);
+module_exit(masquerade_tg_exit);
 }
 
 module_init(masquerade_tg_init);
