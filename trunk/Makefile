@@ -170,8 +170,8 @@ ifeq ($(CONFIG_CCACHE),y)
 endif
 
 dep: config
+	$(MAKEARCH_KERNEL) -C $(LINUXDIR) olddefconfig
 	$(MAKEARCH_KERNEL) -C $(LINUXDIR) modules_prepare
-	$(MAKEARCH_KERNEL) -C $(LINUXDIR) dep
 
 .PHONY: tools
 tools:
