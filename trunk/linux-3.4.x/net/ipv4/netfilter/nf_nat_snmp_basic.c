@@ -34,10 +34,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  *
  * Author: James Morris <jmorris@intercode.com.au>
+ *
+ * Copyright (c) 2006-2010 Patrick McHardy <kaber@trash.net>
  */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -405,7 +406,7 @@ static unsigned char asn1_octets_decode(struct asn1_ctx *ctx,
 
 	ptr = *octets;
 	while (ctx->pointer < eoc) {
-		if (!asn1_octet_decode(ctx, (unsigned char *)ptr++)) {
+		if (!asn1_octet_decode(ctx, ptr++)) {
 			kfree(*octets);
 			*octets = NULL;
 			return 0;
@@ -460,14 +461,14 @@ static unsigned char asn1_oid_decode(struct asn1_ctx *ctx,
 	}
 
 	if (subid < 40) {
-		optr [0] = 0;
-		optr [1] = subid;
+		optr[0] = 0;
+		optr[1] = subid;
 	} else if (subid < 80) {
-		optr [0] = 1;
-		optr [1] = subid - 40;
+		optr[0] = 1;
+		optr[1] = subid - 40;
 	} else {
-		optr [0] = 2;
-		optr [1] = subid - 80;
+		optr[0] = 2;
+		optr[1] = subid - 80;
 	}
 
 	*len = 2;
@@ -759,7 +760,7 @@ static unsigned char snmp_object_decode(struct asn1_ctx *ctx,
 		}
 		break;
 	case SNMP_OBJECTID:
-		if (!asn1_oid_decode(ctx, end, (unsigned long **)&lp, &len)) {
+		if (!asn1_oid_decode(ctx, end, &lp, &len)) {
 			kfree(id);
 			return 0;
 		}
@@ -1155,7 +1156,7 @@ static int snmp_parse_mangle(unsigned char *msg,
 		}
 
 		if (obj->type == SNMP_IPADDR)
-			mangle_address(ctx.begin, ctx.pointer - 4 , map, check);
+			mangle_address(ctx.begin, ctx.pointer - 4, map, check);
 
 		kfree(obj->id);
 		kfree(obj);
@@ -1197,8 +1198,8 @@ static int snmp_translate(struct nf_conn *ct,
 		map.to = NOCT1(&ct->tuplehash[!dir].tuple.dst.u3.ip);
 	} else {
 		/* DNAT replies */
-		map.from = NOCT1(&ct->tuplehash[dir].tuple.src.u3.ip);
-		map.to = NOCT1(&ct->tuplehash[!dir].tuple.dst.u3.ip);
+		map.from = NOCT1(&ct->tuplehash[!dir].tuple.src.u3.ip);
+		map.to = NOCT1(&ct->tuplehash[dir].tuple.dst.u3.ip);
 	}
 
 	if (map.from == map.to)
@@ -1286,6 +1287,7 @@ static int __init nf_nat_snmp_basic_init(void)
 static void __exit nf_nat_snmp_basic_fini(void)
 {
 	RCU_INIT_POINTER(nf_nat_snmp_hook, NULL);
+	synchronize_rcu();
 	nf_conntrack_helper_unregister(&snmp_trap_helper);
 }
 
