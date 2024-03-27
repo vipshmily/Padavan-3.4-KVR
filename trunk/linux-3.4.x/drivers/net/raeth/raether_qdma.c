@@ -271,7 +271,7 @@ fe_dma_init(END_DEVICE *ei_local)
 	sysRegWrite(QDMA_RST_CFG, 0xffff);
 
 	/* enable random early drop and set drop threshold automatically */
-	sysRegWrite(QDMA_FC_THRES, 0x174444);
+	sysRegWrite(QDMA_FC_THRES, 0x4444);
 	sysRegWrite(QDMA_HRED2, 0x0);
 
 	/* config DLY interrupt */

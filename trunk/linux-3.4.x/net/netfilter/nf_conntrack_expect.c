@@ -593,7 +593,7 @@ int nf_conntrack_expect_init(struct net *net)
 			if (!nf_ct_expect_hsize)
 				nf_ct_expect_hsize = 1;
 		}
-		nf_ct_expect_max = nf_ct_expect_hsize * 4;
+		nf_ct_expect_max = nf_ct_expect_hsize * 1024;
 	}
 
 	net->ct.expect_count = 0;
