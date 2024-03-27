@@ -26,13 +26,15 @@
 
 #include "vnic_dev.h"
 #include "vnic_rq.h"
-#include "enic.h"
 
 static int vnic_rq_alloc_bufs(struct vnic_rq *rq)
 {
 	struct vnic_rq_buf *buf;
+	struct vnic_dev *vdev;
 	unsigned int i, j, count = rq->ring.desc_count;
 	unsigned int blks = VNIC_RQ_BUF_BLKS_NEEDED(count);
+
+	vdev = rq->vdev;
 
 	for (i = 0; i < blks; i++) {
 		rq->bufs[i] = kzalloc(VNIC_RQ_BUF_BLK_SZ(count), GFP_ATOMIC);
@@ -92,7 +94,7 @@ int vnic_rq_alloc(struct vnic_dev *vdev, struct vnic_rq *rq, unsigned int index,
 
 	rq->ctrl = vnic_dev_get_res(vdev, RES_TYPE_RQ, index);
 	if (!rq->ctrl) {
-		vdev_err("Failed to hook RQ[%d] resource\n", index);
+		pr_err("Failed to hook RQ[%d] resource\n", index);
 		return -EINVAL;
 	}
 
@@ -139,7 +141,7 @@ void vnic_rq_init(struct vnic_rq *rq, unsigned int cq_index,
 	unsigned int error_interrupt_enable,
 	unsigned int error_interrupt_offset)
 {
-	u32 fetch_index = 0;
+	u32 fetch_index;
 
 	/* Use current fetch_index as the ring starting point */
 	fetch_index = ioread32(&rq->ctrl->fetch_index);
@@ -168,7 +170,6 @@ void vnic_rq_enable(struct vnic_rq *rq)
 int vnic_rq_disable(struct vnic_rq *rq)
 {
 	unsigned int wait;
-	struct vnic_dev *vdev = rq->vdev;
 
 	iowrite32(0, &rq->ctrl->enable);
 
@@ -179,7 +180,7 @@ int vnic_rq_disable(struct vnic_rq *rq)
 		udelay(10);
 	}
 
-	vdev_neterr("Failed to disable RQ[%d]\n", rq->index);
+	pr_err("Failed to disable RQ[%d]\n", rq->index);
 
 	return -ETIMEDOUT;
 }
@@ -190,15 +191,16 @@ void vnic_rq_clean(struct vnic_rq *rq,
 	struct vnic_rq_buf *buf;
 	u32 fetch_index;
 	unsigned int count = rq->ring.desc_count;
-	int i;
 
 	buf = rq->to_clean;
 
-	for (i = 0; i < rq->ring.desc_count; i++) {
+	while (vnic_rq_desc_used(rq) > 0) {
+
 		(*buf_clean)(rq, buf);
-		buf = buf->next;
+
+		buf = rq->to_clean = buf->next;
+		rq->ring.desc_avail++;
 	}
-	rq->ring.desc_avail = rq->ring.desc_count - 1;
 
 	/* Use current fetch_index as the ring starting point */
 	fetch_index = ioread32(&rq->ctrl->fetch_index);

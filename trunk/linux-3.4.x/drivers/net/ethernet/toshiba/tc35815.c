@@ -38,6 +38,7 @@ static const char *version = "tc35815.c:v" DRV_VERSION "\n";
 #include <linux/string.h>
 #include <linux/spinlock.h>
 #include <linux/errno.h>
+#include <linux/init.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/skbuff.h>
@@ -59,13 +60,13 @@ enum tc35815_chiptype {
 /* indexed by tc35815_chiptype, above */
 static const struct {
 	const char *name;
-} chip_info[] = {
+} chip_info[] __devinitdata = {
 	{ "TOSHIBA TC35815CF 10/100BaseTX" },
 	{ "TOSHIBA TC35815 with Wake on LAN" },
 	{ "TOSHIBA TC35815/TX4939" },
 };
 
-static const struct pci_device_id tc35815_pci_tbl[] = {
+static DEFINE_PCI_DEVICE_TABLE(tc35815_pci_tbl) = {
 	{PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA_2, PCI_DEVICE_ID_TOSHIBA_TC35815CF), .driver_data = TC35815CF },
 	{PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA_2, PCI_DEVICE_ID_TOSHIBA_TC35815_NWU), .driver_data = TC35815_NWU },
 	{PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA_2, PCI_DEVICE_ID_TOSHIBA_TC35815_TX4939), .driver_data = TC35815_TX4939 },
@@ -632,8 +633,9 @@ static int tc_mii_probe(struct net_device *dev)
 
 	/* attach the mac to the phy */
 	phydev = phy_connect(dev, dev_name(&phydev->dev),
-			     &tc_handle_link_change,
-			     lp->chiptype == TC35815_TX4939 ? PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII);
+			     &tc_handle_link_change, 0,
+			     lp->chiptype == TC35815_TX4939 ?
+			     PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII);
 	if (IS_ERR(phydev)) {
 		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
 		return PTR_ERR(phydev);
@@ -717,7 +719,7 @@ err_out:
  * should provide a "tc35815-mac" device with a MAC address in its
  * platform_data.
  */
-static int tc35815_mac_match(struct device *dev, void *data)
+static int __devinit tc35815_mac_match(struct device *dev, void *data)
 {
 	struct platform_device *plat_dev = to_platform_device(dev);
 	struct pci_dev *pci_dev = data;
@@ -725,7 +727,7 @@ static int tc35815_mac_match(struct device *dev, void *data)
 	return !strcmp(plat_dev->name, "tc35815-mac") && plat_dev->id == id;
 }
 
-static int tc35815_read_plat_dev_addr(struct net_device *dev)
+static int __devinit tc35815_read_plat_dev_addr(struct net_device *dev)
 {
 	struct tc35815_local *lp = netdev_priv(dev);
 	struct device *pd = bus_find_device(&platform_bus_type, NULL,
@@ -739,13 +741,13 @@ static int tc35815_read_plat_dev_addr(struct net_device *dev)
 	return -ENODEV;
 }
 #else
-static int tc35815_read_plat_dev_addr(struct net_device *dev)
+static int __devinit tc35815_read_plat_dev_addr(struct net_device *dev)
 {
 	return -ENODEV;
 }
 #endif
 
-static int tc35815_init_dev_addr(struct net_device *dev)
+static int __devinit tc35815_init_dev_addr(struct net_device *dev)
 {
 	struct tc35815_regs __iomem *tr =
 		(struct tc35815_regs __iomem *)dev->base_addr;
@@ -783,8 +785,8 @@ static const struct net_device_ops tc35815_netdev_ops = {
 #endif
 };
 
-static int tc35815_init_one(struct pci_dev *pdev,
-			    const struct pci_device_id *ent)
+static int __devinit tc35815_init_one(struct pci_dev *pdev,
+				      const struct pci_device_id *ent)
 {
 	void __iomem *ioaddr = NULL;
 	struct net_device *dev;
@@ -854,6 +856,7 @@ static int tc35815_init_one(struct pci_dev *pdev,
 	if (rc)
 		goto err_out;
 
+	memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
 	printk(KERN_INFO "%s: %s at 0x%lx, %pM, IRQ %d\n",
 		dev->name,
 		chip_info[ent->driver_data].name,
@@ -875,7 +878,7 @@ err_out:
 }
 
 
-static void tc35815_remove_one(struct pci_dev *pdev)
+static void __devexit tc35815_remove_one(struct pci_dev *pdev)
 {
 	struct net_device *dev = pci_get_drvdata(pdev);
 	struct tc35815_local *lp = netdev_priv(dev);
@@ -886,6 +889,7 @@ static void tc35815_remove_one(struct pci_dev *pdev)
 	mdiobus_free(lp->mii_bus);
 	unregister_netdev(dev);
 	free_netdev(dev);
+	pci_set_drvdata(pdev, NULL);
 }
 
 static int
@@ -1169,12 +1173,19 @@ static int tc35815_tx_full(struct net_device *dev)
 static void tc35815_restart(struct net_device *dev)
 {
 	struct tc35815_local *lp = netdev_priv(dev);
-	int ret;
 
 	if (lp->phy_dev) {
-		ret = phy_init_hw(lp->phy_dev);
-		if (ret)
-			printk(KERN_ERR "%s: PHY init failed.\n", dev->name);
+		int timeout;
+
+		phy_write(lp->phy_dev, MII_BMCR, BMCR_RESET);
+		timeout = 100;
+		while (--timeout) {
+			if (!(phy_read(lp->phy_dev, MII_BMCR) & BMCR_RESET))
+				break;
+			udelay(1);
+		}
+		if (!timeout)
+			printk(KERN_ERR "%s: BMCR reset failed.\n", dev->name);
 	}
 
 	spin_lock_bh(&lp->rx_lock);
@@ -1528,7 +1539,7 @@ tc35815_rx(struct net_device *dev, int limit)
 			pci_unmap_single(lp->pci_dev,
 					 lp->rx_skbs[cur_bd].skb_dma,
 					 RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
-			if (!HAVE_DMA_RXALIGN(lp) && NET_IP_ALIGN != 0)
+			if (!HAVE_DMA_RXALIGN(lp) && NET_IP_ALIGN)
 				memmove(skb->data, skb->data - NET_IP_ALIGN,
 					pkt_len);
 			data = skb_put(skb, pkt_len);
@@ -1644,9 +1655,6 @@ static int tc35815_poll(struct napi_struct *napi, int budget)
 		(struct tc35815_regs __iomem *)dev->base_addr;
 	int received = 0, handled;
 	u32 status;
-
-	if (budget <= 0)
-		return received;
 
 	spin_lock(&lp->rx_lock);
 	status = tc_readl(&tr->Int_Src);
@@ -1968,10 +1976,9 @@ tc35815_set_multicast_list(struct net_device *dev)
 static void tc35815_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
 {
 	struct tc35815_local *lp = netdev_priv(dev);
-
-	strlcpy(info->driver, MODNAME, sizeof(info->driver));
-	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
-	strlcpy(info->bus_info, pci_name(lp->pci_dev), sizeof(info->bus_info));
+	strcpy(info->driver, MODNAME);
+	strcpy(info->version, DRV_VERSION);
+	strcpy(info->bus_info, pci_name(lp->pci_dev));
 }
 
 static int tc35815_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
@@ -2191,7 +2198,7 @@ static struct pci_driver tc35815_pci_driver = {
 	.name		= MODNAME,
 	.id_table	= tc35815_pci_tbl,
 	.probe		= tc35815_init_one,
-	.remove		= tc35815_remove_one,
+	.remove		= __devexit_p(tc35815_remove_one),
 #ifdef CONFIG_PM
 	.suspend	= tc35815_suspend,
 	.resume		= tc35815_resume,
@@ -2203,6 +2210,18 @@ MODULE_PARM_DESC(speed, "0:auto, 10:10Mbps, 100:100Mbps");
 module_param_named(duplex, options.duplex, int, 0);
 MODULE_PARM_DESC(duplex, "0:auto, 1:half, 2:full");
 
-module_pci_driver(tc35815_pci_driver);
+static int __init tc35815_init_module(void)
+{
+	return pci_register_driver(&tc35815_pci_driver);
+}
+
+static void __exit tc35815_cleanup_module(void)
+{
+	pci_unregister_driver(&tc35815_pci_driver);
+}
+
+module_init(tc35815_init_module);
+module_exit(tc35815_cleanup_module);
+
 MODULE_DESCRIPTION("TOSHIBA TC35815 PCI 10M/100M Ethernet driver");
 MODULE_LICENSE("GPL");

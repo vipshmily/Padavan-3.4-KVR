@@ -4,7 +4,7 @@
 
 config OCTEON_MGMT_ETHERNET
 	tristate "Octeon Management port ethernet driver (CN5XXX, CN6XXX)"
-	depends on CAVIUM_OCTEON_SOC
+	depends on  CPU_CAVIUM_OCTEON
 	select PHYLIB
 	select MDIO_OCTEON
 	default y

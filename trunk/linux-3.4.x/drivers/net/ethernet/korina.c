@@ -39,6 +39,7 @@
 #include <linux/ctype.h>
 #include <linux/types.h>
 #include <linux/interrupt.h>
+#include <linux/init.h>
 #include <linux/ioport.h>
 #include <linux/in.h>
 #include <linux/slab.h>
@@ -482,6 +483,7 @@ static void korina_multicast_list(struct net_device *dev)
 	unsigned long flags;
 	struct netdev_hw_addr *ha;
 	u32 recognise = ETH_ARC_AB;	/* always accept broadcasts */
+	int i;
 
 	/* Set promiscuous mode */
 	if (dev->flags & IFF_PROMISC)
@@ -493,8 +495,11 @@ static void korina_multicast_list(struct net_device *dev)
 
 	/* Build the hash table */
 	if (netdev_mc_count(dev) > 4) {
-		u16 hash_table[4] = { 0 };
+		u16 hash_table[4];
 		u32 crc;
+
+		for (i = 0; i < 4; i++)
+			hash_table[i] = 0;
 
 		netdev_for_each_mc_addr(ha, dev) {
 			crc = ether_crc_le(6, ha->addr);
@@ -690,9 +695,9 @@ static void netdev_get_drvinfo(struct net_device *dev,
 {
 	struct korina_private *lp = netdev_priv(dev);
 
-	strlcpy(info->driver, DRV_NAME, sizeof(info->driver));
-	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
-	strlcpy(info->bus_info, lp->dev->name, sizeof(info->bus_info));
+	strcpy(info->driver, DRV_NAME);
+	strcpy(info->version, DRV_VERSION);
+	strcpy(info->bus_info, lp->dev->name);
 }
 
 static int netdev_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
@@ -900,9 +905,9 @@ static void korina_restart_task(struct work_struct *work)
 				DMA_STAT_DONE | DMA_STAT_HALT | DMA_STAT_ERR,
 				&lp->rx_dma_regs->dmasm);
 
-	napi_disable(&lp->napi);
-
 	korina_free_ring(dev);
+
+	napi_disable(&lp->napi);
 
 	if (korina_init(dev) < 0) {
 		printk(KERN_ERR "%s: cannot restart device\n", dev->name);
@@ -995,14 +1000,14 @@ static int korina_open(struct net_device *dev)
 	 * that handles the Done Finished
 	 * Ovr and Und Events */
 	ret = request_irq(lp->rx_irq, korina_rx_dma_interrupt,
-			0, "Korina ethernet Rx", dev);
+			IRQF_DISABLED, "Korina ethernet Rx", dev);
 	if (ret < 0) {
 		printk(KERN_ERR "%s: unable to get Rx DMA IRQ %d\n",
 		    dev->name, lp->rx_irq);
 		goto err_release;
 	}
 	ret = request_irq(lp->tx_irq, korina_tx_dma_interrupt,
-			0, "Korina ethernet Tx", dev);
+			IRQF_DISABLED, "Korina ethernet Tx", dev);
 	if (ret < 0) {
 		printk(KERN_ERR "%s: unable to get Tx DMA IRQ %d\n",
 		    dev->name, lp->tx_irq);
@@ -1011,7 +1016,7 @@ static int korina_open(struct net_device *dev)
 
 	/* Install handler for overrun error. */
 	ret = request_irq(lp->ovr_irq, korina_ovr_interrupt,
-			0, "Ethernet Overflow", dev);
+			IRQF_DISABLED, "Ethernet Overflow", dev);
 	if (ret < 0) {
 		printk(KERN_ERR "%s: unable to get OVR IRQ %d\n",
 		    dev->name, lp->ovr_irq);
@@ -1020,7 +1025,7 @@ static int korina_open(struct net_device *dev)
 
 	/* Install handler for underflow error. */
 	ret = request_irq(lp->und_irq, korina_und_interrupt,
-			0, "Ethernet Underflow", dev);
+			IRQF_DISABLED, "Ethernet Underflow", dev);
 	if (ret < 0) {
 		printk(KERN_ERR "%s: unable to get UND IRQ %d\n",
 		    dev->name, lp->und_irq);
@@ -1064,11 +1069,11 @@ static int korina_close(struct net_device *dev)
 	tmp = tmp | DMA_STAT_DONE | DMA_STAT_HALT | DMA_STAT_ERR;
 	writel(tmp, &lp->rx_dma_regs->dmasm);
 
+	korina_free_ring(dev);
+
 	napi_disable(&lp->napi);
 
 	cancel_work_sync(&lp->restart_task);
-
-	korina_free_ring(dev);
 
 	free_irq(lp->rx_irq, dev);
 	free_irq(lp->tx_irq, dev);
@@ -1109,7 +1114,7 @@ static int korina_probe(struct platform_device *pdev)
 	lp = netdev_priv(dev);
 
 	bif->dev = dev;
-	memcpy(dev->dev_addr, bif->mac, ETH_ALEN);
+	memcpy(dev->dev_addr, bif->mac, 6);
 
 	lp->rx_irq = platform_get_irq_byname(pdev, "korina_rx");
 	lp->tx_irq = platform_get_irq_byname(pdev, "korina_tx");
@@ -1209,6 +1214,7 @@ static int korina_remove(struct platform_device *pdev)
 	iounmap(lp->rx_dma_regs);
 	iounmap(lp->tx_dma_regs);
 
+	platform_set_drvdata(pdev, NULL);
 	unregister_netdev(bif->dev);
 	free_netdev(bif->dev);
 

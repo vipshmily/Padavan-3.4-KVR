@@ -472,7 +472,7 @@ am79c961_sendpacket(struct sk_buff *skb, struct net_device *dev)
 	if (am_readword(dev, priv->txhdr + (priv->txhead << 3) + 2) & TMD_OWN)
 		netif_stop_queue(dev);
 
-	dev_consume_skb_any(skb);
+	dev_kfree_skb(skb);
 
 	return NETDEV_TX_OK;
 }
@@ -528,6 +528,7 @@ am79c961_rx(struct net_device *dev, struct dev_priv *priv)
 			dev->stats.rx_packets++;
 		} else {
 			am_writeword (dev, hdraddr + 2, RMD_OWN);
+			printk (KERN_WARNING "%s: memory squeeze, dropping packet.\n", dev->name);
 			dev->stats.rx_dropped++;
 			break;
 		}
@@ -670,7 +671,7 @@ static const struct net_device_ops am79c961_netdev_ops = {
 #endif
 };
 
-static int am79c961_probe(struct platform_device *pdev)
+static int __devinit am79c961_probe(struct platform_device *pdev)
 {
 	struct resource *res;
 	struct net_device *dev;

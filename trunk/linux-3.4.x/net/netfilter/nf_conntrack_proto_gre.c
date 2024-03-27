@@ -21,7 +21,6 @@
  *
  * Development of this code funded by Astaro AG (http://www.astaro.com/)
  *
- * (C) 2006-2012 Patrick McHardy <kaber@trash.net>
  */
 
 #include <linux/module.h>
@@ -55,20 +54,13 @@ static unsigned int gre_timeouts[GRE_CT_MAX] = {
 
 static int proto_gre_net_id __read_mostly;
 struct netns_proto_gre {
-	struct nf_proto_net	nf;
 	rwlock_t		keymap_lock;
 	struct list_head	keymap_list;
-	unsigned int		gre_timeouts[GRE_CT_MAX];
 };
-
-static inline struct netns_proto_gre *gre_pernet(struct net *net)
-{
-	return net_generic(net, proto_gre_net_id);
-}
 
 static void nf_ct_gre_keymap_flush(struct net *net)
 {
-	struct netns_proto_gre *net_gre = gre_pernet(net);
+	struct netns_proto_gre *net_gre = net_generic(net, proto_gre_net_id);
 	struct nf_ct_gre_keymap *km, *tmp;
 
 	write_lock_bh(&net_gre->keymap_lock);
@@ -92,7 +84,7 @@ static inline int gre_key_cmpfn(const struct nf_ct_gre_keymap *km,
 /* look up the source key for a given tuple */
 static __be16 gre_keymap_lookup(struct net *net, struct nf_conntrack_tuple *t)
 {
-	struct netns_proto_gre *net_gre = gre_pernet(net);
+	struct netns_proto_gre *net_gre = net_generic(net, proto_gre_net_id);
 	struct nf_ct_gre_keymap *km;
 	__be16 key = 0;
 
@@ -116,11 +108,11 @@ int nf_ct_gre_keymap_add(struct nf_conn *ct, enum ip_conntrack_dir dir,
 			 struct nf_conntrack_tuple *t)
 {
 	struct net *net = nf_ct_net(ct);
-	struct netns_proto_gre *net_gre = gre_pernet(net);
-	struct nf_ct_pptp_master *ct_pptp_info = nfct_help_data(ct);
+	struct netns_proto_gre *net_gre = net_generic(net, proto_gre_net_id);
+	struct nf_conn_help *help = nfct_help(ct);
 	struct nf_ct_gre_keymap **kmp, *km;
 
-	kmp = &ct_pptp_info->keymap[dir];
+	kmp = &help->help.ct_pptp_info.keymap[dir];
 	if (*kmp) {
 		/* check whether it's a retransmission */
 		read_lock_bh(&net_gre->keymap_lock);
@@ -157,20 +149,20 @@ EXPORT_SYMBOL_GPL(nf_ct_gre_keymap_add);
 void nf_ct_gre_keymap_destroy(struct nf_conn *ct)
 {
 	struct net *net = nf_ct_net(ct);
-	struct netns_proto_gre *net_gre = gre_pernet(net);
-	struct nf_ct_pptp_master *ct_pptp_info = nfct_help_data(ct);
+	struct netns_proto_gre *net_gre = net_generic(net, proto_gre_net_id);
+	struct nf_conn_help *help = nfct_help(ct);
 	enum ip_conntrack_dir dir;
 
 	pr_debug("entering for ct %p\n", ct);
 
 	write_lock_bh(&net_gre->keymap_lock);
 	for (dir = IP_CT_DIR_ORIGINAL; dir < IP_CT_DIR_MAX; dir++) {
-		if (ct_pptp_info->keymap[dir]) {
+		if (help->help.ct_pptp_info.keymap[dir]) {
 			pr_debug("removing %p from list\n",
-				 ct_pptp_info->keymap[dir]);
-			list_del(&ct_pptp_info->keymap[dir]->list);
-			kfree(ct_pptp_info->keymap[dir]);
-			ct_pptp_info->keymap[dir] = NULL;
+				 help->help.ct_pptp_info.keymap[dir]);
+			list_del(&help->help.ct_pptp_info.keymap[dir]->list);
+			kfree(help->help.ct_pptp_info.keymap[dir]);
+			help->help.ct_pptp_info.keymap[dir] = NULL;
 		}
 	}
 	write_unlock_bh(&net_gre->keymap_lock);
@@ -190,8 +182,9 @@ static bool gre_invert_tuple(struct nf_conntrack_tuple *tuple,
 
 /* gre hdr info to tuple */
 static bool gre_pkt_to_tuple(const struct sk_buff *skb, unsigned int dataoff,
-			     struct net *net, struct nf_conntrack_tuple *tuple)
+			     struct nf_conntrack_tuple *tuple)
 {
+	struct net *net = dev_net(skb->dev ? skb->dev : skb_dst(skb)->dev);
 	const struct gre_hdr_pptp *pgrehdr;
 	struct gre_hdr_pptp _pgrehdr;
 	__be16 srckey;
@@ -225,25 +218,25 @@ static bool gre_pkt_to_tuple(const struct sk_buff *skb, unsigned int dataoff,
 }
 
 /* print gre part of tuple */
-static void gre_print_tuple(struct seq_file *s,
-			    const struct nf_conntrack_tuple *tuple)
+static int gre_print_tuple(struct seq_file *s,
+			   const struct nf_conntrack_tuple *tuple)
 {
-	seq_printf(s, "srckey=0x%x dstkey=0x%x ",
-		   ntohs(tuple->src.u.gre.key),
-		   ntohs(tuple->dst.u.gre.key));
+	return seq_printf(s, "srckey=0x%x dstkey=0x%x ",
+			  ntohs(tuple->src.u.gre.key),
+			  ntohs(tuple->dst.u.gre.key));
 }
 
 /* print private data for conntrack */
-static void gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+static int gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
 {
-	seq_printf(s, "timeout=%u, stream_timeout=%u ",
-		   (ct->proto.gre.timeout / HZ),
-		   (ct->proto.gre.stream_timeout / HZ));
+	return seq_printf(s, "timeout=%u, stream_timeout=%u ",
+			  (ct->proto.gre.timeout / HZ),
+			  (ct->proto.gre.stream_timeout / HZ));
 }
 
 static unsigned int *gre_get_timeouts(struct net *net)
 {
-	return gre_pernet(net)->gre_timeouts;
+	return gre_timeouts;
 }
 
 /* Returns verdict for packet, and may modify conntrack */
@@ -303,15 +296,13 @@ static void gre_destroy(struct nf_conn *ct)
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_cttimeout.h>
 
-static int gre_timeout_nlattr_to_obj(struct nlattr *tb[],
-				     struct net *net, void *data)
+static int gre_timeout_nlattr_to_obj(struct nlattr *tb[], void *data)
 {
 	unsigned int *timeouts = data;
-	struct netns_proto_gre *net_gre = gre_pernet(net);
 
 	/* set default timeouts for GRE. */
-	timeouts[GRE_CT_UNREPLIED] = net_gre->gre_timeouts[GRE_CT_UNREPLIED];
-	timeouts[GRE_CT_REPLIED] = net_gre->gre_timeouts[GRE_CT_REPLIED];
+	timeouts[GRE_CT_UNREPLIED] = gre_timeouts[GRE_CT_UNREPLIED];
+	timeouts[GRE_CT_REPLIED] = gre_timeouts[GRE_CT_REPLIED];
 
 	if (tb[CTA_TIMEOUT_GRE_UNREPLIED]) {
 		timeouts[GRE_CT_UNREPLIED] =
@@ -347,19 +338,6 @@ gre_timeout_nla_policy[CTA_TIMEOUT_GRE_MAX+1] = {
 };
 #endif /* CONFIG_NF_CT_NETLINK_TIMEOUT */
 
-static int gre_init_net(struct net *net, u_int16_t proto)
-{
-	struct netns_proto_gre *net_gre = gre_pernet(net);
-	int i;
-
-	rwlock_init(&net_gre->keymap_lock);
-	INIT_LIST_HEAD(&net_gre->keymap_list);
-	for (i = 0; i < GRE_CT_MAX; i++)
-		net_gre->gre_timeouts[i] = gre_timeouts[i];
-
-	return 0;
-}
-
 /* protocol helper struct */
 static struct nf_conntrack_l4proto nf_conntrack_l4proto_gre4 __read_mostly = {
 	.l3proto	 = AF_INET,
@@ -389,22 +367,20 @@ static struct nf_conntrack_l4proto nf_conntrack_l4proto_gre4 __read_mostly = {
 		.nla_policy	= gre_timeout_nla_policy,
 	},
 #endif /* CONFIG_NF_CT_NETLINK_TIMEOUT */
-	.net_id		= &proto_gre_net_id,
-	.init_net	= gre_init_net,
 };
 
 static int proto_gre_net_init(struct net *net)
 {
-	int ret = 0;
-	ret = nf_ct_l4proto_pernet_register(net, &nf_conntrack_l4proto_gre4);
-	if (ret < 0)
-		pr_err("nf_conntrack_gre4: pernet registration failed.\n");
-	return ret;
+	struct netns_proto_gre *net_gre = net_generic(net, proto_gre_net_id);
+
+	rwlock_init(&net_gre->keymap_lock);
+	INIT_LIST_HEAD(&net_gre->keymap_list);
+
+	return 0;
 }
 
 static void proto_gre_net_exit(struct net *net)
 {
-	nf_ct_l4proto_pernet_unregister(net, &nf_conntrack_l4proto_gre4);
 	nf_ct_gre_keymap_flush(net);
 }
 
@@ -417,26 +393,20 @@ static struct pernet_operations proto_gre_net_ops = {
 
 static int __init nf_ct_proto_gre_init(void)
 {
-	int ret;
+	int rv;
 
-	ret = register_pernet_subsys(&proto_gre_net_ops);
-	if (ret < 0)
-		goto out_pernet;
-
-	ret = nf_ct_l4proto_register(&nf_conntrack_l4proto_gre4);
-	if (ret < 0)
-		goto out_gre4;
-
-	return 0;
-out_gre4:
-	unregister_pernet_subsys(&proto_gre_net_ops);
-out_pernet:
-	return ret;
+	rv = nf_conntrack_l4proto_register(&nf_conntrack_l4proto_gre4);
+	if (rv < 0)
+		return rv;
+	rv = register_pernet_subsys(&proto_gre_net_ops);
+	if (rv < 0)
+		nf_conntrack_l4proto_unregister(&nf_conntrack_l4proto_gre4);
+	return rv;
 }
 
 static void __exit nf_ct_proto_gre_fini(void)
 {
-	nf_ct_l4proto_unregister(&nf_conntrack_l4proto_gre4);
+	nf_conntrack_l4proto_unregister(&nf_conntrack_l4proto_gre4);
 	unregister_pernet_subsys(&proto_gre_net_ops);
 }
 

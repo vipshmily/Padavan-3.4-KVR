@@ -1,5 +1,5 @@
 /* (C) 2001-2002 Magnus Boden <mb@ozaba.mine.nu>
- * (C) 2006-2012 Patrick McHardy <kaber@trash.net>
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -60,10 +60,8 @@ static int tftp_help(struct sk_buff *skb,
 		nf_ct_dump_tuple(&ct->tuplehash[IP_CT_DIR_REPLY].tuple);
 
 		exp = nf_ct_expect_alloc(ct);
-		if (exp == NULL) {
-			nf_ct_helper_log(skb, ct, "cannot alloc expectation");
+		if (exp == NULL)
 			return NF_DROP;
-		}
 		tuple = &ct->tuplehash[IP_CT_DIR_REPLY].tuple;
 		nf_ct_expect_init(exp, NF_CT_EXPECT_CLASS_DEFAULT,
 				  nf_ct_l3num(ct),
@@ -76,10 +74,8 @@ static int tftp_help(struct sk_buff *skb,
 		nf_nat_tftp = rcu_dereference(nf_nat_tftp_hook);
 		if (nf_nat_tftp && ct->status & IPS_NAT_MASK)
 			ret = nf_nat_tftp(skb, ctinfo, exp);
-		else if (nf_ct_expect_related(exp) != 0) {
-			nf_ct_helper_log(skb, ct, "cannot add expectation");
+		else if (nf_ct_expect_related(exp) != 0)
 			ret = NF_DROP;
-		}
 		nf_ct_expect_put(exp);
 		break;
 	case TFTP_OPCODE_DATA:
@@ -96,6 +92,7 @@ static int tftp_help(struct sk_buff *skb,
 }
 
 static struct nf_conntrack_helper tftp[MAX_PORTS][2] __read_mostly;
+static char tftp_names[MAX_PORTS][2][sizeof("tftp-65535")] __read_mostly;
 
 static const struct nf_conntrack_expect_policy tftp_exp_policy = {
 	.max_expected	= 1,
@@ -115,6 +112,7 @@ static void nf_conntrack_tftp_fini(void)
 static int __init nf_conntrack_tftp_init(void)
 {
 	int i, j, ret;
+	char *tmpname;
 
 	if (ports_c == 0)
 		ports[ports_c++] = TFTP_PORT;
@@ -131,10 +129,12 @@ static int __init nf_conntrack_tftp_init(void)
 			tftp[i][j].me = THIS_MODULE;
 			tftp[i][j].help = tftp_help;
 
+			tmpname = &tftp_names[i][j][0];
 			if (ports[i] == TFTP_PORT)
-				sprintf(tftp[i][j].name, "tftp");
+				sprintf(tmpname, "tftp");
 			else
-				sprintf(tftp[i][j].name, "tftp-%u", i);
+				sprintf(tmpname, "tftp-%u", i);
+			tftp[i][j].name = tmpname;
 
 			ret = nf_conntrack_helper_register(&tftp[i][j]);
 			if (ret) {
