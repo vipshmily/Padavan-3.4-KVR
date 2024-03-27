@@ -22,7 +22,6 @@
 #include <net/netfilter/nf_nat_rule.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/netfilter/x_tables.h>
-#include <net/netfilter/ipv4/nf_nat_masquerade.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Netfilter Core Team <coreteam@netfilter.org>");
@@ -84,8 +83,6 @@ masquerade_tg(struct sk_buff *skb, const struct xt_action_param *par)
 		{ mr->range[0].flags | NF_NAT_RANGE_MAP_IPS,
 		  newsrc, newsrc,
 		  mr->range[0].min, mr->range[0].max });
-		  mr->range.min_addr.ip, mr->range[0].min_ip;
-	          mr->range.max_addr.ip, mr->range[0].max_ip;
 
 	/* Hand modified range to generic setup. */
 	return nf_nat_setup_info(ct, &newrange, NF_NAT_MANIP_SRC);
