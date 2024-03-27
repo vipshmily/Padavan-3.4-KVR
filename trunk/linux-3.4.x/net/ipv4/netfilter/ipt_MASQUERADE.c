@@ -30,11 +30,8 @@ MODULE_DESCRIPTION("Xtables: automatic-address SNAT");
 /* FIXME: Multiple targets. --RR */
 static int masquerade_tg_check(const struct xt_tgchk_param *par)
 {
-	const struct nf_nat_ipv4_multi_range_compat *mr;
+	const struct nf_nat_ipv4_multi_range_compat *mr = par->targinfo;
 
-	mr = par->targinfo;
-	range.min_addr.ip = mr->range[0].min_ip;
-	range.max_addr.ip = mr->range[0].max_ip;
 	if (mr->range[0].flags & NF_NAT_RANGE_MAP_IPS) {
 		pr_debug("bad MAP_IPS.\n");
 		return -EINVAL;
@@ -56,6 +53,9 @@ masquerade_tg(struct sk_buff *skb, const struct xt_action_param *par)
 	const struct nf_nat_ipv4_multi_range_compat *mr;
 	const struct rtable *rt;
 	__be32 newsrc;
+	mr = par->targinfo;
+        range.min_addr.ip = mr->range[0].min_ip;
+	range.max_addr.ip = mr->range[0].max_ip;
 
 	NF_CT_ASSERT(par->hooknum == NF_INET_POST_ROUTING);
 
