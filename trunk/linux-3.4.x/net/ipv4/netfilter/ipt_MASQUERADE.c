@@ -51,6 +51,13 @@ masquerade_tg(struct sk_buff *skb, const struct xt_action_param *par)
 	enum ip_conntrack_info ctinfo;
 	struct nf_nat_ipv4_range newrange;
 	const struct nf_nat_ipv4_multi_range_compat *mr;
+	mr = par->targinfo;
+	range.flags = mr->range[0].flags;
+	range.min_proto = mr->range[0].min;
+	range.max_proto = mr->range[0].max;
+
+	range.min_addr.ip = mr->range[0].min_ip;
+	range.max_addr.ip = mr->range[0].max_ip;
 	const struct rtable *rt;
 	__be32 newsrc;
 
