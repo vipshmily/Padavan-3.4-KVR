@@ -20,16 +20,20 @@ static const struct xt_table packet_raw = {
 
 /* The work comes in here from netfilter.c. */
 static unsigned int
-iptable_raw_hook(void *priv, struct sk_buff *skb,
-		 const struct nf_hook_state *state)
+iptable_raw_hook(unsigned int hook, struct sk_buff *skb,
+		 const struct net_device *in, const struct net_device *out,
+		 int (*okfn)(struct sk_buff *))
 {
-	if (state->hook == NF_INET_LOCAL_OUT &&
+	const struct net *net;
+
+	if (hook == NF_INET_LOCAL_OUT && 
 	    (skb->len < sizeof(struct iphdr) ||
 	     ip_hdrlen(skb) < sizeof(struct iphdr)))
 		/* root is playing with raw sockets. */
 		return NF_ACCEPT;
 
-	return ipt_do_table(skb, state, state->net->ipv4.iptable_raw);
+	net = dev_net((in != NULL) ? in : out);
+	return ipt_do_table(skb, hook, in, out, net->ipv4.iptable_raw);
 }
 
 static struct nf_hook_ops *rawtable_ops __read_mostly;
@@ -44,7 +48,9 @@ static int __net_init iptable_raw_net_init(struct net *net)
 	net->ipv4.iptable_raw =
 		ipt_register_table(net, &packet_raw, repl);
 	kfree(repl);
-	return PTR_ERR_OR_ZERO(net->ipv4.iptable_raw);
+	if (IS_ERR(net->ipv4.iptable_raw))
+		return PTR_ERR(net->ipv4.iptable_raw);
+	return 0;
 }
 
 static void __net_exit iptable_raw_net_exit(struct net *net)
@@ -69,9 +75,13 @@ static int __init iptable_raw_init(void)
 	rawtable_ops = xt_hook_link(&packet_raw, iptable_raw_hook);
 	if (IS_ERR(rawtable_ops)) {
 		ret = PTR_ERR(rawtable_ops);
-		unregister_pernet_subsys(&iptable_raw_net_ops);
+		goto cleanup_table;
 	}
 
+	return ret;
+
+ cleanup_table:
+	unregister_pernet_subsys(&iptable_raw_net_ops);
 	return ret;
 }
 

@@ -2,7 +2,6 @@
  *
  * (C) 1999-2001 Paul `Rusty' Russell
  * (C) 2002-2006 Netfilter Core Team <coreteam@netfilter.org>
- * (C) 2006-2010 Patrick McHardy <kaber@trash.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -94,7 +93,7 @@ static void ct_seq_stop(struct seq_file *s, void *v)
 }
 
 #ifdef CONFIG_NF_CONNTRACK_SECMARK
-static void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
+static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
 {
 	int ret;
 	u32 len;
@@ -102,15 +101,17 @@ static void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
 
 	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
 	if (ret)
-		return;
+		return 0;
 
-	seq_printf(s, "secctx=%s ", secctx);
+	ret = seq_printf(s, "secctx=%s ", secctx);
 
 	security_release_secctx(secctx, len);
+	return ret;
 }
 #else
-static inline void ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
+static inline int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
 {
+	return 0;
 }
 #endif
 
@@ -139,52 +140,53 @@ static int ct_seq_show(struct seq_file *s, void *v)
 	NF_CT_ASSERT(l4proto);
 
 	ret = -ENOSPC;
-	seq_printf(s, "%-8s %u %ld ",
-		   l4proto->name, nf_ct_protonum(ct),
-		   timer_pending(&ct->timeout)
-		   ? (long)(ct->timeout.expires - jiffies)/HZ : 0);
-
-	if (l4proto->print_conntrack)
-		l4proto->print_conntrack(s, ct);
-
-	if (seq_has_overflowed(s))
+	if (seq_printf(s, "%-8s %u %ld ",
+		      l4proto->name, nf_ct_protonum(ct),
+		      timer_pending(&ct->timeout)
+		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
 		goto release;
 
-	print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-		    l3proto, l4proto);
+	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+		goto release;
 
-	if (seq_has_overflowed(s))
+	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+			l3proto, l4proto))
 		goto release;
 
 	if (seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL))
 		goto release;
 
 	if (!(test_bit(IPS_SEEN_REPLY_BIT, &ct->status)))
-		seq_printf(s, "[UNREPLIED] ");
+		if (seq_printf(s, "[UNREPLIED] "))
+			goto release;
 
-	print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
-		    l3proto, l4proto);
-
-	if (seq_has_overflowed(s))
+	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
+			l3proto, l4proto))
 		goto release;
 
 	if (seq_print_acct(s, ct, IP_CT_DIR_REPLY))
 		goto release;
 
 	if (test_bit(IPS_ASSURED_BIT, &ct->status))
-		seq_printf(s, "[ASSURED] ");
+		if (seq_printf(s, "[ASSURED] "))
+			goto release;
 
 #ifdef CONFIG_NF_CONNTRACK_MARK
-	seq_printf(s, "mark=%u ", ct->mark);
+	if (seq_printf(s, "mark=%u ", ct->mark))
+		goto release;
 #endif
 
-	ct_show_secctx(s, ct);
-
-	seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use));
-
-	if (seq_has_overflowed(s))
+	if (ct_show_secctx(s, ct))
 		goto release;
 
+#if defined(CONFIG_NETFILTER_XT_MATCH_LAYER7) || defined(CONFIG_NETFILTER_XT_MATCH_LAYER7_MODULE)
+	if(ct->layer7.app_proto)
+		if(seq_printf(s, "l7proto=%s ", ct->layer7.app_proto))
+			goto release;
+#endif
+
+	if (seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use)))
+		goto release;
 	ret = 0;
 release:
 	nf_ct_put(ct);
@@ -300,9 +302,7 @@ static int exp_seq_show(struct seq_file *s, void *v)
 		    __nf_ct_l3proto_find(exp->tuple.src.l3num),
 		    __nf_ct_l4proto_find(exp->tuple.src.l3num,
 					 exp->tuple.dst.protonum));
-	seq_putc(s, '\n');
-
-	return 0;
+	return seq_putc(s, '\n');
 }
 
 static const struct seq_operations exp_seq_ops = {
@@ -423,12 +423,12 @@ static int __net_init ip_conntrack_net_init(struct net *net)
 {
 	struct proc_dir_entry *proc, *proc_exp, *proc_stat;
 
-	proc = proc_create("ip_conntrack", 0440, net->proc_net, &ct_file_ops);
+	proc = proc_net_fops_create(net, "ip_conntrack", 0440, &ct_file_ops);
 	if (!proc)
 		goto err1;
 
-	proc_exp = proc_create("ip_conntrack_expect", 0440, net->proc_net,
-			       &ip_exp_file_ops);
+	proc_exp = proc_net_fops_create(net, "ip_conntrack_expect", 0440,
+					&ip_exp_file_ops);
 	if (!proc_exp)
 		goto err2;
 
@@ -439,9 +439,9 @@ static int __net_init ip_conntrack_net_init(struct net *net)
 	return 0;
 
 err3:
-	remove_proc_entry("ip_conntrack_expect", net->proc_net);
+	proc_net_remove(net, "ip_conntrack_expect");
 err2:
-	remove_proc_entry("ip_conntrack", net->proc_net);
+	proc_net_remove(net, "ip_conntrack");
 err1:
 	return -ENOMEM;
 }
@@ -449,8 +449,8 @@ err1:
 static void __net_exit ip_conntrack_net_exit(struct net *net)
 {
 	remove_proc_entry("ip_conntrack", net->proc_net_stat);
-	remove_proc_entry("ip_conntrack_expect", net->proc_net);
-	remove_proc_entry("ip_conntrack", net->proc_net);
+	proc_net_remove(net, "ip_conntrack_expect");
+	proc_net_remove(net, "ip_conntrack");
 }
 
 static struct pernet_operations ip_conntrack_net_ops = {
