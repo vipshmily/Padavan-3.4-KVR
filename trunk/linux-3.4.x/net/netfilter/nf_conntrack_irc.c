@@ -1,7 +1,6 @@
 /* IRC extension for IP connection tracking, Version 1.21
  * (C) 2000-2002 by Harald Welte <laforge@gnumonks.org>
  * based on RR's ip_conntrack_ftp.c
- * (C) 2006-2012 Patrick McHardy <kaber@trash.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,7 +33,6 @@ static DEFINE_SPINLOCK(irc_buffer_lock);
 
 unsigned int (*nf_nat_irc_hook)(struct sk_buff *skb,
 				enum ip_conntrack_info ctinfo,
-				unsigned int protoff,
 				unsigned int matchoff,
 				unsigned int matchlen,
 				struct nf_conntrack_expect *exp) __read_mostly;
@@ -195,8 +193,6 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 
 			exp = nf_ct_expect_alloc(ct);
 			if (exp == NULL) {
-				nf_ct_helper_log(skb, ct,
-						 "cannot alloc expectation");
 				ret = NF_DROP;
 				goto out;
 			}
@@ -209,15 +205,12 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 
 			nf_nat_irc = rcu_dereference(nf_nat_irc_hook);
 			if (nf_nat_irc && ct->status & IPS_NAT_MASK)
-				ret = nf_nat_irc(skb, ctinfo, protoff,
+				ret = nf_nat_irc(skb, ctinfo,
 						 addr_beg_p - ib_ptr,
 						 addr_end_p - addr_beg_p,
 						 exp);
-			else if (nf_ct_expect_related(exp) != 0) {
-				nf_ct_helper_log(skb, ct,
-						 "cannot add expectation");
+			else if (nf_ct_expect_related(exp) != 0)
 				ret = NF_DROP;
-			}
 			nf_ct_expect_put(exp);
 			goto out;
 		}
@@ -228,6 +221,7 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 }
 
 static struct nf_conntrack_helper irc[MAX_PORTS] __read_mostly;
+static char irc_names[MAX_PORTS][sizeof("irc-65535")] __read_mostly;
 static struct nf_conntrack_expect_policy irc_exp_policy;
 
 static void nf_conntrack_irc_fini(void);
@@ -235,6 +229,7 @@ static void nf_conntrack_irc_fini(void);
 static int __init nf_conntrack_irc_init(void)
 {
 	int i, ret;
+	char *tmpname;
 
 	if (max_dcc_channels < 1) {
 		printk(KERN_ERR "nf_ct_irc: max_dcc_channels must not be zero\n");
@@ -260,10 +255,12 @@ static int __init nf_conntrack_irc_init(void)
 		irc[i].me = THIS_MODULE;
 		irc[i].help = help;
 
+		tmpname = &irc_names[i][0];
 		if (ports[i] == IRC_PORT)
-			sprintf(irc[i].name, "irc");
+			sprintf(tmpname, "irc");
 		else
-			sprintf(irc[i].name, "irc-%u", i);
+			sprintf(tmpname, "irc-%u", i);
+		irc[i].name = tmpname;
 
 		ret = nf_conntrack_helper_register(&irc[i]);
 		if (ret) {
