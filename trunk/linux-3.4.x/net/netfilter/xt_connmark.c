@@ -17,7 +17,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #include <linux/module.h>
@@ -26,6 +27,10 @@
 #include <net/netfilter/nf_conntrack_ecache.h>
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_connmark.h>
+
+#if IS_ENABLED(CONFIG_RA_HW_NAT)
+#include "../nat/hw_nat/ra_nat.h"
+#endif
 
 MODULE_AUTHOR("Henrik Nordstrom <hno@marasystems.com>");
 MODULE_DESCRIPTION("Xtables: connection mark operations");
@@ -51,6 +56,11 @@ connmark_tg(struct sk_buff *skb, const struct xt_action_param *par)
 	case XT_CONNMARK_SET:
 		newmark = (ct->mark & ~info->ctmask) ^ info->ctmark;
 		if (ct->mark != newmark) {
+#if IS_ENABLED(CONFIG_RA_HW_NAT)
+#if !defined(CONFIG_RA_HW_NAT_QDMA)
+			FOE_ALG_MARK(skb);
+#endif
+#endif
 			ct->mark = newmark;
 			nf_conntrack_event_cache(IPCT_MARK, ct);
 		}

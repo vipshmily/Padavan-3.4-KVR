@@ -1,6 +1,5 @@
 /* (C) 1999-2001 Paul `Rusty' Russell
  * (C) 2002-2004 Netfilter Core Team <coreteam@netfilter.org>
- * (C) 2006-2012 Patrick McHardy <kaber@trash.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -26,26 +25,26 @@
 #include <net/netfilter/ipv4/nf_conntrack_ipv4.h>
 #include <net/netfilter/ipv6/nf_conntrack_ipv6.h>
 
+enum udp_conntrack {
+	UDP_CT_UNREPLIED,
+	UDP_CT_REPLIED,
+	UDP_CT_MAX
+};
+
 static unsigned int udp_timeouts[UDP_CT_MAX] = {
 	[UDP_CT_UNREPLIED]	= 30*HZ,
 	[UDP_CT_REPLIED]	= 180*HZ,
 };
 
-static inline struct nf_udp_net *udp_pernet(struct net *net)
-{
-	return &net->ct.nf_ct_proto.udp;
-}
-
 static bool udp_pkt_to_tuple(const struct sk_buff *skb,
 			     unsigned int dataoff,
-			     struct net *net,
 			     struct nf_conntrack_tuple *tuple)
 {
 	const struct udphdr *hp;
 	struct udphdr _hdr;
 
-	/* Actually only need first 8 bytes. */
-	hp = skb_header_pointer(skb, dataoff, sizeof(_hdr), &_hdr);
+	/* Actually only need first 4 bytes to get ports. */
+	hp = skb_header_pointer(skb, dataoff, 4, &_hdr);
 	if (hp == NULL)
 		return false;
 
@@ -64,17 +63,17 @@ static bool udp_invert_tuple(struct nf_conntrack_tuple *tuple,
 }
 
 /* Print out the per-protocol part of the tuple. */
-static void udp_print_tuple(struct seq_file *s,
-			    const struct nf_conntrack_tuple *tuple)
+static int udp_print_tuple(struct seq_file *s,
+			   const struct nf_conntrack_tuple *tuple)
 {
-	seq_printf(s, "sport=%hu dport=%hu ",
-		   ntohs(tuple->src.u.udp.port),
-		   ntohs(tuple->dst.u.udp.port));
+	return seq_printf(s, "sport=%hu dport=%hu ",
+			  ntohs(tuple->src.u.udp.port),
+			  ntohs(tuple->dst.u.udp.port));
 }
 
 static unsigned int *udp_get_timeouts(struct net *net)
 {
-	return udp_pernet(net)->timeouts;
+	return udp_timeouts;
 }
 
 /* Returns verdict for packet, and may modify conntracktype */
@@ -121,7 +120,7 @@ static int udp_error(struct net *net, struct nf_conn *tmpl, struct sk_buff *skb,
 	hdr = skb_header_pointer(skb, dataoff, sizeof(_hdr), &_hdr);
 	if (hdr == NULL) {
 		if (LOG_INVALID(net, IPPROTO_UDP))
-			nf_log_packet(net, pf, 0, skb, NULL, NULL, NULL,
+			nf_log_packet(pf, 0, skb, NULL, NULL, NULL,
 				      "nf_ct_udp: short packet ");
 		return -NF_ACCEPT;
 	}
@@ -129,7 +128,7 @@ static int udp_error(struct net *net, struct nf_conn *tmpl, struct sk_buff *skb,
 	/* Truncated/malformed packets */
 	if (ntohs(hdr->len) > udplen || ntohs(hdr->len) < sizeof(*hdr)) {
 		if (LOG_INVALID(net, IPPROTO_UDP))
-			nf_log_packet(net, pf, 0, skb, NULL, NULL, NULL,
+			nf_log_packet(pf, 0, skb, NULL, NULL, NULL,
 				"nf_ct_udp: truncated/malformed packet ");
 		return -NF_ACCEPT;
 	}
@@ -145,7 +144,7 @@ static int udp_error(struct net *net, struct nf_conn *tmpl, struct sk_buff *skb,
 	if (net->ct.sysctl_checksum && hooknum == NF_INET_PRE_ROUTING &&
 	    nf_checksum(skb, hooknum, dataoff, IPPROTO_UDP, pf)) {
 		if (LOG_INVALID(net, IPPROTO_UDP))
-			nf_log_packet(net, pf, 0, skb, NULL, NULL, NULL,
+			nf_log_packet(pf, 0, skb, NULL, NULL, NULL,
 				"nf_ct_udp: bad UDP checksum ");
 		return -NF_ACCEPT;
 	}
@@ -158,15 +157,13 @@ static int udp_error(struct net *net, struct nf_conn *tmpl, struct sk_buff *skb,
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_cttimeout.h>
 
-static int udp_timeout_nlattr_to_obj(struct nlattr *tb[],
-				     struct net *net, void *data)
+static int udp_timeout_nlattr_to_obj(struct nlattr *tb[], void *data)
 {
 	unsigned int *timeouts = data;
-	struct nf_udp_net *un = udp_pernet(net);
 
 	/* set default timeouts for UDP. */
-	timeouts[UDP_CT_UNREPLIED] = un->timeouts[UDP_CT_UNREPLIED];
-	timeouts[UDP_CT_REPLIED] = un->timeouts[UDP_CT_REPLIED];
+	timeouts[UDP_CT_UNREPLIED] = udp_timeouts[UDP_CT_UNREPLIED];
+	timeouts[UDP_CT_REPLIED] = udp_timeouts[UDP_CT_REPLIED];
 
 	if (tb[CTA_TIMEOUT_UDP_UNREPLIED]) {
 		timeouts[UDP_CT_UNREPLIED] =
@@ -203,15 +200,19 @@ udp_timeout_nla_policy[CTA_TIMEOUT_UDP_MAX+1] = {
 #endif /* CONFIG_NF_CT_NETLINK_TIMEOUT */
 
 #ifdef CONFIG_SYSCTL
+static unsigned int udp_sysctl_table_users;
+static struct ctl_table_header *udp_sysctl_header;
 static struct ctl_table udp_sysctl_table[] = {
 	{
 		.procname	= "nf_conntrack_udp_timeout",
+		.data		= &udp_timeouts[UDP_CT_UNREPLIED],
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_jiffies,
 	},
 	{
 		.procname	= "nf_conntrack_udp_timeout_stream",
+		.data		= &udp_timeouts[UDP_CT_REPLIED],
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_jiffies,
@@ -222,12 +223,14 @@ static struct ctl_table udp_sysctl_table[] = {
 static struct ctl_table udp_compat_sysctl_table[] = {
 	{
 		.procname	= "ip_conntrack_udp_timeout",
+		.data		= &udp_timeouts[UDP_CT_UNREPLIED],
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_jiffies,
 	},
 	{
 		.procname	= "ip_conntrack_udp_timeout_stream",
+		.data		= &udp_timeouts[UDP_CT_REPLIED],
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_jiffies,
@@ -236,73 +239,6 @@ static struct ctl_table udp_compat_sysctl_table[] = {
 };
 #endif /* CONFIG_NF_CONNTRACK_PROC_COMPAT */
 #endif /* CONFIG_SYSCTL */
-
-static int udp_kmemdup_sysctl_table(struct nf_proto_net *pn,
-				    struct nf_udp_net *un)
-{
-#ifdef CONFIG_SYSCTL
-	if (pn->ctl_table)
-		return 0;
-	pn->ctl_table = kmemdup(udp_sysctl_table,
-				sizeof(udp_sysctl_table),
-				GFP_KERNEL);
-	if (!pn->ctl_table)
-		return -ENOMEM;
-	pn->ctl_table[0].data = &un->timeouts[UDP_CT_UNREPLIED];
-	pn->ctl_table[1].data = &un->timeouts[UDP_CT_REPLIED];
-#endif
-	return 0;
-}
-
-static int udp_kmemdup_compat_sysctl_table(struct nf_proto_net *pn,
-					   struct nf_udp_net *un)
-{
-#ifdef CONFIG_SYSCTL
-#ifdef CONFIG_NF_CONNTRACK_PROC_COMPAT
-	pn->ctl_compat_table = kmemdup(udp_compat_sysctl_table,
-				       sizeof(udp_compat_sysctl_table),
-				       GFP_KERNEL);
-	if (!pn->ctl_compat_table)
-		return -ENOMEM;
-
-	pn->ctl_compat_table[0].data = &un->timeouts[UDP_CT_UNREPLIED];
-	pn->ctl_compat_table[1].data = &un->timeouts[UDP_CT_REPLIED];
-#endif
-#endif
-	return 0;
-}
-
-static int udp_init_net(struct net *net, u_int16_t proto)
-{
-	int ret;
-	struct nf_udp_net *un = udp_pernet(net);
-	struct nf_proto_net *pn = &un->pn;
-
-	if (!pn->users) {
-		int i;
-
-		for (i = 0; i < UDP_CT_MAX; i++)
-			un->timeouts[i] = udp_timeouts[i];
-	}
-
-	if (proto == AF_INET) {
-		ret = udp_kmemdup_compat_sysctl_table(pn, un);
-		if (ret < 0)
-			return ret;
-
-		ret = udp_kmemdup_sysctl_table(pn, un);
-		if (ret < 0)
-			nf_ct_kfree_compat_sysctl_table(pn);
-	} else
-		ret = udp_kmemdup_sysctl_table(pn, un);
-
-	return ret;
-}
-
-static struct nf_proto_net *udp_get_net_proto(struct net *net)
-{
-	return &net->ct.nf_ct_proto.udp.pn;
-}
 
 struct nf_conntrack_l4proto nf_conntrack_l4proto_udp4 __read_mostly =
 {
@@ -331,8 +267,14 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_udp4 __read_mostly =
 		.nla_policy	= udp_timeout_nla_policy,
 	},
 #endif /* CONFIG_NF_CT_NETLINK_TIMEOUT */
-	.init_net		= udp_init_net,
-	.get_net_proto		= udp_get_net_proto,
+#ifdef CONFIG_SYSCTL
+	.ctl_table_users	= &udp_sysctl_table_users,
+	.ctl_table_header	= &udp_sysctl_header,
+	.ctl_table		= udp_sysctl_table,
+#ifdef CONFIG_NF_CONNTRACK_PROC_COMPAT
+	.ctl_compat_table	= udp_compat_sysctl_table,
+#endif
+#endif
 };
 EXPORT_SYMBOL_GPL(nf_conntrack_l4proto_udp4);
 
@@ -363,7 +305,10 @@ struct nf_conntrack_l4proto nf_conntrack_l4proto_udp6 __read_mostly =
 		.nla_policy	= udp_timeout_nla_policy,
 	},
 #endif /* CONFIG_NF_CT_NETLINK_TIMEOUT */
-	.init_net		= udp_init_net,
-	.get_net_proto		= udp_get_net_proto,
+#ifdef CONFIG_SYSCTL
+	.ctl_table_users	= &udp_sysctl_table_users,
+	.ctl_table_header	= &udp_sysctl_header,
+	.ctl_table		= udp_sysctl_table,
+#endif
 };
 EXPORT_SYMBOL_GPL(nf_conntrack_l4proto_udp6);
