@@ -11,10 +11,12 @@
  *
  * Development of this code funded by Astaro AG (http://www.astaro.com/)
  *
+ * (C) 2006-2012 Patrick McHardy <kaber@trash.net>
+ *
  * Limitations:
  * 	 - We blindly assume that control connections are always
  * 	   established in PNS->PAC direction.  This is a violation
- * 	   of RFFC2673
+ *	   of RFC 2637
  * 	 - We can only support one single call within each session
  * TODO:
  *	 - testing of incoming PPTP calls
@@ -28,6 +30,7 @@
 #include <net/netfilter/nf_conntrack.h>
 #include <net/netfilter/nf_conntrack_core.h>
 #include <net/netfilter/nf_conntrack_helper.h>
+#include <net/netfilter/nf_conntrack_zones.h>
 #include <linux/netfilter/nf_conntrack_proto_gre.h>
 #include <linux/netfilter/nf_conntrack_pptp.h>
 
@@ -44,14 +47,14 @@ static DEFINE_SPINLOCK(nf_pptp_lock);
 int
 (*nf_nat_pptp_hook_outbound)(struct sk_buff *skb,
 			     struct nf_conn *ct, enum ip_conntrack_info ctinfo,
-			     struct PptpControlHeader *ctlh,
+			     unsigned int protoff, struct PptpControlHeader *ctlh,
 			     union pptp_ctrl_union *pptpReq) __read_mostly;
 EXPORT_SYMBOL_GPL(nf_nat_pptp_hook_outbound);
 
 int
 (*nf_nat_pptp_hook_inbound)(struct sk_buff *skb,
 			    struct nf_conn *ct, enum ip_conntrack_info ctinfo,
-			    struct PptpControlHeader *ctlh,
+			    unsigned int protoff, struct PptpControlHeader *ctlh,
 			    union pptp_ctrl_union *pptpReq) __read_mostly;
 EXPORT_SYMBOL_GPL(nf_nat_pptp_hook_inbound);
 
@@ -123,7 +126,7 @@ static void pptp_expectfn(struct nf_conn *ct,
 		pr_debug("trying to unexpect other dir: ");
 		nf_ct_dump_tuple(&inv_t);
 
-		exp_other = nf_ct_expect_find_get(net, &inv_t);
+		exp_other = nf_ct_expect_find_get(net, nf_ct_zone(ct), &inv_t);
 		if (exp_other) {
 			/* delete other expectation.  */
 			pr_debug("found\n");
@@ -140,13 +143,15 @@ static int destroy_sibling_or_exp(struct net *net, struct nf_conn *ct,
 				  const struct nf_conntrack_tuple *t)
 {
 	const struct nf_conntrack_tuple_hash *h;
+	const struct nf_conntrack_zone *zone;
 	struct nf_conntrack_expect *exp;
 	struct nf_conn *sibling;
 
 	pr_debug("trying to timeout ct or exp for tuple ");
 	nf_ct_dump_tuple(t);
 
-	h = nf_conntrack_find_get(net, t);
+	zone = nf_ct_zone(ct);
+	h = nf_conntrack_find_get(net, zone, t);
 	if (h)  {
 		sibling = nf_ct_tuplehash_to_ctrack(h);
 		pr_debug("setting timeout of conntrack %p to 0\n", sibling);
@@ -157,7 +162,7 @@ static int destroy_sibling_or_exp(struct net *net, struct nf_conn *ct,
 		nf_ct_put(sibling);
 		return 1;
 	} else {
-		exp = nf_ct_expect_find_get(net, t);
+		exp = nf_ct_expect_find_get(net, zone, t);
 		if (exp) {
 			pr_debug("unexpect_related of expect %p\n", exp);
 			nf_ct_unexpect_related(exp);
@@ -172,7 +177,7 @@ static int destroy_sibling_or_exp(struct net *net, struct nf_conn *ct,
 static void pptp_destroy_siblings(struct nf_conn *ct)
 {
 	struct net *net = nf_ct_net(ct);
-	const struct nf_conn_help *help = nfct_help(ct);
+	const struct nf_ct_pptp_master *ct_pptp_info = nfct_help_data(ct);
 	struct nf_conntrack_tuple t;
 
 	nf_ct_gre_keymap_destroy(ct);
@@ -180,16 +185,16 @@ static void pptp_destroy_siblings(struct nf_conn *ct)
 	/* try original (pns->pac) tuple */
 	memcpy(&t, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple, sizeof(t));
 	t.dst.protonum = IPPROTO_GRE;
-	t.src.u.gre.key = help->help.ct_pptp_info.pns_call_id;
-	t.dst.u.gre.key = help->help.ct_pptp_info.pac_call_id;
+	t.src.u.gre.key = ct_pptp_info->pns_call_id;
+	t.dst.u.gre.key = ct_pptp_info->pac_call_id;
 	if (!destroy_sibling_or_exp(net, ct, &t))
 		pr_debug("failed to timeout original pns->pac ct/exp\n");
 
 	/* try reply (pac->pns) tuple */
 	memcpy(&t, &ct->tuplehash[IP_CT_DIR_REPLY].tuple, sizeof(t));
 	t.dst.protonum = IPPROTO_GRE;
-	t.src.u.gre.key = help->help.ct_pptp_info.pac_call_id;
-	t.dst.u.gre.key = help->help.ct_pptp_info.pns_call_id;
+	t.src.u.gre.key = ct_pptp_info->pac_call_id;
+	t.dst.u.gre.key = ct_pptp_info->pns_call_id;
 	if (!destroy_sibling_or_exp(net, ct, &t))
 		pr_debug("failed to timeout reply pac->pns ct/exp\n");
 }
@@ -260,14 +265,14 @@ out_unexpect_orig:
 }
 
 static inline int
-pptp_inbound_pkt(struct sk_buff *skb,
+pptp_inbound_pkt(struct sk_buff *skb, unsigned int protoff,
 		 struct PptpControlHeader *ctlh,
 		 union pptp_ctrl_union *pptpReq,
 		 unsigned int reqlen,
 		 struct nf_conn *ct,
 		 enum ip_conntrack_info ctinfo)
 {
-	struct nf_ct_pptp_master *info = &nfct_help(ct)->help.ct_pptp_info;
+	struct nf_ct_pptp_master *info = nfct_help_data(ct);
 	u_int16_t msg;
 	__be16 cid = 0, pcid = 0;
 	typeof(nf_nat_pptp_hook_inbound) nf_nat_pptp_inbound;
@@ -374,7 +379,8 @@ pptp_inbound_pkt(struct sk_buff *skb,
 
 	nf_nat_pptp_inbound = rcu_dereference(nf_nat_pptp_hook_inbound);
 	if (nf_nat_pptp_inbound && ct->status & IPS_NAT_MASK)
-		return nf_nat_pptp_inbound(skb, ct, ctinfo, ctlh, pptpReq);
+		return nf_nat_pptp_inbound(skb, ct, ctinfo,
+					   protoff, ctlh, pptpReq);
 	return NF_ACCEPT;
 
 invalid:
@@ -387,14 +393,14 @@ invalid:
 }
 
 static inline int
-pptp_outbound_pkt(struct sk_buff *skb,
+pptp_outbound_pkt(struct sk_buff *skb, unsigned int protoff,
 		  struct PptpControlHeader *ctlh,
 		  union pptp_ctrl_union *pptpReq,
 		  unsigned int reqlen,
 		  struct nf_conn *ct,
 		  enum ip_conntrack_info ctinfo)
 {
-	struct nf_ct_pptp_master *info = &nfct_help(ct)->help.ct_pptp_info;
+	struct nf_ct_pptp_master *info = nfct_help_data(ct);
 	u_int16_t msg;
 	__be16 cid = 0, pcid = 0;
 	typeof(nf_nat_pptp_hook_outbound) nf_nat_pptp_outbound;
@@ -469,7 +475,8 @@ pptp_outbound_pkt(struct sk_buff *skb,
 
 	nf_nat_pptp_outbound = rcu_dereference(nf_nat_pptp_hook_outbound);
 	if (nf_nat_pptp_outbound && ct->status & IPS_NAT_MASK)
-		return nf_nat_pptp_outbound(skb, ct, ctinfo, ctlh, pptpReq);
+		return nf_nat_pptp_outbound(skb, ct, ctinfo,
+					    protoff, ctlh, pptpReq);
 	return NF_ACCEPT;
 
 invalid:
@@ -504,7 +511,7 @@ conntrack_pptp_help(struct sk_buff *skb, unsigned int protoff,
 
 {
 	int dir = CTINFO2DIR(ctinfo);
-	const struct nf_ct_pptp_master *info = &nfct_help(ct)->help.ct_pptp_info;
+	const struct nf_ct_pptp_master *info = nfct_help_data(ct);
 	const struct tcphdr *tcph;
 	struct tcphdr _tcph;
 	const struct pptp_pkt_hdr *pptph;
@@ -568,11 +575,11 @@ conntrack_pptp_help(struct sk_buff *skb, unsigned int protoff,
 	 * established from PNS->PAC.  However, RFC makes no guarantee */
 	if (dir == IP_CT_DIR_ORIGINAL)
 		/* client -> server (PNS -> PAC) */
-		ret = pptp_outbound_pkt(skb, ctlh, pptpReq, reqlen, ct,
+		ret = pptp_outbound_pkt(skb, protoff, ctlh, pptpReq, reqlen, ct,
 					ctinfo);
 	else
 		/* server -> client (PAC -> PNS) */
-		ret = pptp_inbound_pkt(skb, ctlh, pptpReq, reqlen, ct,
+		ret = pptp_inbound_pkt(skb, protoff, ctlh, pptpReq, reqlen, ct,
 				       ctinfo);
 	pr_debug("sstate: %d->%d, cstate: %d->%d\n",
 		 oldsstate, info->sstate, oldcstate, info->cstate);
@@ -590,6 +597,7 @@ static const struct nf_conntrack_expect_policy pptp_exp_policy = {
 static struct nf_conntrack_helper pptp __read_mostly = {
 	.name			= "pptp",
 	.me			= THIS_MODULE,
+	.data_len		= sizeof(struct nf_ct_pptp_master),
 	.tuple.src.l3num	= AF_INET,
 	.tuple.src.u.tcp.port	= cpu_to_be16(PPTP_CONTROL_PORT),
 	.tuple.dst.protonum	= IPPROTO_TCP,

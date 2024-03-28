@@ -16,10 +16,6 @@
 #include <linux/netfilter/xt_mark.h>
 #include <linux/netfilter/x_tables.h>
 
-#if IS_ENABLED(CONFIG_RA_HW_NAT)
-#include "../nat/hw_nat/ra_nat.h"
-#endif
-
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marc Boucher <marc@mbsi.ca>");
 MODULE_DESCRIPTION("Xtables: packet mark operations");
@@ -27,20 +23,14 @@ MODULE_ALIAS("ipt_mark");
 MODULE_ALIAS("ip6t_mark");
 MODULE_ALIAS("ipt_MARK");
 MODULE_ALIAS("ip6t_MARK");
+MODULE_ALIAS("arpt_MARK");
 
 static unsigned int
 mark_tg(struct sk_buff *skb, const struct xt_action_param *par)
 {
 	const struct xt_mark_tginfo2 *info = par->targinfo;
 
-#if IS_ENABLED(CONFIG_RA_HW_NAT)
-#if !defined(CONFIG_RA_HW_NAT_QDMA)
-	FOE_ALG_MARK(skb);
-#endif
-#endif
-
 	skb->mark = (skb->mark & ~info->mask) ^ info->mark;
-
 	return XT_CONTINUE;
 }
 
