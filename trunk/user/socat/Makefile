@@ -3,7 +3,7 @@ SRC_URL = http://www.dest-unreach.org/socat/download/$(SRC_NAME).tar.bz2
 THISDIR = $(shell pwd)
 
 all: download_test extract_test config_test
-	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) CC=$(CONFIG_CROSS_COMPILER_ROOT)/bin/mipsel-linux-uclibc-gcc
 
 download_test:
 	( if [ ! -f $(SRC_NAME).tar.bz2 ]; then \

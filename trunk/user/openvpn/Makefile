@@ -1,5 +1,5 @@
-SRC_NAME=openvpn-2.6.10
-SRC_URL = https://github.com/OpenVPN/openvpn/archive/refs/tags/v2.6.10.tar.gz
+SRC_NAME=openvpn-2.5.9
+SRC_URL = https://github.com/OpenVPN/openvpn/archive/refs/tags/v2.5.9.tar.gz
 
 CFLAGS += -ffunction-sections -fdata-sections -fvisibility=hidden
 LDFLAGS += -Wl,--gc-sections

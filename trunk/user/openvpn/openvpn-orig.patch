@@ -3,9 +3,9 @@
 @@ -53,7 +53,7 @@ BUILT_SOURCES = \
  	config-version.h
  endif
- 
+
 -SUBDIRS = build distro include src sample doc tests
 +SUBDIRS = build distro include src
- 
+
  dist_doc_DATA = \
  	README \
