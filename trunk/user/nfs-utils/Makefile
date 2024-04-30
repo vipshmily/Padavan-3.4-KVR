@@ -58,7 +58,7 @@ clean:
 	rm -f config_done
 
 romfs:
-	$(ROMFSINST) /usr/bin/nfsd.sh
+	$(ROMFSINST) -p +x /usr/bin/nfsd.sh
 	$(ROMFSINST) $(SRC_NAME)/utils/exportfs/exportfs /sbin/exportfs
 	$(ROMFSINST) $(SRC_NAME)/utils/nfsd/nfsd /sbin/rpc.nfsd
 	$(ROMFSINST) $(SRC_NAME)/utils/mountd/mountd /sbin/rpc.mountd

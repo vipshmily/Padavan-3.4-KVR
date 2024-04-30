@@ -35,7 +35,7 @@ usage() {
 		    -w <wan_ips>            wan ip of will be forwarded
 		    -p <fp_lan_ips>         lan ip of will be global proxy
 		    -G <gm_lan_ips>         lan ip of will be game mode proxy
-			-D <proxy_ports>        proxy ports
+		    -D <proxy_ports>        proxy ports
 		    -e <extra_options>      extra options for iptables
 		    -o                      apply the rules to the OUTPUT chain
 		    -O                      apply the global rules to the OUTPUT chain
@@ -76,6 +76,7 @@ flush_r() {
 	ipset -X china 2>/dev/null
 	ipset -X fplan 2>/dev/null
 	ipset -X gmlan 2>/dev/null
+	ipset -X gfwlist 2>/dev/null
 	ipset -X oversea 2>/dev/null
 	ipset -X blacklist 2>/dev/null
 	ipset -X whitelist 2>/dev/null
@@ -87,6 +88,7 @@ ipset_r() {
     mkdir -p /tmp/dnsmasq.dom
 	ipset -N china hash:net 2>/dev/null
 	ipset -N gmlan hash:net 2>/dev/null
+	ipset -N gfwlist hash:net 2>/dev/null
 	for ip in $LAN_GM_IP; do ipset -! add gmlan $ip; done
 	$ipt_n -N SS_SPEC_WAN_AC
 	$ipt_n -I SS_SPEC_WAN_AC -p tcp ! --dport 53 -d $server -j RETURN
@@ -106,9 +108,9 @@ EOF
 	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -m set ! --match-set china dst -j SS_SPEC_WAN_FW
 	$ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW
 	$ipt_n -I PREROUTING $SSNU -j SS_SPEC_WAN_AC
-	if [ ! -f "/etc/storage/gfwlist/gfwlist_listnew.conf" ] ; then
+	if [ ! -f "/etc/storage/gfwlist/gfwlist_list.conf" ] ; then
 	mkdir -p /etc/storage/gfwlist
-	cp -rf /etc_ro/gfwlist_list.conf /etc/storage/gfwlist/gfwlist_listnew.conf
+	cp -rf /etc_ro/gfwlist_list.conf /etc/storage/gfwlist/gfwlist_list.conf
 	fi
 	if [ ! -f "/tmp/dnsmasq.dom/gfwlist_list.conf" ] ; then
 	lua /etc_ro/ss/gfwcreate.lua
@@ -120,9 +122,9 @@ EOF
 	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -m set ! --match-set china dst -j SS_SPEC_WAN_FW
 	$ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW # gfwlist ipset几乎没有，必须加！[simonchen]
 	$ipt_n -I PREROUTING $SSNU -j SS_SPEC_WAN_AC
-	if [ ! -f "/etc/storage/gfwlist/gfwlist_listnew.conf" ] ; then
+	if [ ! -f "/etc/storage/gfwlist/gfwlist_list.conf" ] ; then
 	mkdir -p /etc/storage/gfwlist
-	cp -rf /etc_ro/gfwlist_list.conf /etc/storage/gfwlist/gfwlist_listnew.conf
+	cp -rf /etc_ro/gfwlist_list.conf /etc/storage/gfwlist/gfwlist_list.conf
 	fi
 	if [ ! -f "/tmp/dnsmasq.dom/gfwlist_list.conf" ] ; then
 	lua /etc_ro/ss/gfwcreate.lua
@@ -147,7 +149,7 @@ EOF
 	awk '{printf("ipset=/%s/blacklist\n", $1, $1 )}' /tmp/ss_dom.txt > /tmp/dnsmasq.dom/ss_dom.conf
 	cat /etc/storage/uss_dom.sh | grep -v '^!' | grep -v "^$" > /tmp/uss_dom.txt
 	awk '{printf("ipset=/%s/whitelist\n", $1, $1 )}' /tmp/uss_dom.txt > /tmp/dnsmasq.dom/uss_dom.conf
-    rm -f /tmp/ss_dom.txt
+	rm -f /tmp/ss_dom.txt
 	rm -f /tmp/uss_dom.txt
 	$ipt_n -I SS_SPEC_WAN_AC 2 -m set --match-set blacklist dst -j SS_SPEC_WAN_FW
 	$ipt_n -I SS_SPEC_WAN_AC 2 -m set --match-set whitelist dst -j RETURN
@@ -380,7 +382,7 @@ while getopts ":s:l:S:L:i:e:a:b:w:p:G:D:k:oOuUfgrczh" arg; do
 			LAN_GM_IP=$(while read ip; do echo $ip; done < $OPTARG)
 			;;
 		D)
-		    PROXY_PORTS=$OPTARG
+			PROXY_PORTS=$OPTARG
 			;;
 		o)
 			OUTPUT=SS_SPEC_WAN_AC

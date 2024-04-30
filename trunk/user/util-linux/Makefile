@@ -1,4 +1,4 @@
-SRC_NAME=util-linux-2.39.3
+SRC_NAME=util-linux-2.39.4
 SRC_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.39/$(SRC_NAME).tar.xz
 
 THISDIR = $(shell pwd)

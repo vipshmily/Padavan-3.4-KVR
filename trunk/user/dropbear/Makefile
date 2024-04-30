@@ -1,4 +1,4 @@
-SRC_NAME=dropbear-2022.83
+SRC_NAME=dropbear-2024.85
 SRC_URL=https://matt.ucc.asn.au/dropbear/$(SRC_NAME).tar.bz2
 
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SFTP),y)
@@ -23,7 +23,7 @@ download_test:
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
 		tar xjf $(SRC_NAME).tar.bz2; \
-		patch -d $(SRC_NAME) -p1 -i ../100-update-default-host-keys-path.patch; \
+		patch -d $(SRC_NAME) -p1 -i ../001-firmware-specific.patch; \
 	fi )
 
 config_test:

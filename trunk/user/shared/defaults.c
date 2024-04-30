@@ -34,7 +34,8 @@ struct nvram_pair router_defaults[] = {
 
 	/* Miscellaneous parameters */
 	{ "time_zone", DEF_TIMEZONE },
-	{ "log_float_ui", "1" },		/* WebUI syslog float panel mode */
+        { "preferred_lang", "CN" },
+	{ "log_float_ui", "0" },		/* WebUI syslog float panel mode */
 	{ "log_ipaddr", "" },			/* syslog recipient IP */
 	{ "log_port", "514" },			/* syslog recipient Port */
 	{ "log_level", "0" },			/* Bitmask 0:off 1:denied 2:accepted */
@@ -201,7 +202,7 @@ struct nvram_pair router_defaults[] = {
 	{ "wl_TxBurst", "1" },
 	{ "wl_PktAggregate", "1" },
 	{ "wl_APSDCapable", "0" },
-	{ "wl_HT_OpMode", "0" },
+	{ "wl_HT_OpMode", "1" },
 #if BOARD_HAS_5G_11AC
 	{ "wl_HT_BW", "2" },
 #else
@@ -292,7 +293,7 @@ struct nvram_pair router_defaults[] = {
 	{ "rt_mode", "ap" },
 	{ "rt_HT_BW", "1" },
 	{ "rt_HT_EXTCHA", "1" },
-	{ "rt_HT_OpMode", "0" },
+	{ "rt_HT_OpMode", "1" },
 	{ "rt_wme", "1" },
 	{ "rt_wme_no_ack", "off" },
 	{ "rt_IgmpSnEnable", "1" },
@@ -332,10 +333,10 @@ struct nvram_pair router_defaults[] = {
 	{ "rt_preamble", "1" },
 	{ "rt_greenap", "0" },                 /* 2G GreenAP */
 	{ "rt_HT_RDG", "0" },
-	{ "rt_HT_AMSDU", "0" },
-	{ "rt_HT_MpduDensity", "5" },
+	{ "rt_HT_AMSDU", "1" },
 	{ "rt_HT_80211KV", "1" },
 	{ "rt_HT_80211R", "0" },
+	{ "rt_HT_MpduDensity", "5" },
 #if defined (USE_WID_2G) && (USE_WID_2G==7615 || USE_WID_2G==7915)
 	{ "rt_HT_BAWinSize", "256" },
 	{ "rt_ldpc", "1" },
@@ -746,17 +747,24 @@ struct nvram_pair router_defaults[] = {
 	{ "sdns_ipv6_server", "0" },
 	{ "sdns_ip_change", "0" },
 	{ "sdns_ip_change_time", "30" },
-	{ "sdns_ipv6", "0" },
-	{ "sdns_www", "0" },
-	{ "sdns_www", "0" },
-	{ "sdns_exp", "0" },
-	{ "sdns_redirect", "0" },
-	{ "sdns_cache", "0" },
+	{ "sdns_ipv6", "1" },
+	{ "sdns_www", "1" },
+	{ "sdns_exp", "1" },
+	{ "sdns_exp_ttl", "0" },
+	{ "sdns_exp_ttl_max", "10" },
+	{ "sdns_cache_persist", "1" },
+	{ "sdns_redirect", "1" },
+	{ "sdns_cache", "5120" },
 	{ "sdns_ttl", "300" },
 	{ "sdns_ttl_min", "60" },
-	{ "sdns_ttl_max", "86400" },
+	{ "sdns_ttl_max", "3600" },
 	{ "sdns_coredump", "0" },
 	{ "sdnss_staticnum_x", "0" },
+	{ "sdns_speed", "0" },
+	{ "sdns_address", "0" },
+	{ "sdns_as", "0" },
+	{ "sdns_ipset", "0" },
+	{ "sdns_ns", "0" },
 	{ "sdnse_enable", "0" },
 	{ "sdnse_port", "7053" },
 	{ "sdnse_tcp", "0" },
@@ -768,10 +776,15 @@ struct nvram_pair router_defaults[] = {
 	{ "sdnse_as", "0" },
 	{ "sdnse_ipc", "0" },
 	{ "sdnse_cache", "0" },
+	{ "sdns_adblock", "0" },
+	{ "sdns_adblock_url", "https://anti-ad.net/anti-ad-for-smartdns.conf" },
 	{ "ss_white", "0" },
 	{ "ss_black", "0" },
+	{ "sdns_change", "2" },
+	{ "sdns_change1", "2" },
+	{ "sdns_change2", "2" },
 #endif
-	
+
 #if defined(APP_WYY)
 	/*UnblockNeteaseMusic*/
 	{ "wyy_enable", "0" },
@@ -841,53 +854,6 @@ struct nvram_pair router_defaults[] = {
 	{ "sqm_script", "simple" },
 #endif
 
-#if defined(APP_SMARTDNS)
-	/*SmartDns*/
-	{ "sdns_enable", "0" },
-	{ "sdns_name", "smartdns" },
-	{ "sdns_port", "6053" },
-	{ "sdns_tcp_server", "0" },
-	{ "sdns_ipv6_server", "0" },
-	{ "sdns_ip_change", "0" },
-	{ "sdns_ip_change_time", "30" },
-	{ "sdns_ipv6", "1" },
-	{ "sdns_www", "1" },
-	{ "sdns_exp", "1" },
-	{ "sdns_exp_ttl", "0" },
-	{ "sdns_exp_ttl_max", "10" },
-	{ "sdns_cache_persist", "1" },
-	{ "sdns_redirect", "1" },
-	{ "sdns_cache", "5120" },
-	{ "sdns_ttl", "21600" },
-	{ "sdns_ttl_min", "1800" },
-	{ "sdns_ttl_max", "86400" },
-	{ "sdns_coredump", "0" },
-	{ "sdnss_staticnum_x", "0" },
-	{ "sdns_speed", "0" },
-	{ "sdns_address", "0" },
-	{ "sdns_as", "0" },
-	{ "sdns_ipset", "0" },
-	{ "sdns_ns", "0" },
-	{ "sdnse_enable", "0" },
-	{ "sdnse_port", "7053" },
-	{ "sdnse_tcp", "0" },
-	{ "sdnse_speed", "0" },
-	{ "sdnse_name", "" },
-	{ "sdnse_address", "0" },
-	{ "sdnse_ns", "0" },
-	{ "sdnse_ipset", "0" },
-	{ "sdnse_as", "0" },
-	{ "sdnse_ipc", "0" },
-	{ "sdnse_cache", "0" },
-	{ "sdns_adblock", "0" },
-	{ "sdns_adblock_url", "https://anti-ad.net/anti-ad-for-smartdns.conf" },
-	{ "ss_white", "0" },
-	{ "ss_black", "0" },
-	{ "sdns_change", "2" },
-	{ "sdns_change1", "2" },
-	{ "sdns_change2", "2" },
-#endif
-
 	/* DHCP server parameters */
 	{ "dhcp_start", DEF_LAN_DHCP_BEG },	/* First assignable DHCP address */
 	{ "dhcp_end", DEF_LAN_DHCP_END },	/* Last assignable DHCP address */
@@ -936,8 +902,6 @@ struct nvram_pair router_defaults[] = {
 	{ "ddns2_pass", "" },
 	{ "ddns2_ssl", "0" },
 	{ "asusddns_tos_agreement", "0" },
-
-	{ "preferred_lang", "CN" },
 
 	{ "modem_rule", "0" },
 	{ "modem_prio", "1" },
@@ -1018,7 +982,7 @@ struct nvram_pair router_defaults[] = {
 	{ "wol_mac_last", "" },
 	{ "gw_arp_ping", "0" },
 	{ "ez_action_short", "0" },
-#if defined(BOARD_CR660x)
+#if defined(BOARD_K2P)
 	{ "ez_action_long", "15" },		/* Reset */
 #else
 	{ "ez_action_long", "0" },

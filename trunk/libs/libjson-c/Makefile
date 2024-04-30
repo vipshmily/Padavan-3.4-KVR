@@ -1,5 +1,5 @@
 SRC_NAME=json-c-json-c-0.17-20230812
-SRC_URL=https://codeload.github.com/json-c/json-c/tar.gz/refs/tags/json-c-0.17-20230812
+SRC_URL=https://github.com/json-c/json-c/archive/refs/tags/json-c-json-c-0.17-20230812.tar.gz
 ARCHIVE_NAME=json-c-json-c-0.17-20230812
 
 all: download_test extract_test config_test
@@ -13,6 +13,7 @@ download_test:
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
 		tar zxf $(ARCHIVE_NAME).tar.gz; \
+		patch -p1 -d $(SRC_NAME) < json-c-0.17.patch; \
 	fi )
 
 config_test:
@@ -23,22 +24,20 @@ config_test:
 	fi )
 
 configure:
-	( cd $(SRC_NAME) ; \
-	mkdir build; \
-	cd build; \
-	../cmake-configure \
-		--prefix=$(STAGEDIR) \
-		--enable-static \
-		--enable-shared ; \
+	( mkdir -p $(SRC_NAME)/build && cd $(SRC_NAME)/build ; \
+	cmake -DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX=$(STAGEDIR) \
+	-DCMAKE_TOOLCHAIN_FILE=$(CONFIG_CMAKE_TOOLCHAIN_FILE) \
+	-DDISABLE_EXTRA_LIBS=TRUE \
+	.. \
 	)
 
 clean:
-	( rm -f $(SRC_NAME) ; \
-	rm -f config_done ; \
-	)
+	rm -rf $(SRC_NAME)/build
+	rm -f config_done
 
 install:
 	$(MAKE) -C $(SRC_NAME)/build install DESTDIR=""
 
 romfs:
-	cp -fP $(SRC_NAME)/build/libjson-c.so* $(ROMFSDIR)/lib
+	cp -fP $(DESTDIR)/lib/libjson-c.so* $(ROMFSDIR)/lib

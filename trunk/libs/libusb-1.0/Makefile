@@ -13,6 +13,7 @@ download_test:
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
 		tar jxf $(SRC_NAME).tar.bz2; \
+		patch -d $(SRC_NAME) -p1 -i ../specifig.patch; \
 	fi )
 
 config_test:

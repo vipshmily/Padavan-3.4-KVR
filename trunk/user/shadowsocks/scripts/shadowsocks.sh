@@ -34,6 +34,8 @@ run_mode=`nvram get ss_run_mode`
 lan_con=`nvram get lan_con`
 GLOBAL_SERVER=`nvram get global_server`
 socks=""
+SS_RULES=/usr/bin/ss-rules
+[ -x /etc/storage/ss-rules ] && SS_RULES=/etc/storage/ss-rules
 
 log() {
 	logger -t "$NAME" "$@"
@@ -150,7 +152,8 @@ get_arg_out() {
 start_rules() {
     log "正在添加防火墙规则..."
 	lua /etc_ro/ss/getconfig.lua $GLOBAL_SERVER > /tmp/server.txt
-	server=`cat /tmp/server.txt` 
+	server=`cat /tmp/server.txt`
+	rm -f /tmp/server.txt
 	cat /etc/storage/ss_ip.sh | grep -v '^!' | grep -v "^$" >$wan_fw_ips
 	cat /etc/storage/ss_wan_ip.sh | grep -v '^!' | grep -v "^$" >$wan_bp_ips
 	#resolve name
@@ -174,7 +177,8 @@ start_rules() {
 	if [ "$UDP_RELAY_SERVER" != "nil" ]; then
 		ARG_UDP="-U"
 		lua /etc_ro/ss/getconfig.lua $UDP_RELAY_SERVER > /tmp/userver.txt
-	    udp_server=`cat /tmp/userver.txt` 
+		udp_server=`cat /tmp/userver.txt`
+		rm -f /tmp/userver.txt
 		udp_local_port="1080"
 	fi
 	if [ -n "$lan_ac_ips" ]; then
@@ -196,7 +200,7 @@ start_rules() {
 	if [ "$lan_con" = "0" ]; then
 		rm -f $lan_fp_ips
 		lancon="all"
-		lancons="全部IP走代理！"
+		lancons="全部IP走代理..."
 		cat /etc/storage/ss_lan_ip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
 	elif [ "$lan_con" = "1" ]; then
 		rm -f $lan_fp_ips
@@ -212,7 +216,7 @@ start_rules() {
 	else
 		proxyport="-m multiport --dports 22,53,587,465,995,993,143,80,443,3389 --syn"
 	fi
-	/usr/bin/ss-rules \
+	$SS_RULES \
 		-s "$server" \
 		-l "$local_port" \
 		-S "$udp_server" \
@@ -240,7 +244,7 @@ start_redir_tcp() {
 	else
 		threads=$(nvram get ss_threads)
 	fi
-	log "启动 $stype 主服务器..."
+	log "正在启动 $stype 服务器..."
 	case "$stype" in
 	ss | ssr)
 		last_config_file=$CONFIG_FILE
@@ -257,15 +261,15 @@ start_redir_tcp() {
 			run_bin $bin --config $trojan_json_file
 			usleep 500000
 		done
-		log "$($bin --version 2>&1 | head -1) 启动成功!"
+		log "$($bin --version 2>&1 | head -1) 启动成功！"
 		;;
 	v2ray)
 		run_bin $bin -config $v2_json_file
-		log "$($bin -version | head -1) 启动成功!"
+		log "$($bin -version | head -1) 启动成功！"
 		;;
 	xray)
 		run_bin $bin -config $v2_json_file
-		log "$($bin -version | head -1) 启动成功!"
+		log "$($bin -version | head -1) 启动成功！"
 		;;	
 	socks5)
 		for i in $(seq 1 $threads); do
@@ -281,7 +285,7 @@ start_redir_udp() {
 	if [ "$UDP_RELAY_SERVER" != "nil" ]; then
 		redir_udp=1
 		utype=$(nvram get ud_type)
-		log "启动 $utype 游戏 UDP 中继服务器..."
+		log "正在启动 $utype 游戏 UDP 中继服务器..."
 		local bin=$(find_bin $utype)
 		[ ! -f "$bin" ] && log "UDP TPROXY Relay:Can't find $bin program, can't start!" && return 1
 		case "$utype" in
@@ -393,7 +397,7 @@ EOF
 		stop_dns_proxy
 		start_dns_proxy
 		start_chinadns
-		log "开始处理 gfwlist..."
+		log "开始处理 GFWList..."
 		;;
 	oversea)
 		ipset add gfwlist $dnsserver 2>/dev/null
@@ -545,7 +549,7 @@ ssp_start() {
 
 ssp_close() {
 	rm -rf /tmp/cdn
-	/usr/bin/ss-rules -f
+	$SS_RULES -f
 	kill -9 $(ps | grep ss-monitor | grep -v grep | awk '{print $1}') >/dev/null 2>&1
 	kill_process
 	cgroups_cleanup
@@ -575,7 +579,7 @@ clear_iptable() {
 kill_process() {
 	v2ray_process=$(pidof v2ray || pidof xray)
 	if [ -n "$v2ray_process" ]; then
-		log "关闭 xray 进程..."
+		log "关闭 Xray 进程..."
 		killall v2ray xray >/dev/null 2>&1
 		kill -9 "$v2ray_process" >/dev/null 2>&1
 	fi
@@ -657,7 +661,7 @@ kill_process() {
 	fi
 }
 
-# ================================= 重启 SS ===============================
+# ================================= 启用备用服务器 ===============================
 ressp() {
 	BACKUP_SERVER=$(nvram get backup_server)
 	start_redir $BACKUP_SERVER
@@ -667,15 +671,15 @@ ressp() {
 	start_watchcat
 	auto_update
 	ENABLE_SERVER=$(nvram get global_server)
-	log "备用服务器启动成功"
+	log "备用服务器启动成功！"
 	log "内网IP控制为: $lancons"
 }
 
 case $1 in
 start)
     ss_adblock=$(nvram get ss_adblock)
-        if [ $(nvram get ss_adblock) = "1" ]; then
-            Start_AD
+    if [ $(nvram get ss_adblock) = "1" ]; then
+        Start_AD
     fi
 	ssp_start
 	;;

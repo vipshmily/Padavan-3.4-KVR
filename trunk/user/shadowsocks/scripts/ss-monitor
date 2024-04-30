@@ -67,7 +67,7 @@ do
 	if [ $redir_tcp_process -gt 0 ] ;then
 		icount=`ps -w | grep ssr-retcp | grep -v grep | wc -l`
 		if [ $icount = 0 ] ;then
-			log "检测到SS进程挂掉，重新启动!"
+			log "检测到 SS 进程挂掉，正在重启..."
 			/usr/bin/shadowsocks.sh restart 
 			exit 0
 		fi
@@ -76,7 +76,7 @@ do
 	if [ $redir_udp_process -gt 0 ] ;then
 		icount=`ps -w | grep ssr-reudp | grep -v grep | wc -l`
 		if [ $icount = 0 ] ;then
-			log "检测到SS进程挂掉，重新启动!"
+			log "检测到 SS 进程挂掉，正在重启..."
 			/usr/bin/shadowsocks.sh restart  
 			exit 0
 		fi
@@ -103,10 +103,10 @@ do
 		icount=`ps -w | grep $bin | grep -v grep| wc -l`
 		if [ $icount -lt $v2ray_process ]  #如果进程挂掉就重启它
 		then
-			log "检测到 $bin 进程挂掉，重新启动!"
+			log "检测到 $bin 进程挂掉，正在重启..."
 			killall -q -9 $bin
 			run_bin /usr/bin/$bin --config $conf
-		fi   
+		fi
 	fi
 	#local
 	if [ $local_process -gt 0 ] ;then
@@ -116,7 +116,7 @@ do
 			log "ssr local error.restart!"
 			/usr/bin/shadowsocks.sh restart
 			exit 0
-		fi   
+		fi
 	fi
 	#dnsproxy
 	if [ $pdnsd_process = 0 ] ;then
@@ -126,7 +126,7 @@ do
 			log "dnsproxy is restarted!"
 			stop_dns_proxy
 			start_dns_proxy
-		fi   
+		fi
 	fi
 	#dns2tcp
 	if [ $pdnsd_process = 1 ] ;then
@@ -136,8 +136,8 @@ do
 			log "dns2tcp is restarted!"
 			stop_dns_proxy
 			start_dns_proxy
-		fi   
-	fi      
+		fi
+	fi
 	#chinadns-ng
 	if [ $chinadnsng_process -gt 0 ] ;then
 		icount=`ps -w | grep chinadns-ng | grep -v grep | wc -l`
@@ -163,6 +163,6 @@ do
 no-resolv
 server=127.0.0.1#65353
 EOF
-		fi   
+		fi
 	fi
 done
