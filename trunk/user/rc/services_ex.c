@@ -415,6 +415,11 @@ start_dns_dhcpd(int is_ap_mode)
 		else if (nvram_get_int("wins_enable"))
 			fprintf(fp, "dhcp-option=tag:%s,%d,%s\n", DHCPD_RANGE_DEF_TAG, 44, ipaddr);
 #endif
+#if defined(APP_VLMCSD)
+		int vlmcsd_mode = nvram_get_int("vlmcsd_enable");
+		if ( vlmcsd_mode == 1)	
+			fprintf(fp, "srv-host=%s.%s,%s,%d\n", "_VLMCS", "_tcp", ipaddr, 1688);
+#endif
 		if (i_verbose == 0 || i_verbose == 2)
 			fprintf(fp, "quiet-dhcp\n");
 		
