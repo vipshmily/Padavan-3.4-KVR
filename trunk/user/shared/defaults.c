@@ -154,9 +154,9 @@ struct nvram_pair router_defaults[] = {
 	{ "http_lanport", "80" },		/* HTTP LAN port to listen on */
 	{ "https_lport", "443" },		/* HTTPS LAN port to listen on */
 	{ "https_clist", DEF_HTTPS_CIPH_LIST },	/* HTTPS SSL cipher list */
-	{ "fw_dos_x", "0" },			// oleg patch
-	{ "dr_enable_x", "1" },			// oleg patch
-	{ "mr_enable_x", "1" },			// oleg patch
+	{ "fw_dos_x", "0" },			/* DoS Attacks Protection */
+	{ "dr_enable_x", "1" },			/* Use DHCP Routes */
+	{ "mr_enable_x", "1" },			/* Multicast Routing to LAN */
 	{ "mr_qleave_x", "1" },
 
 #if BOARD_HAS_5G_RADIO
@@ -1013,11 +1013,9 @@ struct nvram_pair router_defaults[] = {
 	{ "ether_uport", "0" },		/* WAN port in AP mode is static upstream by default */
 	{ "ether_m2u", "2" },
 	{ "ether_green", "1" },
-#if defined(USE_RTL8367)
+	{ "ether_eee", "0" },
 	{ "ether_jumbo", "1" },
-#else
-	{ "ether_jumbo", "0" },
-#endif
+	
 #if (BOARD_NUM_ETH_LEDS > 1)
 	{ "ether_led0", "3" },
 #else

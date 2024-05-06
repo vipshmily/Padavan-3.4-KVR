@@ -549,6 +549,7 @@ void start_vlmcsd(void);
 void restart_vlmcsd(void);
 #endif
 #if defined(APP_IPERF3)
+int is_iperf3_run(void);
 void stop_iperf3(void);
 void start_iperf3(void);
 void restart_iperf3(void);

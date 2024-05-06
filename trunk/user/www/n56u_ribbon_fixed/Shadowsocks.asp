@@ -1557,9 +1557,9 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 											<div id="tabMenu" class="submenuBlock"></div>
 											<div id="wnd_ss_cfg">
 												<div class="alert alert-info" style="margin: 10px;">一个兼容Shadowsocks、ShadowsocksR 、Vmess、Vless、Trojan、Sock5协议的游戏加速工具。
-													<div><span style="color:#E53333;">注意:</span></div>
-													<div><span style="color:#E53333;">若被编辑的节点正在运行使用，请完成后点击“应用设置”更新节点信息并重连</span></div>
-													<div><span style="color:#E53333;">运行状态不会实时更新，启动节点后需等待一段时间手动 <input type="button" id="btn_reconnect" class="btn btn-info" value="刷新页面" onclick="window.location.reload();" tabindex="1"> 获取运行状态</span></div>
+													<div><span style="color:#E53333;">注意：</span></div>
+													<div><span style="color:#E53333;">若被编辑的节点正在运行使用，请完成后点击“应用设置”按钮更新节点信息，并点击"重连"按钮重新连接。</span></div>
+													<div><span style="color:#E53333;">运行状态不会实时更新，启动程序后需稍等片刻后，点击"刷新"按钮重新获取运行状态。</span></div>
 												</div>
 												<table width="100%" cellpadding="4" cellspacing="0" class="table">
 													<tr>
@@ -2406,8 +2406,11 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 														</td>
 													</tr>
 													<tr>
-														<td style="padding-bottom: 0px;">
-															<center><input type="button" id="btn_reconnect" class="btn btn-info" style="width: 200px" value="刷新日志" onclick="window.location.reload();"></center>
+														<td>
+															<center>
+																<input type="button" id="btn_clearLog" class="btn btn-info" style="width: 200px" value=<#CTL_clear#> onClick="clearLog();">
+																<input type="button" id="btn_reconnect" class="btn btn-info" style="width: 200px" value=<#CTL_refresh#> onclick="window.location.reload();">
+															</center>
 														</td>
 													</tr>
 												</table>
@@ -2430,7 +2433,7 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 														<th width="100%">进程资源限制是为了防止进程占用过多资源导致路由器卡顿或重启,如果你的路由器配置足够,可以适当调高限制值。</th>
 													</tr>
 													<tr>
-														<th width="100%">CPU 限制值为一个大于 2 小于 1024 的整数，表示可以使用的 CPU 百分比，如 512 表示 50%;内存限制值需要带上 M 作为单位, 如 20M 表示可以使用 20M 内存，超出会被内核 OOM Killer 自动 kill。</th>
+														<th width="100%">CPU 限制值为一个大于 2 小于 1024 的整数，表示可以使用的 CPU 百分比，如 512 表示 50%;内存限制值需要带上 M 作为单位,<br/> 如 20M 表示可以使用 20M 内存，超出会被内核 OOM Killer 自动 kill。</th>
 													</tr>
 												</table>
 											</div>

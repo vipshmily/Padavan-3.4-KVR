@@ -154,9 +154,9 @@ stop_networkmap(void)
 void
 restart_networkmap(void)
 {
-	//if (pids("networkmap"))
-		//doSystem("killall %s %s", "-KILL", "networkmap");
-	stop_networkmap();
+	if (pids("networkmap"))
+		doSystem("killall %s %s", "-SIGUSR1", "networkmap");
+	else
 		start_networkmap(0);
 }
 
@@ -183,9 +183,7 @@ start_telnetd(void)
 }
 
 #if defined(APP_SSHD)
-int
-is_sshd_run(void)
-{
+int is_sshd_run(void){
 	if (check_if_file_exist("/usr/bin/dropbearmulti"))
 	{
 		if (pids("dropbear"))
@@ -196,19 +194,14 @@ is_sshd_run(void)
 		if (pids("sshd"))
 			return 1;
 	}
-	
 	return 0;
 }
 
-void
-stop_sshd(void)
-{
+void stop_sshd(void){
 	eval("/usr/bin/sshd.sh", "stop");
 }
 
-void
-start_sshd(void)
-{
+void start_sshd(void){
 	int sshd_mode = nvram_get_int("sshd_enable");
 
 	if (sshd_mode == 2)
@@ -217,9 +210,7 @@ start_sshd(void)
 		eval("/usr/bin/sshd.sh", "start");
 }
 
-void
-restart_sshd(void)
-{
+void restart_sshd(void){
 	int is_run_before = is_sshd_run();
 	int is_run_after;
 
@@ -234,26 +225,22 @@ restart_sshd(void)
 #endif
 
 #if defined(APP_SCUT)
-int is_scutclient_run(void)
-{
+int is_scutclient_run(void){
 	if(pids("bin_scutclient"))
 		return 1;
 	return 0;
 }
-void stop_scutclient(void)
-{
+void stop_scutclient(void){
 	eval("/usr/bin/scutclient.sh","stop");
 }
 
-void start_scutclient(void)
-{
+void start_scutclient(void){
 	int scutclient_mode = nvram_get_int("scutclient_enable");
 	if (scutclient_mode == 1)
 		eval("/usr/bin/scutclient.sh","start");
 }
 
-void restart_scutclient(void)
-{
+void restart_scutclient(void){
 	stop_scutclient();
 	start_scutclient();
 }
@@ -263,26 +250,22 @@ void restart_scutclient(void)
 
 #if defined(APP_MENTOHUST)
 
-int is_mentohust_run(void)
-{
+int is_mentohust_run(void){
 	if(pids("bin_mentohust"))
 		return 1;
 	return 0;
 }
-void stop_mentohust(void)
-{
+void stop_mentohust(void){
 	eval("/usr/bin/mentohust.sh","stop");
 }
 
-void start_mentohust(void)
-{
+void start_mentohust(void){
 	int mode = nvram_get_int("mentohust_enable");
 	if (mode == 1)
 		eval("/usr/bin/mentohust.sh","start");
 }
 
-void restart_mentohust(void)
-{
+void restart_mentohust(void){
 	stop_mentohust();
 	start_mentohust();
 }
@@ -354,9 +337,7 @@ void reset_dlink(void){
 #endif
 
 #if defined(APP_VLMCSD)
-int
-is_vlmcsd_run(void)
-{
+int is_vlmcsd_run(void){
 	if (check_if_file_exist("/usr/bin/vlmcsd"))
 	{
 		if (pids("vlmcsd"))
@@ -364,27 +345,31 @@ is_vlmcsd_run(void)
 	}
 	return 0;
 }
-void 
-stop_vlmcsd(void)
-{
+void stop_vlmcsd(void){
 	eval("/usr/bin/vlmcsd.sh","stop");
 }
-void 
-start_vlmcsd(void)
-{
+
+void start_vlmcsd(void){
 	int vlmcsd_mode = nvram_get_int("vlmcsd_enable");
 	if ( vlmcsd_mode == 1)
 		eval("/usr/bin/vlmcsd.sh","start");
 }
-void 
-restart_vlmcsd(void)
-{
+
+void restart_vlmcsd(void){
 	stop_vlmcsd();
 	start_vlmcsd();
 }
 #endif
-
 #if defined(APP_IPERF3)
+int is_iperf3_run(void){
+	if (check_if_file_exist("/usr/bin/iperf3"))
+	{
+		if (pids("iperf3"))
+			return 1;
+	}
+	return 0;
+}
+
 void stop_iperf3(void){
 	eval("/usr/bin/iperf3.sh","stop");
 }
@@ -400,24 +385,6 @@ void restart_iperf3(void){
 	start_iperf3();
 }
 #endif
-
-#if defined(APP_NAPT66)
-void start_napt66(void){
-	int napt66_mode = nvram_get_int("napt66_enable");
-	char *wan6_ifname = nvram_get("wan0_ifname_t");
-	if (napt66_mode == 1) {
-		if (wan6_ifname) {
-			char napt66_para[32];
-			logmessage("napt66","wan6 ifname: %s",wan6_ifname);
-			snprintf(napt66_para,sizeof(napt66_para),"wan_if=%s",wan6_ifname);
-			module_smart_load("napt66", napt66_para);
-		} else {
-			logmessage("napt66","Invalid wan6 ifname!");
-		}
-	}
-}
-#endif
-
 #if defined(APP_DNSFORWARDER)
 void stop_dnsforwarder(void){
 	eval("/usr/bin/dns-forwarder.sh","stop");
@@ -792,6 +759,7 @@ start_services_once(int is_ap_mode)
 #endif
 	start_vpn_server();
 	start_watchdog();
+	start_gpio_btn();
 	start_infosvr();
 
 	if (!is_ap_mode) {

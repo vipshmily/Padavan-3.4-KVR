@@ -12,7 +12,7 @@
 <script>
 var action_mode = '<% get_parameter("action_mode"); %>';
 var boot_time = parent.board_boot_time();
-var lan_ipaddr = '<% nvram_get_x("", "lan_ipaddr_t"); %>';
+var lan_ipaddr = '<% nvram_get_x("", "lan_ipaddr"); %>';
 
 function redirect(){
 	setTimeout("redirect1();", (boot_time+2)*1000);
