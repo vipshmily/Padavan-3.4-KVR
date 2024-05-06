@@ -235,6 +235,9 @@
 #if defined (APP_VLMCSD)
 			{"vlmcsd_enable", "", NULL, EVM_RESTART_VLMCSD},
 #endif
+#if defined (APP_IPERF3)
+			{"iperf3_enable", "", NULL, EVM_RESTART_IPERF3},
+#endif
 #if defined (APP_NAPT66)
 			{"napt66_enable", "", NULL, FALSE},
 #endif
@@ -1449,6 +1452,9 @@
 #endif
 #if defined(APP_VLMCSD)
 		{EVM_RESTART_VLMCSD,	EVT_RESTART_VLMCSD,		RCN_RESTART_VLMCSD,	EVM_RESTART_DHCPD},
+#endif
+#if defined(APP_IPERF3)
+		{EVM_RESTART_IPERF3,	EVT_RESTART_IPERF3,		RCN_RESTART_IPERF3,	0},
 #endif
 #if defined(APP_ADGUARDHOME)
 		{EVM_RESTART_ADGUARDHOME,		EVT_RESTART_ADGUARDHOME,		RCN_RESTART_ADGUARDHOME,	0},

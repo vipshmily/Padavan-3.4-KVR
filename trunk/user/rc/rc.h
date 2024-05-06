@@ -548,6 +548,11 @@ void stop_vlmcsd(void);
 void start_vlmcsd(void);
 void restart_vlmcsd(void);
 #endif
+#if defined(APP_IPERF3)
+void stop_iperf3(void);
+void start_iperf3(void);
+void restart_iperf3(void);
+#endif
 #if defined(APP_NAPT66)
 void start_napt66(void);
 #endif

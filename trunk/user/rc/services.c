@@ -384,6 +384,23 @@ restart_vlmcsd(void)
 }
 #endif
 
+#if defined(APP_IPERF3)
+void stop_iperf3(void){
+	eval("/usr/bin/iperf3.sh","stop");
+}
+
+void start_iperf3(void){
+	int iperf3_mode = nvram_get_int("iperf3_enable");
+	if ( iperf3_mode == 1)
+		eval("/usr/bin/iperf3.sh","start");
+}
+
+void restart_iperf3(void){
+	stop_iperf3();
+	start_iperf3();
+}
+#endif
+
 #if defined(APP_NAPT66)
 void start_napt66(void){
 	int napt66_mode = nvram_get_int("napt66_enable");
@@ -804,6 +821,9 @@ doSystem("/usr/sbin/skipd -d /etc/storage/db");
 #if defined(APP_VLMCSD)
 	start_vlmcsd();
 #endif
+#if defined(APP_IPERF3)
+	start_iperf3();
+#endif
 	start_lltd();
 	start_watchdog_cpu();
 	start_crond();
@@ -846,6 +866,9 @@ stop_services(int stopall)
 #endif
 #if defined(APP_VLMCSD)
 	stop_vlmcsd();
+#endif
+#if defined(APP_IPERF3)
+	stop_iperf3();
 #endif
 #if defined(APP_ADGUARDHOME)
 	stop_adguardhome();

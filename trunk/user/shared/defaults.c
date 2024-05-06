@@ -552,6 +552,11 @@ struct nvram_pair router_defaults[] = {
 	{ "vlmcsd_enable", "0" },
 #endif
 
+#if defined (APP_IPERF3)
+	/* iperf3 */
+	{ "iperf3_enable", "0" },
+#endif
+
 #if defined (APP_NAPT66)
 	/* NAPT66 */
 	{ "napt66_enable", "0" },
