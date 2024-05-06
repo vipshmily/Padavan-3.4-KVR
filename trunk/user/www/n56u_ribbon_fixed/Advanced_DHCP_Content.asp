@@ -28,6 +28,7 @@ $j(document).ready(function() {
 	init_itoggle('dhcp_enable_x');
 	init_itoggle('lan_dhcpd_x');
     init_itoggle('redirect_all_dns');
+    init_itoggle('dhcp_filter_aaaa');
 	init_itoggle('dhcp_static_x', change_dhcp_static_enabled);
 	init_itoggle('dhcp_static_arp');
 	init_itoggle('dhcp_filter_aaa');
@@ -62,6 +63,7 @@ function initial(){
 		showhide_div('row_dhcpd_rt', 0);
 		showhide_div('row_dhcpd_ap', 1);
 		showhide_div('row_domain', 0);
+        showhide_div('row_dhcp_filter_aaaa', 0);
         showhide_div('row_redirect_all_dns', 0);
 		showhide_div('row_dservers', 0);
 		showhide_div('row_hosts', 0);
@@ -520,16 +522,21 @@ function changeBgColor(obj, num){
                                             <th width="50%"><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,5,13);">禁止解析IPv6 DNS记录</a></th>
                                             <td>
                                                 <div class="main_itoggle">
-                                                    <div id="dhcp_filter_aaa_on_of">
-                                                        <input type="checkbox" id="dhcp_filter_aaa_fake" <% nvram_match_x("", "dhcp_filter_aaa", "1", "value=1 checked"); %><% nvram_match_x("", "dhcp_filter_aaa", "0", "value=0"); %>>
+                                                    <div id="dhcp_filter_aaaa_on_of">
+                                                        <input type="checkbox" id="dhcp_filter_aaaa_fake" <% nvram_match_x("", "dhcp_filter_aaaa", "1", "value=1 checked"); %><% nvram_match_x("", "dhcp_filter_aaaa", "0", "value=0"); %>>
                                                     </div>
                                                 </div>
 
                                                 <div style="position: absolute; margin-left: -10000px;">
-                                                    <input type="radio" value="1" name="dhcp_filter_aaa" id="dhcp_filter_aaa_1" <% nvram_match_x("", "dhcp_filter_aaa", "1", "checked"); %> /><#checkbox_Yes#>
-                                                    <input type="radio" value="0" name="dhcp_filter_aaa" id="dhcp_filter_aaa_0" <% nvram_match_x("", "dhcp_filter_aaa", "0", "checked"); %> /><#checkbox_No#>
+                                                    <input type="radio" value="1" name="dhcp_filter_aaaa" id="dhcp_filter_aaaa_1" <% nvram_match_x("", "dhcp_filter_aaaa", "1", "checked"); %> /><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="dhcp_filter_aaaa" id="dhcp_filter_aaaa_0" <% nvram_match_x("", "dhcp_filter_aaaa", "0", "checked"); %> /><#checkbox_No#>
                                                 </div>
                                             </td>
+                                        </tr>
+                                    </table>
+                                    <table width="100%" align="center" cellpadding="4" cellspacing="0" class="table">
+                                        <tr>
+                                            <th colspan="2" style="background-color: #E3E3E3;"><#t2Advanced#></th>
                                         
                                         </tr>
                                         <tr>
