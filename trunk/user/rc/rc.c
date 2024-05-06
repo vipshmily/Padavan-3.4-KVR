@@ -1665,6 +1665,7 @@ static const applet_rc_t applets_rc[] = {
 #endif
 	{ "ddns_updated",	ddns_updated_main	},
 	{ "ntpc_updated",	ntpc_updated_main	},
+	{ "ntpc_syncnow",	ntpc_syncnow_main	},
 
 	{ "detect_wan",		detect_wan_main		},
 	{ "detect_link",	detect_link_main	},

@@ -1731,6 +1731,7 @@ LANHostConfig_x_NTPServer1_itemname=NTP Server
 RouterConfig_GWStaticMT_itemname=Metric
 RouterConfig_GWStaticIF_itemname=Interface
 LANHostConfig_x_NTPServer1_linkname=Find NTP
+LANHostConfig_x_NTP_SyncNow=Sync now
 t2FilterBasic=Basic Config
 FirewallConfig_display2_sectiondesc=Enabling Firewall (SPI Firewall) provides basic protection for ZVMODELVZ and devices behind it. If you want to filter out specified packets, please use WAN vs. LAN filter.
 FirewallConfig_LanWanFirewallEnable_itemname=Enable Network Services Filter?

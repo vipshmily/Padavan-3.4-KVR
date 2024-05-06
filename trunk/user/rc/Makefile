@@ -88,6 +88,7 @@ romfs:
 	cd $(INSTALLDIR)/sbin && ln -sf rc mtk_gpio
 	cd $(INSTALLDIR)/sbin && ln -sf rc ddns_updated
 	cd $(INSTALLDIR)/sbin && ln -sf rc ntpc_updated
+	cd $(INSTALLDIR)/sbin && ln -sf rc ntpc_syncnow
 	cd $(INSTALLDIR)/sbin && ln -sf rc start_ddns
 	cd $(INSTALLDIR)/sbin && ln -sf rc restart_dns
 	cd $(INSTALLDIR)/sbin && ln -sf rc restart_dhcpd

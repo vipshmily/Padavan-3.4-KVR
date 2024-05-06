@@ -1744,6 +1744,7 @@ LANHostConfig_x_NTPServer1_itemname=NTP 服务器
 RouterConfig_GWStaticMT_itemname=跃点
 RouterConfig_GWStaticIF_itemname=接口
 LANHostConfig_x_NTPServer1_linkname=搜索 NTP 服务器
+LANHostConfig_x_NTP_SyncNow=立即同步
 t2FilterBasic=基本设置
 FirewallConfig_display2_sectiondesc=防火墙可根据规则过滤发送或接收的数据包，开启后可保护你的内网不被入侵。
 FirewallConfig_LanWanFirewallEnable_itemname=启用网络服务过滤
