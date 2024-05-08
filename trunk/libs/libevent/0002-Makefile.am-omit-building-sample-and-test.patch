@@ -1,6 +1,6 @@
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -172,8 +172,8 @@ CLEANFILES=
+@@ -177,8 +177,8 @@ CLEANFILES=
  DISTCLEANFILES=
  BUILT_SOURCES =
  include include/include.am

@@ -682,17 +682,21 @@ start)
         Start_AD
     fi
 	ssp_start
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 stop)
 	ssp_close
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 restart)
 	ssp_close
 	ssp_start
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 reserver)
 	ssp_close
 	ressp
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 *)
 	echo "check"

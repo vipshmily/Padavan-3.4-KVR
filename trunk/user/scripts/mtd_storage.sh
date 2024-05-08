@@ -210,7 +210,7 @@ func_fill()
 
 	user_hosts="$dir_dnsmasq/hosts"
 	user_dnsmasq_conf="$dir_dnsmasq/dnsmasq.conf"
-	user_dnsmasq_serv="$dir_dnsmasq/dnsmasq.servers"
+	user_dnsmasq_servers="$dir_dnsmasq/dnsmasq.servers"
 	user_dhcp_conf="$dir_dnsmasq/dhcp.conf"
 	user_ovpnsvr_conf="$dir_ovpnsvr/server.conf"
 	user_ovpncli_conf="$dir_ovpncli/client.conf"
@@ -533,14 +533,14 @@ EOF
 	fi
 
 	# create user dns servers
-	if [ ! -f "$user_dnsmasq_serv" ] ; then
-		cat > "$user_dnsmasq_serv" <<EOF
+	if [ ! -f "$user_dnsmasq_servers" ] ; then
+		cat > "$user_dnsmasq_servers" <<EOF
 # Custom user servers file for dnsmasq
 # Example:
 #server=/mit.ru/izmuroma.ru/10.25.11.30
 
 EOF
-		chmod 644 "$user_dnsmasq_serv"
+		chmod 644 "$user_dnsmasq_servers"
 	fi
 
 	# create user dns dhcp_conf

@@ -60,7 +60,8 @@ helpcontent[3] = new Array("",
 				"<#WLANConfig11n_mumimo_itemdesc#>",
 				"<#WLANConfig11n_txbf_itemdesc#>",
 				"<#WLANConfig11n_amsdu_itemdesc#>",
-				"<#WIFILDPC_itemdesc#>");
+				"<#WIFILDPC_itemdesc#>",
+				"<#WIFILDPC2_itemdesc#>");
 // MAC filter
 helpcontent[4] = new Array("",
 				"<#FirewallConfig_MFMethod_itemdesc#>");

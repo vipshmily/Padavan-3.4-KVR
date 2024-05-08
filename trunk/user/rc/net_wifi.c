@@ -1140,7 +1140,7 @@ ebtables_filter_guest_ap(const char *wifname, int is_aband, int i_need_dhcp)
 				"INPUT", wifname, "DROP");
 	}
 
-	/* drop forwards between 2.4/5Ghz AP wifs */
+	/* drop forwards between 2.4GHz/5GHz AP wifs */
 #if BOARD_HAS_5G_RADIO
 	if (is_aband) {
 #if defined(USE_RT3352_MII)

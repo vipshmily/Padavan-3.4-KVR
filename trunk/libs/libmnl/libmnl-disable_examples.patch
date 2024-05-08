@@ -1,0 +1,24 @@
+--- libmnl-1.0.5-orig/Makefile.am	2022-04-05 14:15:32.955722000 +0300
++++ libmnl-1.0.5/Makefile.am	2023-02-26 01:47:50.524776153 +0200
+@@ -2,8 +2,8 @@
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+-SUBDIRS = src include examples doxygen
+-DIST_SUBDIRS = src include examples doxygen
++SUBDIRS = src include
++DIST_SUBDIRS = src include
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libmnl.pc
+--- libmnl-1.0.5-orig/configure.ac	2022-04-05 14:15:32.955722000 +0300
++++ libmnl-1.0.5/configure.ac	2023-02-26 01:47:50.528776017 +0200
+@@ -27,7 +27,7 @@
+ 	-Wformat=2 -pipe"
+ AC_SUBST([regular_CPPFLAGS])
+ AC_SUBST([regular_CFLAGS])
+-AC_CONFIG_FILES([Makefile src/Makefile include/Makefile include/libmnl/Makefile include/linux/Makefile include/linux/netfilter/Makefile examples/Makefile examples/genl/Makefile examples/kobject/Makefile examples/netfilter/Makefile examples/rtnl/Makefile libmnl.pc doxygen.cfg doxygen/Makefile])
++AC_CONFIG_FILES([Makefile src/Makefile include/Makefile include/libmnl/Makefile include/linux/Makefile include/linux/netfilter/Makefile libmnl.pc])
+ 
+ AC_ARG_WITH([doxygen], [AS_HELP_STRING([--with-doxygen],
+ 	    [create doxygen documentation])],

@@ -218,7 +218,7 @@ function done_validating(action){
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th><#LAN_STP#></th>
+                                            <th><a class="help_tooltip"  href="javascript:void(0);" onmouseover="openTooltip(this, 4,4);"><#LAN_STP_itemname#></a></th>
                                             <td>
                                                 <div class="main_itoggle">
                                                     <div id="lan_stp_on_of">

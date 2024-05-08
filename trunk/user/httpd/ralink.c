@@ -1047,7 +1047,7 @@ print_sta_list(webs_t wp, RT_802_11_MAC_TABLE *mp, int num_ss_rx, int ap_idx)
 #endif
 	ret += websWrite(wp, "----------------------------------------\n");
 	ret += websWrite(wp, "%-19s%-8s%-4s%-4s%-4s%-5s%-5s%-7s%-7s%-5s%-4s%-12s\n",
-			   "MAC", "PhyMode", "BW", "MCS", "SGI", "LDPC", "STBC", "TxRate", "RxRate", "RSSI", "PSM", "Connect Time");
+			   "MAC", "PhyMode", "BW", "MCS", "SGI", "LDPC", "STBC", "TxRate", "RxRate", "RSSI", "PSM", "ConnectTime");
 
 	for (i = 0; i < mp->Num; i++) {
 		if ((int)mp->Entry[i].ApIdx != ap_idx)
@@ -1124,7 +1124,7 @@ print_sta_list_inic(webs_t wp, RT_802_11_MAC_TABLE_INIC* mp, int num_ss_rx, int 
 	ret += websWrite(wp, "\nAP %s Stations List\n", (ap_idx == 0) ? "Main" : "Guest");
 	ret += websWrite(wp, "----------------------------------------\n");
 	ret += websWrite(wp, "%-19s%-8s%-4s%-4s%-4s%-5s%-5s%-6s%-5s%-4s%-12s\n",
-			   "MAC", "PhyMode", "BW", "MCS", "SGI", "LDPC", "STBC", "TRate", "RSSI", "PSM", "Connect Time");
+			   "MAC", "PhyMode", "BW", "MCS", "SGI", "LDPC", "STBC", "TRate", "RSSI", "PSM", "ConnectTime");
 
 	for (i = 0; i < mp->Num; i++) {
 		if ((int)mp->Entry[i].ApIdx != ap_idx)

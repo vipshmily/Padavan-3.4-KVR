@@ -1,7 +1,7 @@
 SRC_NAME=src
 
 all:
-	make -C $(SRC_NAME) embedded
+	make -j$(HOST_NCPU) -C $(SRC_NAME) embedded
 
 clean:
 	make -C $(SRC_NAME) clean

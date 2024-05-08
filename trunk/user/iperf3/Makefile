@@ -42,3 +42,4 @@ clean:
 
 romfs:
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_NAME)/src/iperf3 /usr/bin/iperf3
+	$(ROMFSINST) -p +x $(THISDIR)/iperf3.sh /usr/bin/iperf3.sh

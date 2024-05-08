@@ -182,7 +182,7 @@ function submitInternet(v){
                                             <li><#FW_desc4#></li>
                                             <li><#FW_desc5#></li>
                                             <li><#FW_desc6#></li>
-											<li><#FW_desc7#><input id="bingtmp" class="btn btn-success" style="width:50px display:none;" type="button" name="bingtmp" value="<#expand_tmp#>" onclick="submitInternet('bigtmp');" /></li>
+                                            <li><#FW_desc7#><input id="bingtmp" class="btn btn-success" style="width:50px display:none;" type="button" name="bingtmp" value="<#TMP_btn#>" onclick="submitInternet('bigtmp');" /></li>
                                         </ol>
                                     </div>
 

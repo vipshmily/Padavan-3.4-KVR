@@ -115,7 +115,7 @@
  #define KERNEL_NET_CORE_RMEM		983040
  #define KERNEL_NET_CORE_WMEM		983040
  #define KERNEL_MIN_FREE_KBYTES		8192
- #define DNS_RELAY_CACHE_MAX		1024
+ #define DNS_RELAY_CACHE_MAX		10240
  #define LOG_ROTATE_SIZE_MAX		512
 #elif BOARD_RAM_SIZE > 32
  #define KERNEL_NET_CORE_RMEM		655360
@@ -754,7 +754,7 @@ void ez_event_long(int btn_id);
 #endif
 int  is_ntpc_updated(void);
 int  ntpc_updated_main(int argc, char *argv[]);
-int ntpc_syncnow_main(int argc, char *argv[]);
+int  ntpc_syncnow_main(int argc, char *argv[]);
 int  watchdog_main(int argc, char *argv[]);
 int  start_watchdog(void);
 void notify_watchdog_time(void);

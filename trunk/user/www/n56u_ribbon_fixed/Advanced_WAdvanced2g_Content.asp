@@ -57,9 +57,9 @@ function initial(){
 		}
 	}
 
-	if (support_2g_stream_tx()<4) 
+	if (support_2g_stream_tx()<4)
 		document.form.rt_stream_tx.remove(3);
-	if (support_2g_stream_tx()<3) 
+	if (support_2g_stream_tx()<3)
 		document.form.rt_stream_tx.remove(2);
 	if (support_2g_stream_tx()<2) {
 		document.form.rt_stream_tx.remove(1);
@@ -76,7 +76,7 @@ function initial(){
 	if (!support_2g_inic_mii())
 		showhide_div('row_mrate', 0);
 
-    if (support_2g_band_steering())
+	if (support_2g_band_steering())
 		showhide_div("row_band_steering", 1);
 
 	if (support_2g_turbo_qam())
@@ -299,7 +299,7 @@ function done_validating(action){
                                             </td>
                                         </tr>
                                         <tr id="row_ldpc" style="display:none">
-                                            <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 24);"><#WIFILDPC_itemname#></a></th>
+                                            <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 25);"><#WIFILDPC2_itemname#></a></th>
                                             <td>
                                                 <select name="rt_ldpc" class="input">
                                                     <option value="0" <% nvram_match_x("","rt_ldpc", "0","selected"); %>><#btn_Disable#></option>

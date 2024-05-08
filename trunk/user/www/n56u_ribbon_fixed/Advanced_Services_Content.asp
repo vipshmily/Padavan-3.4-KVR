@@ -31,7 +31,7 @@ $j(document).ready(function() {
 	init_itoggle('crond_enable', change_crond_enabled);
 	init_itoggle('ttyd_enable', change_ttyd_enabled);
 	init_itoggle('vlmcsd_enable');
-	init_itoggle('napt66_enable');    
+	init_itoggle('napt66_enable');
 	init_itoggle('iperf3_enable');
 	init_itoggle('watchdog_cpu');
 });
@@ -94,6 +94,8 @@ function initial(){
 
 	if(!found_app_napt66()){
 		showhide_div('div_napt66', 0);
+    }
+
 	if(!found_app_iperf3()){
 		showhide_div('row_iperf3', 0);
 	}

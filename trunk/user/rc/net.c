@@ -895,7 +895,7 @@ set_tcp_tweaks(void)
 
 	/* Tweak TCP IPv4 performance */
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_fin_timeout");
-	fput_int(tmp, 40);		// def: 60
+	fput_int(tmp, 30);		// def: 60
 
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_keepalive_intvl");
 	fput_int(tmp, 30);		// def: 75
@@ -916,13 +916,13 @@ set_tcp_tweaks(void)
 	fput_int(tmp, 3);		// def: 5
 
 //	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_tw_recycle");
-//	fput_int(tmp, 1);
+//	fput_int(tmp, 1);		//def: 1
 
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_tw_reuse");
-	fput_int(tmp, 1);
+	fput_int(tmp, 1);		//def: 1
 
 	sprintf(tmp, "/proc/sys/net/%s/%s", "ipv4", "tcp_rfc1337");
-	fput_int(tmp, 1);
+	fput_int(tmp, 1);		//def: 1
 }
 
 void
