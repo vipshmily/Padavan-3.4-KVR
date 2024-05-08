@@ -605,6 +605,7 @@
 			{"dhcp_dns2_x", "", NULL, EVM_RESTART_DHCPD|EVM_REAPPLY_VPNSVR},
 			{"dhcp_dns3_x", "", NULL, EVM_RESTART_DHCPD},
 			{"dhcp_dnsv6_x", "", NULL, EVM_RESTART_DHCPD},
+			{"dhcp_dnsv61_x", "", NULL, EVM_RESTART_DHCPD},
 			{"dhcp_wins_x", "", NULL, EVM_RESTART_DHCPD|EVM_REAPPLY_VPNSVR},
 			{"redirect_all_dns", "", NULL, EVM_RESTART_FIREWALL|EVM_RESTART_DHCPD},
 			{"dhcp_filter_aaaa", "", NULL, EVM_RESTART_DHCPD},

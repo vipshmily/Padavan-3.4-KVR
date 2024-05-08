@@ -499,6 +499,12 @@ function changeBgColor(obj, num){
                                             </td>
                                         </tr>
                                         <tr>
+                                            <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,5,10);"><#LANHostConfig_x_LDNSServer61_itemname#> :</th>
+                                            <td>
+                                                <input type="text" maxlength="40" class="input" size="15" name="dhcp_dnsv61_x" value="<% nvram_get_x("", "dhcp_dnsv61_x"); %>" onKeyPress="return is_string(this,event);" />
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <th style="padding-bottom: 0px;"><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this,5,11);"><#LANHostConfig_x_WINSServer_itemname#></a></th>
                                             <td style="padding-bottom: 0px;">
                                                 <input type="text" maxlength="15" class="input" size="15" name="dhcp_wins_x" value="<% nvram_get_x("", "dhcp_wins_x"); %>" onkeypress="return is_ipaddr(this,event);" />
