@@ -1,4 +1,4 @@
-SRC_NAME = iperf-3.16
+SRC_NAME = iperf-3.15
 SRC_URL = https://downloads.es.net/pub/iperf/$(SRC_NAME).tar.gz
 THISDIR = $(shell pwd)
 
@@ -12,7 +12,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar -xf $(SRC_NAME).tar.gz; \
+		tar xf $(SRC_NAME).tar.gz; \
 	fi )
 
 config_test:
