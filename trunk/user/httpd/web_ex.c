@@ -2070,7 +2070,7 @@ applydb_cgi(webs_t wp, char *urlPrefix, char *webDir, int arg,
 				temp=strstr(dbjson[j], "=");
 				strcpy(dbval, temp+1);
 				strncpy(dbvar, dbjson[j], strlen(dbjson[j])-strlen(temp));
-			logmessage("HTTPD", "name: %s post: %s", dbvar, userm);
+			//logmessage("HTTPD", "name: %s post: %s", dbvar, userm);
 			if(strcmp(dbval,userm) == 0)
 				doSystem("dbus remove %s", dbvar);
 			else if(strcmp(dbval,useping) == 0)
@@ -3540,6 +3540,12 @@ apply_cgi(const char *url, webs_t wp)
 		// current only syslog implement this button
 		unlink("/tmp/syslog.log");
 		websRedirect(wp, current_url);
+		return 0;
+	}
+	else if (!strcmp(value, " ClearssrplusLog "))
+	{
+		// current only ssrpluslog implement this button
+		doSystem("echo "" > /tmp/ssrplus.log");
 		return 0;
 	}
 	else if (!strcmp(value, " Reboot "))

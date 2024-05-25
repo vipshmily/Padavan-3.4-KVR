@@ -91,7 +91,6 @@ add_join() {
 		touch $config_path/networks.d/$1.conf
 }
 
-
 rules() {
 	while [ "$(ifconfig | grep zt | awk '{print $1}')" = "" ]; do
 		sleep 1
@@ -114,7 +113,6 @@ rules() {
 	fi
 
 }
-
 
 del_rules() {
 	zt0=$(ifconfig | grep zt | awk '{print $1}')
@@ -236,9 +234,13 @@ remove_moon() {
 case $1 in
 start)
 	start_zero
+	sleep 2
+        echo 3 > /proc/sys/vm/drop_caches
 	;;
 stop)
 	stop_zero
+	sleep 2
+        echo 3 > /proc/sys/vm/drop_caches
 	;;
 *)
 	echo "check"

@@ -99,6 +99,13 @@
 			}
 			});
 		});
+function ClearssrplusLog(){
+	var $j = jQuery.noConflict();
+	$j.post('/apply.cgi',
+	{
+		'action_mode': ' ClearssrplusLog ',
+	});
+}
 function ctime() {
 var t=0;
 c=null;
@@ -1558,8 +1565,8 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 											<div id="wnd_ss_cfg">
 												<div class="alert alert-info" style="margin: 10px;">一个兼容Shadowsocks、ShadowsocksR 、Vmess、Vless、Trojan、Sock5协议的游戏加速工具。
 													<div><span style="color:#E53333;">注意：</span></div>
-													<div><span style="color:#E53333;">若被编辑的节点正在运行使用，请完成后点击“应用设置”按钮更新节点信息，并点击"重连"按钮重新连接。</span></div>
-													<div><span style="color:#E53333;">运行状态不会实时更新，启动程序后需稍等片刻后，点击"刷新"按钮重新获取运行状态。</span></div>
+													<div><span style="color:#E53333;">若被编辑的节点正在运行使用，请编辑完成后点击下方“应用设置”按钮更新节点信息，并点击"重连"按钮重新连接。</span></div>
+													<div><span style="color:#E53333;">运行状态不会实时更新，启动程序后需稍等片刻，再点击此 <input type="button" id="btn_reconnect" class="btn btn-info" value="刷新页面" onclick="window.location.reload();" tabindex="1"> 按钮重新获取运行状态。</span></div>
 												</div>
 												<table width="100%" cellpadding="4" cellspacing="0" class="table">
 													<tr>
@@ -1579,7 +1586,6 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 													<tr>
 														<th width="50%"><#InetControl#></th>
 														<td>
-															<input type="button" id="btn_reconnect" class="btn btn-info" value="<#CTL_refresh#>" onclick="window.location.reload();">
 															<input type="button" id="btn_reconnect" class="btn btn-info" value="<#Connect#>" onclick="submitInternet('Reconnect');">
 														</td>
 													</tr>
@@ -1746,7 +1752,7 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 											<!--节点列表-->
 											<div id="wnd_ss_add">
 												<table width="100%" cellpadding="4" cellspacing="0" class="table">
-													<div class="alert alert-info" style="margin: 10px;"> 添加完节点订阅地址后，请先点击下方“应用设置”按钮，再点击“更新订阅”按钮更新所订阅的节点。</div>
+													<div class="alert alert-info" style="margin: 10px;"><span style="color:#E53333;">注意：</span> 添加完节点订阅地址后，请先点击下方“应用设置”按钮，再点击“更新订阅”按钮更新所订阅的节点。 <input type="button" id="btn_reconnect" class="btn btn-info" value="刷新页面" onclick="window.location.reload();"></div>
 													<tr>
 														<td colspan="3">
 															<i class="icon-hand-right"></i> <a href="javascript:spoiler_toggle('script7')"><span>点击输入节点订阅地址：(一行一个地址)</span></a>
@@ -1806,13 +1812,12 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 																<option value="c">订阅节点</option>
 															</select>
 															<input name="button" type="button" class="btn btn-primary" onclick="applyRule();" value="<#CTL_apply#>">
-															<input type="button" id="btn_add_link" class="btn btn-info" value="添加/导入节点">
 															<input type="button" id="btn_update_link" class="btn btn-info" value="更新节点订阅" onclick="dlink();">
+															<input type="button" id="btn_add_link" class="btn btn-info" value="添加/导入节点">
 															<input type="button" id="btn_ping_link" class="btn btn-info" value="ping选中节点">
 															<input type="button" id="btn_aping_link" class="btn btn-info" value="ping全部节点">
 															<input type="button" id="btn_del_link" class="btn btn-danger" value="删除选中节点">
 															<input type="button" id="btn_rest_link" class="btn btn-danger" value="删除全部节点" onclick="ddlink();">
-															<input type="button" id="btn_reconnect" class="btn btn-info" value="刷新页面" onclick="window.location.reload();">
 															<input type="button" id="btn_ctime" style="display:none;" class="btn btn-good" value="正在运行脚本:0s" onclick="">
 														</th>
 													</tr>
@@ -2410,8 +2415,8 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 													<tr>
 														<td>
 															<center>
-																<input type="button" id="btn_clearLog" class="btn btn-info" style="width: 200px" value=<#CTL_clear#> onClick="clearLog();">
-																<input type="button" id="btn_reconnect" class="btn btn-info" style="width: 200px" value=<#CTL_refresh#> onclick="window.location.reload();">
+																<input type="button" id="btn_ClearssrplusLog" class="btn btn-info" style="width: 200px" value=<#CTL_clear#> onClick="ClearssrplusLog();">
+																<input type="button" class="btn btn-info" style="width: 200px" value=<#CTL_refresh#> onClick="parent.location.reload();">
 															</center>
 														</td>
 													</tr>

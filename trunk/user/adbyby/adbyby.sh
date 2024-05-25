@@ -42,7 +42,7 @@ adbyby_start()
 	hosts_ads
 	/sbin/restart_dhcpd
 	add_cron
-	logger -t "adbyby" "Adbyby启动完成。"
+	logger -t "adbyby" "Adbyby启动完成！"
 }
 
 adbyby_close()
@@ -56,13 +56,13 @@ adbyby_close()
 	fi
 	kill -9 $(ps | grep admem.sh | grep -v grep | awk '{print $1}') >/dev/null 2>&1 
 	/sbin/restart_dhcpd
-	logger -t "adbyby" "Adbyby已关闭。"
+	logger -t "adbyby" "Adbyby已关闭！"
 
 }
 
 add_rules()
 {
-	logger -t "adbyby" "正在检查规则是否需要更新!"
+	logger -t "adbyby" "正在检查规则是否需要更新？"
 	rm -f /tmp/adbyby/data/*.bak
 
 	touch /tmp/local-md5.json && md5sum /tmp/adbyby/data/lazy.txt /tmp/adbyby/data/video.txt > /tmp/local-md5.json
@@ -75,7 +75,7 @@ add_rules()
 
 	if [ "$lazy_online"x != "$lazy_local"x -o "$video_online"x != "$video_local"x ]; then
 	echo "MD5 not match! Need update!"
-	logger -t "adbyby" "发现更新的规则,下载规则！"
+	logger -t "adbyby" "发现更新的规则,正在下载规则..."
 	touch /tmp/lazy.txt && curl -k -s -o /tmp/lazy.txt --connect-timeout 5 --retry 3 https://fastly.jsdelivr.net/gh/kongfl888/ad-rules/lazy.txt
 	touch /tmp/video.txt && curl -k -s -o /tmp/video.txt --connect-timeout 5 --retry 3 https://fastly.jsdelivr.net/gh/kongfl888/ad-rules/video.txt
 	touch /tmp/local-md5.json && md5sum /tmp/lazy.txt /tmp/video.txt > /tmp/local-md5.json
@@ -93,7 +93,7 @@ add_rules()
 	fi
 
 	rm -f /tmp/lazy.txt /tmp/video.txt /tmp/local-md5.json /tmp/md5.json
-	logger -t "adbyby" "Adbyby规则更新完成"
+	logger -t "adbyby" "Adbyby规则更新完成！"
 	nvram set adbyby_ltime=`head -1 /tmp/adbyby/data/lazy.txt | awk -F' ' '{print $3,$4}'`
 	nvram set adbyby_vtime=`head -1 /tmp/adbyby/data/video.txt | awk -F' ' '{print $3,$4}'`
 	#nvram set adbyby_rules=`grep -v '^!' /tmp/adbyby/data/rules.txt | wc -l`
@@ -115,7 +115,7 @@ add_rules()
 		rules_address=`nvram get adbybyrules_x$j`
 		rules_road=`nvram get adbybyrules_road_x$j`
 		if [ $rules_road -ne 0 ]; then
-			logger -t "adbyby" "正在下载和合并第三方规则"
+			logger -t "adbyby" "正在下载和合并第三方规则..."
 			curl -k -s -o /tmp/adbyby/user2.txt --connect-timeout 5 --retry 3 $rules_address
 			grep -v '^!' /tmp/adbyby/user2.txt | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> $DATA_PATH/user3adblocks.txt
 			rm -f /tmp/adbyby/user2.txt
@@ -127,7 +127,6 @@ add_rules()
 	grep -v ^! $PROG_PATH/rules.txt >> $DATA_PATH/user.txt
 	nvram set adbyby_user=`cat /tmp/adbyby/data/user.txt | wc -l`
 }
-
 
 add_cron()
 {
@@ -164,7 +163,7 @@ ip_rule()
 	num=`nvram get adbybyip_staticnum_x`
 	if [ $adbyby_ip_x -eq 1 ]; then
 	if [ $num -ne 0 ]; then
-	logger -t "adbyby" "设置内网IP过滤控制"
+	logger -t "adbyby" "设置内网IP过滤控制！"
 	for i in $(seq 1 $num)
 	do
 		j=`expr $i - 1`
@@ -173,18 +172,18 @@ ip_rule()
 		case $mode in
 		0)
 			$ipt_n -A ADBYBY -s $ip -j RETURN
-			logger -t "adbyby" "忽略$ip走AD过滤。"
+			logger -t "adbyby" "忽略$ip走AD过滤！"
 			;;
 		1)
 			$ipt_n -A ADBYBY -s $ip -p tcp -j REDIRECT --to-ports 8118
 			$ipt_n -A ADBYBY -s $ip -j RETURN
-			logger -t "adbyby" "设置$ip走全局过滤。"
+			logger -t "adbyby" "设置$ip走全局过滤！"
 			;;
 		2)
 			ipset -N adbyby_wan hash:ip
 			$ipt_n -A ADBYBY -m set --match-set adbyby_wan dst -s $ip -p tcp -j REDIRECT --to-ports 8118
 			awk '!/^$/&&!/^#/{printf("ipset=/%s/'"adbyby_wan"'\n",$0)}' $PROG_PATH/adhost.conf > $WAN_FILE
-			logger -t "adbyby" "设置$ip走Plus+过滤。"
+			logger -t "adbyby" "设置$ip走Plus+过滤！"
 			;;
 		esac
 	done
@@ -256,7 +255,6 @@ del_dns()
 	rm -f /tmp/adbyby_host.conf
 }
 
-
 add_rule()
 {
 	$ipt_n -N ADBYBY
@@ -269,7 +267,7 @@ add_rule()
 	$ipt_n -A ADBYBY -d 224.0.0.0/4 -j RETURN
 	$ipt_n -A ADBYBY -d 240.0.0.0/4 -j RETURN
 	ip_rule
-	logger -t "adbyby" "添加8118透明代理端口。"
+	logger -t "adbyby" "添加8118透明代理端口！"
 	$ipt_n -I PREROUTING -p tcp --dport 80 -j ADBYBY
 	iptables-save | grep -E "ADBYBY|^\*|^COMMIT" | sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/" > /tmp/adbyby.save
 	if [ -f "/tmp/adbyby.save" ]; then
@@ -292,7 +290,7 @@ del_rule()
 	ipset -X adbyby_wan 2>/dev/null
 	ipset -F blockip 2>/dev/null
 	ipset -X blockip 2>/dev/null
-	logger -t "adbyby" "已关闭全部8118透明代理端口。"
+	logger -t "adbyby" "已关闭全部8118透明代理端口！"
 }
 
 reload_rule()
@@ -331,7 +329,8 @@ adbyby_uprules()
 #{
 #	/tmp/adbyby/adblock.sh &
 #}
-anti_ad(){
+anti_ad()
+{
 anti_ad=`nvram get anti_ad`
 anti_ad_link=`nvram get anti_ad_link`
 nvram set anti_ad_count=0
@@ -346,7 +345,8 @@ fi
 fi
 }
 
-hosts_ads(){
+hosts_ads()
+{
 adbyby_hosts=`nvram get hosts_ad`
 nvram set adbyby_hostsad=0
 if [ "$adbyby_hosts" = "1" ]; then
@@ -364,7 +364,7 @@ grep -v '^#' /tmp/host.txt | grep -v "^$" >> $PROG_PATH/hosts
 fi
 done
 rm -f /tmp/host.txt
-logger -t "adbyby" "正在对hosts文件进行去重处理."
+logger -t "adbyby" "正在对hosts文件进行去重处理..."
 sort $PROG_PATH/hosts | uniq
 nvram set adbyby_hostsad=`grep -v '^!' $PROG_PATH/hosts | wc -l`
 sed -i '/hosts/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -374,8 +374,7 @@ EOF
 fi
 }
 
-
-addscripts()
+add_scripts()
 {
 
 	adbyby_rules="/etc/storage/adbyby_rules.sh"
@@ -491,6 +490,7 @@ wasu.cn
 analytics-union.xunlei.com
 kankan.xunlei.com
 youku.com
+v.youku.com
 hunantv.com
 ifeng.com
 renren.com
@@ -510,6 +510,9 @@ cnbetacdn.com
 ptqy.gitv.tv
 admaster.com.cn
 serving-sys.com
+ixigua.com
+bilibili.com
+youtube.com
 EEE
 	chmod 755 "$adbyby_adhost"
 	fi
@@ -518,9 +521,13 @@ EEE
 case $1 in
 start)
 	adbyby_start
+	sleep 2
+        echo 3 > /proc/sys/vm/drop_caches
 	;;
 stop)
 	adbyby_close
+	sleep 2
+        echo 3 > /proc/sys/vm/drop_caches
 	;;
 A)
 	add_rules
@@ -532,7 +539,7 @@ D)
 	add_dns
 	;;
 E)
-	addscripts
+	add_scripts
 	;;
 F)
 	hosts_ads

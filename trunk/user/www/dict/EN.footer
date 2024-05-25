@@ -2025,4 +2025,5 @@ pppoemwan2=Multi-dial frequency
 pppoemwan1=Intranet IP flow control
 pppoemwan1_1=Export serial number(1 Start)
 pppoemwan0=Disable 443 load balancing（Avoid affecting web browsing, which may affect speed testing）
-
+AP_Relay=【Click to open the configuration wireless relay enhancement script】
+AP_Relay_1=Wireless repeater enhancements:【It can automatically search and switch the relay signals and channels preconfigured in the script for automatic bridging】

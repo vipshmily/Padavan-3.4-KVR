@@ -1,10 +1,16 @@
 SRC_NAME1=squashfs-4.6.1
+#SRC_URL1=https://github.com/plougher/squashfs-tools/archive/refs/tags/4.6.1.tar.gz
 SRC_NAME2=xz-5.4.6
 SRC_URL2=https://netactuate.dl.sourceforge.net/project/lzmautils/$(SRC_NAME2).tar.xz
 
-all: extract_xz config_xz build_xz build_squashfs
+all: download_test extract_test config_xz build_xz build_squashfs
 
-extract_xz:
+download_test:
+	( if [ ! -f $(SRC_NAME2).tar.xz ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME2).tar.xz $(SRC_URL2); \
+	fi )
+
+extract_test:
 	( if [ ! -d $(SRC_NAME2) ]; then \
 		tar xf $(SRC_NAME2).tar.xz; \
 	fi )

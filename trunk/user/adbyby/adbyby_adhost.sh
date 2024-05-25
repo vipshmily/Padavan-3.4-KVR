@@ -47,6 +47,7 @@ wasu.cn
 analytics-union.xunlei.com
 kankan.xunlei.com
 youku.com
+v.youku.com
 hunantv.com
 ifeng.com
 renren.com
@@ -68,3 +69,4 @@ admaster.com.cn
 serving-sys.com
 ixigua.com
 bilibili.com
+youtube.com

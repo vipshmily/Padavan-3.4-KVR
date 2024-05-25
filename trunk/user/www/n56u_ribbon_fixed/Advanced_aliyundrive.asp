@@ -138,7 +138,7 @@ function done_validating(action){
 								<div class="row-fluid">
 									<div id="tabMenu" class="submenuBlock"></div>
 									<div class="alert alert-info" style="margin: 10px;">
-									<p>阿里云盘 WebDAV<br>
+									<p>阿里云盘 WebDAV <input type="button" id="btn_reconnect" class="btn btn-info" value="刷新页面" onclick="window.location.reload();"><br>
 									</p>
 									</div>
 

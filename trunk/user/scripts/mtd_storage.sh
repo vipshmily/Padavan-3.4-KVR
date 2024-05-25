@@ -328,7 +328,7 @@ EOF
 ### \$2 - WAN interface name (e.g. eth3 or ppp0)
 ### \$3 - WAN IPv4 address
 
-### UPnP solution when router without external IP
+### Solution for UPnP working in case no delicated (no WHITE) external IP adress
 #echo "ext_ip=1.1.1.1" >> /etc/miniupnpd.conf && killall miniupnpd && miniupnpd -f /etc/miniupnpd.conf
 
 EOF
@@ -504,6 +504,9 @@ dhcp-option=252,"\n"
 ### Keep DHCP host name valid at any times
 #dhcp-to-host
 
+### Do NOT forward queries with no domain part
+domain-needed
+
 EOF
 	if [ -f /usr/bin/vlmcsd ]; then
 		cat >> "$user_dnsmasq_conf" <<EOF
@@ -546,6 +549,8 @@ EOF
 	# create user dns dhcp_conf
 	if [ ! -f "$user_dhcp_conf" ] ; then
 		cat > "$user_dhcp_conf" <<EOF
+# Custom user hosts for dhcp_hostsfile
+# Example:
 #6C:96:CF:E0:95:55,192.168.1.10,iMac
 
 EOF

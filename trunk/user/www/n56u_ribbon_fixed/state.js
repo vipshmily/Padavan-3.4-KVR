@@ -369,7 +369,7 @@ function show_banner(L3){
 	bc += '  </tr>\n';
 	bc += '  <tr>\n';
 	bc += '    <td><button type="button" id="commit_btn" class="btn btn-mini" style="width: 114px; height: 21px; outline:0; '+enabledBtnCommit+'" onclick="commit();"><i class="icon icon-fire"></i>&nbsp;<#CTL_Commit#></button></td>\n';
-	bc += '    <td><button type="button" id="freememory_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_FREEMEMORY#>" onclick="freememory();"><i class="icon icon-trash"></i></button><button type="button" id="logout_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#t1Logout#>" onclick="logout();"><i class="icon icon-user"></i></button> <button type="button" id="reboto_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_REBOOT#>" onclick="reboot();"><i class="icon icon-repeat"></i></button><button type="button" id="shutdown_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_SHUTDOWN#>" onclick="shutdown();"><i class="icon icon-off"></i></button></td>\n';
+	bc += '    <td><button type="button" id="freememory_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_FREEMEMORY#>" onclick="freememory();"><i class="icon icon-trash"></i></button> <button type="button" id="logout_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#t1Logout#>" onclick="logout();"><i class="icon icon-user"></i></button> <button type="button" id="reboto_btn" class="btn btn-mini" style="height: 21px; outline:0;" title="<#BTN_REBOOT#>" onclick="reboot();"><i class="icon icon-repeat"></i></button> <button type="button" id="shutdown_btn" class="btn btn-mini" style="margin-left: 15px; height: 21px; outline:0;" title="<#BTN_SHUTDOWN#>" onclick="shutdown();"><i class="icon icon-off"></i></button></td>\n';
 	bc += '  </tr>\n';
 	bc += '</table>\n';
 	bc += '</div>\n';
@@ -746,7 +746,7 @@ function show_footer(){
 	footer_code +='<div align="center" class="copyright"><#footer_copyright_desc#></div>\n';
 	footer_code +='<div align="center">\n';
 	footer_code +='  <span>Developed by © <a href="https://bitbucket.org/padavan/rt-n56u/">Andy Padavan</a> &amp; <a href="https://github.com/hanwckf/rt-n56u">hanwckf</a> &amp; <a href="https://github.com/keke1023/Padavan">keke1023</a> &amp; <a href="https://github.com/vipshmily/Padavan-3.4-KVR">vipshmily</a></span></br>\n';
-	footer_code +='  <span>Firmware distribution is prohibited &amp; Non-Commercial Use Only</span></br>\n';
+	footer_code +=' <span>Firmware distribution is prohibited , Non-Commercial Use Only</span></br>\n';
 	footer_code +='</div>\n';
 
 	$("footer").innerHTML = footer_code;
@@ -847,7 +847,7 @@ function logout(){
 }
 
 function reboot(){
-	if(!confirm('<#Main_content_Login_Item7#>'))
+	if(!confirm('<#JS_reboot#>'))
 		return;
 	showLoading(board_boot_time());
 	var $j = jQuery.noConflict();
