@@ -1,4 +1,4 @@
-SRC_NAME = dns2tcp
+SRC_NAME = dns2tcp-1.1.1
 THISDIR = $(shell pwd)
 
 all: 

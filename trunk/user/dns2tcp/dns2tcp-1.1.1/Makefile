@@ -19,7 +19,7 @@ install: $(MAIN)
 	install -m 0755 $(MAIN) $(DESTDIR)
 
 clean:
-	$(RM) *.o $(MAIN)
+	$(RM) $(MAIN) *.o libev/*.o
 
 $(MAIN): $(EVOBJFILE) $(OBJS)
 	$(CC) $(CFLAGS) -s -o $(MAIN) $(OBJS) $(EVOBJFILE) $(LIBS)
