@@ -1,17 +1,17 @@
-SRC_NAME=libsodium-1.0.19
-SRC_URL=https://download.libsodium.org/libsodium/releases/$(SRC_NAME).tar.xz
+SRC_NAME=libsodium-1.0.20
+SRC_URL=https://download.libsodium.org/libsodium/releases/$(SRC_NAME).tar.gz
 
 all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)
 
 download_test:
-	( if [ ! -f $(SRC_NAME).tar.xz ]; then \
-		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.xz $(SRC_URL); \
+	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
+		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.gz $(SRC_URL); \
 	fi )
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xf $(SRC_NAME).tar.xz ; \
+		tar xf $(SRC_NAME).tar.gz ; \
 	fi )
 
 config_test:
