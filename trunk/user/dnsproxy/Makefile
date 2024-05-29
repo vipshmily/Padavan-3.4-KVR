@@ -1,11 +1,14 @@
-SRC_NAME = dnsproxy
+SRC_NAME = dnsproxy-1.1.1
 THISDIR = $(shell pwd)
 
 all: 
-	echo "fake compile"
+	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) CC="$(CC)"
 
 clean:
-	echo "fake clean"
+	if [ -f $(SRC_NAME)/Makefile ] ; then \
+		$(MAKE) -C $(SRC_NAME) clean ; \
+	fi ; \
+	rm -f config_done
 
 romfs:
-	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_NAME) /usr/bin/$(SRC_NAME)
+	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_NAME)/src/dnsproxy /usr/bin/dnsproxy
