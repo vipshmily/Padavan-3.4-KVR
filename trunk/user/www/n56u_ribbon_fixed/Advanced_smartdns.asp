@@ -36,7 +36,7 @@ $j(document).ready(function(){
 	init_itoggle('sdnse_enable');
 	init_itoggle('sdnse_address');
 	init_itoggle('sdns_address');
-	init_itoggle('sdnse_tcp');
+	init_itoggle('sdnse_tcp_server');
 	init_itoggle('sdnse_as');
 	init_itoggle('sdns_as');
 	init_itoggle('sdnse_speed');
@@ -48,10 +48,10 @@ $j(document).ready(function(){
 	init_itoggle('sdns_ipset');
 	init_itoggle('sdnse_cache');
 	init_itoggle('sdns_coredump');
-        init_itoggle('sdns_adblock');
+	init_itoggle('sdns_black');
+	init_itoggle('sdns_white');
+	init_itoggle('sdns_adblock');
 	init_itoggle('sdns_adblock_url');
-	init_itoggle('ss_black');
-	init_itoggle('ss_white');
 	init_itoggle('sdnss_enable_x_0');
 		$j("#tab_sm_cfg, #tab_sm_exp, #tab_sm_sec, #tab_sm_dns, #tab_sm_cou").click(function(){
 		var newHash = $j(this).attr('href').toLowerCase();
@@ -293,8 +293,9 @@ function showMRULESList(){
                         </div>
                                 <div class="row-fluid">
                                     <div id="tabMenu" class="submenuBlock"></div>
-									<div class="alert alert-info" style="margin: 10px;">SmartDNS是一个本地高性能DNS服务器，支持避免域名污染，支持返回最快IP，支持广告过滤。</br>
-									SmartDNS官方网站:<a href="https://pymumu.github.io/smartdns/">https://pymumu.github.io/smartdns/</a>
+									<div class="alert alert-info" style="margin: 10px;">SmartDNS 是一个本地高性能DNS服务器，支持避免域名污染，支持返回最快IP，支持广告过滤。</br>
+									SmartDNS 官方网站:<a href="https://pymumu.github.io/smartdns/">https://pymumu.github.io/smartdns/</a>
+                                    <input type="button" id="btn_reconnect" class="btn btn-info" value="刷新页面" onclick="window.location.reload();">
 </div>
 </div>
 <div id="wnd_sm_cfg">
@@ -302,7 +303,7 @@ function showMRULESList(){
                                         <tr> <th width="50%"><#running_status#></th>
                                             <td id="smartdns_status" colspan="2"></td>
                                         </tr>
-                                        <tr> <th><#menu5_21_1#></th>
+                                        <tr> <th>主开关</th>
                                             <td>
                                                 <div class="main_itoggle">
                                                 <div id="sdns_enable_on_of">
@@ -322,7 +323,7 @@ function showMRULESList(){
                                             </td>
                                         </tr>
 
-                                        <tr> <th>本地端口</th>
+                                        <tr> <th>服务器端口</th>
                                             <td>
                                                 <input type="text" maxlength="5" class="input" size="15" name="sdns_port" style="width: 200px" value="<% nvram_get_x("", "sdns_port"); %>">
                                             </td>
@@ -371,7 +372,7 @@ function showMRULESList(){
                                                 <input type="text" maxlength="64" class="input" size="64" name="sdns_ip_change_time" style="width: 50px" value="<% nvram_get_x("", "sdns_ip_change_time"); %>"> 毫秒（0-100）
                                             </td>
                                         </tr>
-										<tr> <th>禁用IPV6解析</th>
+										<tr> <th>禁用IPV6地址解析</th>
                                             <td>
                                                 <div class="main_itoggle">
                                                 <div id="sdns_ipv6_on_of">
@@ -389,14 +390,14 @@ function showMRULESList(){
 												<select name="sdns_redirect" class="input" style="width: 200px">
 													<option value="0" <% nvram_match_x("","sdns_redirect", "0","selected"); %>>无</option>
 													<option value="1" <% nvram_match_x("","sdns_redirect", "1","selected"); %>>作为dnsmasq的上游服务器</option>
-													<option value="2" <% nvram_match_x("","sdns_redirect", "2","selected"); %>>重定向53端口到SmartDns</option>
+													<option value="2" <% nvram_match_x("","sdns_redirect", "2","selected"); %>>重定向53端口到SmartDNS</option>
 												</select>
 											</td>
 										</tr>
                                         <tr> <th>域名查询结果缓存个数</th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="15" name="sdns_cache" style="width: 200px" value="<% nvram_get_x("", "sdns_cache"); %>">
-                                                <div><span style="color:#888;">0为禁用缓存功能</span></div>
+                                                <div><span style="color:#888;">“0”为禁用缓存功能。</span></div>
                                             </td>
                                         </tr>
                                         </tr>
@@ -416,19 +417,19 @@ function showMRULESList(){
 										<tr> <th>缓存可用时间</th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="15" name="sdns_ttl" style="width: 200px" value="<% nvram_get_x("", "sdns_ttl"); %>">
-                                                <div><span style="color:#888;">单位：秒，需大于0的数字</span></div>
+                                                <div><span style="color:#888;">单位：秒，需大于“0”的数字。</span></div>
                                             </td>
                                         </tr>
 										<tr> <th><a class="help_tooltip"  href="javascript:void(0);" onmouseover="openTooltip(this,3,1);">缓存更新阈值</a></th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="15" name="sdns_ttl_min" style="width: 200px" value="<% nvram_get_x("", "sdns_ttl_min"); %>">
-												<div><span style="color:#888;">单位：秒，需大于0的数字</span></div>
+												<div><span style="color:#888;">单位：秒，需大于“0”的数字。</span></div>
                                             </td>
                                         </tr>
 										<tr> <th>缓存时间上限</th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="15" name="sdns_ttl_max" style="width: 200px" value="<% nvram_get_x("", "sdns_ttl_max"); %>">
-												<div><span style="color:#888;">单位：秒，需大于0的数字</span></div>
+												<div><span style="color:#888;">单位：秒，需大于“0”的数字。</span></div>
                                             </td>
                                         </tr>
 										<tr>
@@ -460,25 +461,25 @@ function showMRULESList(){
 										<tr> <th>过期缓存回应阈值</th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="15" name="sdns_exp_ttl" style="width: 200px" value="<% nvram_get_x("", "sdns_exp_ttl"); %>">
-												<div><span style="color:#888;">失效不足此时长的过期缓存可用。0为不限时</span></div>
+												<div><span style="color:#888;">失效不足此时长的过期缓存可用，“0”为不限时。</span></div>
                                             </td>
                                         </tr>
 										<tr> <th>回应的过期缓存可用时间</th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="15" name="sdns_exp_ttl_max" style="width: 200px" value="<% nvram_get_x("", "sdns_exp_ttl_max"); %>">
-												<div><span style="color:#888;">过期缓存更新前的临时可用时间。0为不限时</span></div>
+												<div><span style="color:#888;">过期缓存更新前的临时可用时间，“0”为不限时。</span></div>
                                             </td>
                                         </tr>
 										<tr> <th>加载ChnrouteIP为白名单</th>
                                             <td>
                                                 <div class="main_itoggle">
-                                                <div id="ss_white_on_of">
-                                                    <input type="checkbox" id="ss_white_fake" <% nvram_match_x("", "ss_white", "1", "value=1 checked"); %><% nvram_match_x("", "ss_white", "0", "value=0"); %>>
+                                                <div id="sdns_white_on_of">
+                                                    <input type="checkbox" id="sdns_white_fake" <% nvram_match_x("", "sdns_white", "1", "value=1 checked"); %><% nvram_match_x("", "sdns_white", "0", "value=0"); %>>
                                                 </div>
                                                 </div>
                                                 <div style="position: absolute; margin-left: -10000px;">
-                                                    <input type="radio" value="1" name="ss_white" id="ss_white_1" <% nvram_match_x("", "ss_white", "1", "checked"); %>><#checkbox_Yes#>
-                                                    <input type="radio" value="0" name="ss_white" id="ss_white_0" <% nvram_match_x("", "ss_white", "0", "checked"); %>><#checkbox_No#>
+                                                    <input type="radio" value="1" name="sdns_white" id="sdns_white_1" <% nvram_match_x("", "sdns_white", "1", "checked"); %>><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="sdns_white" id="sdns_white_0" <% nvram_match_x("", "sdns_white", "0", "checked"); %>><#checkbox_No#>
                                                 </div>
 												<div><span style="color:#888;">此项可配合科学上网来实现大陆IP才走国内DNS</span></div>
 												<div><span style="color:#888;">需在上游服务器国内组中开启白名单过滤[-whitelist-ip]</span></div>
@@ -487,13 +488,13 @@ function showMRULESList(){
 										<tr> <th>加载ChnrouteIP为黑名单</th>
                                             <td>
                                                 <div class="main_itoggle">
-                                                <div id="ss_black_on_of">
-                                                    <input type="checkbox" id="ss_black_fake" <% nvram_match_x("", "ss_black", "1", "value=1 checked"); %><% nvram_match_x("", "ss_black", "0", "value=0"); %>>
+                                                <div id="sdns_black_on_of">
+                                                    <input type="checkbox" id="sdns_black_fake" <% nvram_match_x("", "sdns_black", "1", "value=1 checked"); %><% nvram_match_x("", "sdns_black", "0", "value=0"); %>>
                                                 </div>
                                                 </div>
                                                 <div style="position: absolute; margin-left: -10000px;">
-                                                    <input type="radio" value="1" name="ss_black" id="ss_black_1" <% nvram_match_x("", "ss_black", "1", "checked"); %>><#checkbox_Yes#>
-                                                    <input type="radio" value="0" name="ss_black" id="ss_black_0" <% nvram_match_x("", "ss_black", "0", "checked"); %>><#checkbox_No#>
+                                                    <input type="radio" value="1" name="sdns_black" id="sdns_black_1" <% nvram_match_x("", "sdns_black", "1", "checked"); %>><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="sdns_black" id="sdns_black_0" <% nvram_match_x("", "sdns_black", "0", "checked"); %>><#checkbox_No#>
                                                 </div>
 												<div><span style="color:#888;">此项可配合科学上网来实现大陆IP禁止走国外DNS</span></div>
 												<div><span style="color:#888;">需在上游服务器国外组中开启黑名单过滤[-blacklist-ip]</span></div>
@@ -587,7 +588,7 @@ function showMRULESList(){
                                                 </div>
                                             </td>
                                         </tr>
-										<tr> <th>本地端口</th>
+										<tr> <th>服务器端口</th>
                                             <td>
                                                 <input type="text" maxlength="64" class="input" size="64" name="sdnse_port" style="width: 200px" value="<% nvram_get_x("", "sdnse_port"); %>">
 										
@@ -596,13 +597,13 @@ function showMRULESList(){
 										<tr> <th>TCP服务器</th>
                                             <td>
                                                 <div class="main_itoggle">
-                                                <div id="sdnse_tcp_on_of">
-                                                    <input type="checkbox" id="sdnse_tcp_fake" <% nvram_match_x("", "sdnse_tcp", "1", "value=1 checked"); %><% nvram_match_x("", "sdnse_tcp", "0", "value=0"); %>>
+                                                <div id="sdnse_tcp_server_on_of">
+                                                    <input type="checkbox" id="sdnse_tcp_server_fake" <% nvram_match_x("", "sdnse_tcp_server", "1", "value=1 checked"); %><% nvram_match_x("", "sdnse_tcp_server", "0", "value=0"); %>>
                                                 </div>
                                                 </div>
                                                 <div style="position: absolute; margin-left: -10000px;">
-                                                    <input type="radio" value="1" name="sdnse_tcp" id="sdnse_tcp_1" <% nvram_match_x("", "sdnse_tcp", "1", "checked"); %>><#checkbox_Yes#>
-                                                    <input type="radio" value="0" name="sdnse_tcp" id="sdnse_tcp_0" <% nvram_match_x("", "sdnse_tcp", "0", "checked"); %>><#checkbox_No#>
+                                                    <input type="radio" value="1" name="sdnse_tcp_server" id="sdnse_tcp_server_1" <% nvram_match_x("", "sdnse_tcp_server", "1", "checked"); %>><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="sdnse_tcp_server" id="sdnse_tcp_server_0" <% nvram_match_x("", "sdnse_tcp_server", "0", "checked"); %>><#checkbox_No#>
                                                 </div>
                                             </td>
                                         </tr>
