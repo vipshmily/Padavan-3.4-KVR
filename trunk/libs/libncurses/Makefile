@@ -1,4 +1,4 @@
-SRC_NAME=ncurses-6.4
+SRC_NAME=ncurses-6.5
 SRC_URL=https://ftp.gnu.org/pub/gnu/ncurses/$(SRC_NAME).tar.gz
 
 all: download_test extract_test config_test
@@ -11,7 +11,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xf $(SRC_NAME).tar.gz ; \
+		tar zxf $(SRC_NAME).tar.gz ; \
 		patch -p1 -d $(SRC_NAME) < $(SRC_NAME).patch ; \
 	fi )
 
