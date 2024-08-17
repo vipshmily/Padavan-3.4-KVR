@@ -1,5 +1,5 @@
-SRC_NAME=c-ares-1.28.1
-SRC_URL=https://github.com/c-ares/c-ares/releases/download/cares-1_28_1/$(SRC_NAME).tar.gz
+SRC_NAME=c-ares-1.32.3
+SRC_URL=https://github.com/c-ares/c-ares/releases/download/cares-1_32_3/$(SRC_NAME).tar.gz
 
 all: download_test extract_test config_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME)/build
@@ -11,7 +11,7 @@ download_test:
 
 extract_test:
 	( if [ ! -d $(SRC_NAME) ]; then \
-		tar xf $(SRC_NAME).tar.gz ; \
+		tar zxf $(SRC_NAME).tar.gz ; \
 	fi )
 
 config_test:
