@@ -1,4 +1,4 @@
-SRC_NAME=libtirpc-1.3.4
+SRC_NAME=libtirpc-1.3.5
 SRC_URL=https://downloads.sourceforge.net/libtirpc/$(SRC_NAME).tar.bz2
 
 all: download_test extract_test config_test
