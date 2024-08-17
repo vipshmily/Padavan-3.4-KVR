@@ -27,3 +27,6 @@ stamp-h1
 /images/*
 /stage
 /stage/*
+
+# MacOS
+.DS_Store
