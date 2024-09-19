@@ -123,6 +123,7 @@ function change_wireless_bridge(){
 	}
 
 	if (is_apc){
+		rescan();
 		if (!support_2g_inic_mii())
 			is_apc_auto = 1;
 		if (!get_ap_mode() && !support_2g_inic_mii())
