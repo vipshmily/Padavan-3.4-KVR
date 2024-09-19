@@ -26,6 +26,8 @@ var $j = jQuery.noConflict();
 
 $j(document).ready(function() {
 	init_itoggle('rt_greenap');
+	init_itoggle('rt_pmf', pmf_handle);
+	init_itoggle('rt_pmfsha256');
 	init_itoggle('rt_ap_isolate');
 });
 
@@ -88,6 +90,16 @@ function initial(){
 	load_body();
 
 	change_wmm();
+	pmf_handle();
+}
+function pmf_handle() {
+	var v = document.form.rt_pmf[0].checked;
+	var p = document.form.rt_pmfsha256[0].checked;
+	if (v && !p) {
+		document.form.rt_pmfsha256[0].checked=true;
+		document.form.rt_pmfsha256[1].checked=false;
+	}
+	showhide_div("row_pmfsha256", !v);
 }
 
 function change_wmm() {
@@ -217,6 +229,34 @@ function done_validating(action){
                                                 </select>
                                             </td>
                                         </tr>
+                                        <tr  id="row_pmf">
+                                            <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 3);"><#WIFIPMF_itemname#></a></th>
+                                            <td>
+                                                <div class="main_itoggle">
+                                                    <div id="rt_pmf_on_of">
+                                                        <input type="checkbox" id="rt_pmf_fake" <% nvram_match_x("", "rt_pmf", "1", "value=1 checked"); %><% nvram_match_x("", "rt_pmf", "0", "value=0"); %>>
+                                                    </div>
+                                                </div>
+                                                <div style="position: absolute; margin-left: -10000px;">
+                                                    <input type="radio" value="1" name="rt_pmf" id="rt_pmf_1" class="input" <% nvram_match_x("", "rt_pmf", "1", "checked"); %>><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="rt_pmf" id="rt_pmf_0" class="input" <% nvram_match_x("", "rt_pmf", "0", "checked"); %>><#checkbox_No#>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr id="row_pmfsha256">
+                                            <th><#WIFIPMFsha256#></th>
+                                            <td>
+                                                <div class="main_itoggle">
+                                                    <div id="rt_pmfsha256_on_of">
+                                                        <input type="checkbox" id="rt_pmfsha256_fake" <% nvram_match_x("", "rt_pmfsha256", "1", "value=1 checked"); %><% nvram_match_x("", "rt_pmfsha256", "0", "value=0"); %>>
+                                                    </div>
+                                                </div>
+                                                <div style="position: absolute; margin-left: -10000px;">
+                                                    <input type="radio" value="1" name="rt_pmfsha256" id="rt_pmfsha256_1" class="input" <% nvram_match_x("", "rt_pmfsha256", "1", "checked"); %>><#checkbox_Yes#>
+                                                    <input type="radio" value="0" name="rt_pmfsha256" id="rt_pmfsha256_0" class="input" <% nvram_match_x("", "rt_pmfsha256", "0", "checked"); %>><#checkbox_No#>
+                                                </div>
+                                            </td>
+                                        </tr>
                                         <tr id="row_greenap">
                                             <th><#WIFIGreenAP#></th>
                                             <td>
@@ -307,6 +347,15 @@ function done_validating(action){
                                                 </select>
                                             </td>
                                         </tr>
+                                        <tr id="row_stbc">
+                                            <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 26);"><#WIFISTBC_itemname#></a></th>
+                                            <td>
+                                                <select name="rt_stbc" class="input">
+                                                    <option value="0" <% nvram_match_x("","rt_stbc", "0","selected"); %>><#btn_Disable#></option>
+                                                    <option value="1" <% nvram_match_x("","rt_stbc", "1","selected"); %>>11n only (*)</option>
+                                                </select>
+                                            </td>
+                                        </tr>
                                         <tr>
                                             <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 13);"><#WLANConfig11b_x_TxBurst_itemname#></a></th>
                                             <td>
@@ -343,7 +392,7 @@ function done_validating(action){
                                                 </select>
                                             </td>
                                         </tr>
-                                        <tr>
+                                        <tr id="row_amsdu">
                                             <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 23);"><#WLANConfig11n_amsdu_itemname#></a></th>
                                             <td>
                                                 <select name="rt_HT_AMSDU" class="input">

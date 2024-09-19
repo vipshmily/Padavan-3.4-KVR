@@ -567,7 +567,8 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 {
 	FILE *fp;
 	char list[2048], *p_str, *c_val_mbss[2];
-	int i, i_num,  i_val, i_wmm, i_ldpc;
+	int i_pmfr, i_pmfsha256;
+	int i, i_num,  i_val, i_wmm, i_ldpc, i_stbc;
 	int i_mode_x, i_phy_mode, i_gfe, i_auth, i_encr, i_wep, i_wds;
 	int i_ssid_num, i_channel, i_channel_max, i_HTBW_MAX;
 	int i_stream_tx, i_stream_rx, i_mphy, i_mmcs, i_fphy[2], i_val_mbss[2];
@@ -679,6 +680,13 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 		}
 	}
 	fprintf(fp, "Channel=%d\n", i_channel);
+
+	//PMF Capbility and required
+	i_pmfr = nvram_wlan_get_int(is_aband, "pmf");
+	i_pmfsha256 = nvram_wlan_get_int(is_aband, "pmfsha256");
+	fprintf(fp, "PMFMFPC=%d\n", 1);
+	fprintf(fp, "PMFMFPR=%d\n", i_pmfr);
+	fprintf(fp, "PMFSHA256=%d\n", i_pmfsha256);
 
 	fprintf(fp, "AutoProvisionEn=%d\n", 0);
 	fprintf(fp, "CalCacheApply=%d\n", 0);
@@ -1338,7 +1346,9 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 	fprintf(fp, "HT_GI=%d;%d\n", 1, 1);
 
 	//HT_STBC
-	fprintf(fp, "HT_STBC=%d;%d\n", 1, 1);
+	i_stbc = nvram_wlan_get_int(is_aband, "stbc");
+	i_val = (i_stbc == 1 || i_stbc == 3) ? 1 : 0;
+	fprintf(fp, "HT_STBC=%d;%d\n", i_val, i_val);
 
 	i_fphy[0] = calc_fixed_tx_mode(nvram_wlan_get_int(is_aband, "mcs_mode"), is_aband, i_phy_mode, &i_val_mbss[0]);
 	i_fphy[1] = calc_fixed_tx_mode(nvram_wlan_get_int(is_aband, "guest_mcs_mode"), is_aband, i_phy_mode, &i_val_mbss[1]);
@@ -1399,11 +1409,8 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 		fprintf(fp, "VHT_LDPC=%d\n", i_val);
 		
 		//VHT_STBC
-#if defined (USE_WID_5G) && (USE_WID_5G==7615 || USE_WID_5G == 7915)
+		i_val = (i_stbc == 2 || i_stbc == 3) ? 1 : 0;
 		fprintf(fp, "VHT_STBC=%d\n", i_val);
-#else
-		fprintf(fp, "VHT_STBC=%d\n", 0);
-#endif
 	}
 #endif
 

@@ -39,7 +39,7 @@ helpcontent[2] = new Array("",
 helpcontent[3] = new Array("",
 				"",
 				"",
-				"",
+				"<#WIFIPMF_itemdesc#>",
 				"<#WLANConfig11n_PremblesType_itemdesc#>",
 				"<#WLANConfig11b_x_IsolateAP_itemdesc#>",
 				"<#WLANConfig11b_DataRateAll_itemdesc#>",
@@ -61,7 +61,8 @@ helpcontent[3] = new Array("",
 				"<#WLANConfig11n_txbf_itemdesc#>",
 				"<#WLANConfig11n_amsdu_itemdesc#>",
 				"<#WIFILDPC_itemdesc#>",
-				"<#WIFILDPC2_itemdesc#>");
+				"<#WIFILDPC2_itemdesc#>",
+				"<#WIFISTBC_itemdesc#>");
 // MAC filter
 helpcontent[4] = new Array("",
 				"<#FirewallConfig_MFMethod_itemdesc#>");
