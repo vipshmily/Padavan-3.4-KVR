@@ -1,4 +1,4 @@
-SRC_NAME=readline-8.3-alpha
+SRC_NAME=readline-8.2.13
 SRC_URL=http://ftp.gnu.org/gnu/readline/$(SRC_NAME).tar.gz
 
 all: download_test extract_test config_test

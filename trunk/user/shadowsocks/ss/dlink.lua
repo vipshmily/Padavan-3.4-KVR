@@ -172,6 +172,14 @@ local function processData(szType, content)
 			result.quic_key = info.key
 			result.quic_security = info.securty
 		end
+		if info.net == 'httpupgrade' then
+			result.httpupgrade_host = info.host
+			result.httpupgrade_path = info.path
+		end
+		if info.net == 'splithttp' then
+			result.splithttp_host = info.host
+			result.splithttp_path = info.path
+		end
 		if info.security then
 			result.security = info.security
 		end
@@ -244,6 +252,14 @@ local function processData(szType, content)
 				result.quic_key = params.key
 				result.quic_security = params.security
 			end
+			if info.net == 'httpupgrade' then
+				result.httpupgrade_host = info.host
+				result.httpupgrade_path = info.path
+				end
+				if info.net == 'splithttp' then
+				result.splithttp_host = info.host
+				result.splithttp_path = info.path
+				end
 			if params.encryption then
 				result.security = params.encryption --vless security默认none
 			end
@@ -252,14 +268,14 @@ local function processData(szType, content)
 				result.tls_host = params.host
 				result.insecure = 0
 				result.flow = "0"
-			elseif params.security == "xtls" or params.security == "2" then
+			elseif params.security == "reality" or params.security == "2" then
 				result.tls = "2"
 				result.tls_host = params.host
 				result.insecure = 0
-				if params.flow == "xtls-rprx-splice" then
-					result.flow = "2"
-				else
+				if params.flow == "xtls-rprx-vision" then
 					result.flow = "1"
+				else
+					result.flow = "2"
 				end
 			else
 				result.tls = "0"

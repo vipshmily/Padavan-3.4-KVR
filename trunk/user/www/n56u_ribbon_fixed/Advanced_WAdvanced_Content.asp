@@ -108,12 +108,10 @@ function change_wmm() {
 
 function applyRule(){
 	if(validForm()){
-		showLoading();
-		
+		showLoading();	
 		document.form.action_mode.value = " Apply ";
 		document.form.current_page.value = "/Advanced_WAdvanced_Content.asp";
 		document.form.next_page.value = "";
-		
 		document.form.submit();
 	}
 }
@@ -133,7 +131,6 @@ function done_validating(action){
 }
 </script>
 </head>
-
 
 <body onload="initial();" onunLoad="return unload_body();">
 

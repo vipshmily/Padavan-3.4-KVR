@@ -1115,7 +1115,7 @@ gen_ralink_config(int is_soc_ap, int is_aband, int disable_autoscan)
 
 	//Wapi
 	for (i = 1; i <= 8; i++)
-		fprintf(fp, "WapiPsk%d=\n", i);
+	fprintf(fp, "WapiPsk%d=\n", i);
 	fprintf(fp, "WapiPskType=\n");
 	fprintf(fp, "Wapiifname=\n");
 	fprintf(fp, "WapiAsCertPath=\n");

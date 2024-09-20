@@ -117,11 +117,9 @@ function change_wmm() {
 function applyRule(){
 	if(validForm()){
 		showLoading();
-		
 		document.form.action_mode.value = " Apply ";
 		document.form.current_page.value = "/Advanced_WAdvanced2g_Content.asp";
 		document.form.next_page.value = "";
-		
 		document.form.submit();
 	}
 }
@@ -229,7 +227,7 @@ function done_validating(action){
                                                 </select>
                                             </td>
                                         </tr>
-                                        <tr  id="row_pmf">
+                                        <tr id="row_pmf">
                                             <th><a class="help_tooltip" href="javascript:void(0);" onmouseover="openTooltip(this, 3, 3);"><#WIFIPMF_itemname#></a></th>
                                             <td>
                                                 <div class="main_itoggle">
@@ -265,7 +263,6 @@ function done_validating(action){
                                                         <input type="checkbox" id="rt_greenap_fake" <% nvram_match_x("", "rt_greenap", "1", "value=1 checked"); %><% nvram_match_x("", "rt_greenap", "0", "value=0"); %>>
                                                     </div>
                                                 </div>
-
                                                 <div style="position: absolute; margin-left: -10000px;">
                                                     <input type="radio" value="1" name="rt_greenap" id="rt_greenap_1" class="input" <% nvram_match_x("", "rt_greenap", "1", "checked"); %>><#checkbox_Yes#>
                                                     <input type="radio" value="0" name="rt_greenap" id="rt_greenap_0" class="input" <% nvram_match_x("", "rt_greenap", "0", "checked"); %>><#checkbox_No#>
